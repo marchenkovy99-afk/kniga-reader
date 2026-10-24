@@ -1,4 +1,5 @@
-import {PageFlip} from 'page-flip';
+import {PageFlip} from '@gullabs/flipbook-core';
+import {animatedTurn} from './page-turn.js';
 import {attachReaderChrome} from './chrome-controls.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
@@ -113,9 +114,9 @@ async function layout(){
   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
   const book=document.createElement('div');book.id='flipbook';book.setAttribute('aria-label','Книга с перелистыванием страниц');stage.append(book);
   const nodes=pages.map((p,i)=>{const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);return node;});pageNodes=nodes;hydrateAround(pageIndex);
-  flip=new PageFlip(book,{width,height,size:'fixed',minWidth:100,maxWidth:2000,minHeight:80,maxHeight:3000,usePortrait:true,autoSize:false,startPage:pageIndex,drawShadow:true,maxShadowOpacity:0.24,flippingTime:550,showCover:false,mobileScrollSupport:true,clickEventForward:true,useMouseEvents:false,showPageCorners:false,disableFlipByClick:true,swipeDistance:35});
+  flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:550,allowTouchScroll:true,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:true});
   let initializing=true;
-  flip.on('flip',e=>{if(initializing)return;recordReading();pageIndex=e.data;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
+  flip.on('flip',e=>{if(initializing)return;recordReading();pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
   anchor=target; // Keep the precise source anchor through consecutive typography edits.
@@ -137,7 +138,7 @@ function updateProgress(){
  // Only the active page is exposed to assistive technology; physical page layers stay visual.
  document.querySelectorAll('.book-page').forEach((el,i)=>el.setAttribute('aria-hidden',String(i!==pageIndex)));
 }
-function turn(dir){if(!flip||!pages.length)return;if(flip.getState()!=='read')return;const next=pageIndex+dir;if(next<0||next>=pages.length)return;hydrateAround(next);if(reduced()){goPage(next);return;}dir>0?flip.flipNext('bottom'):flip.flipPrev('bottom');}
+function turn(dir){if(!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady()||flip.isAnimating())return;hydrateAround(next);if(reduced()){goPage(next);return;}animatedTurn(flip,dir,pages.length);}
 function goPage(index){if(!flip||!pages.length)return;recordReading();pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();}
 function jump(target){closeSheet();if(!pages.length)return;goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
