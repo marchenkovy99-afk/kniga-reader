@@ -6,7 +6,7 @@ import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
 export class CloudSync{
- constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;}
+ constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;this.lastSuccessfulAt=null;this.remoteBooksCount=0;}
  async init(){
   try{
    // Device ID must survive a full browser restart. The old session-only ID
@@ -82,6 +82,8 @@ export class CloudSync{
     await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[])));
    }
    this.error=null;
+   this.remoteBooksCount=snapshot.books.length+local.filter(b=>b.id!=='sample'&&b.cloudOwner===this.owner&&!remoteIds.has(b.id)).length;
+   this.lastSuccessfulAt=Date.now();
    this.setStatus(Object.keys(this.pending).length?'Изменения ожидают отправки…':'Синхронизировано');
    if(added)this.cb.libraryChanged?.();
   }catch(e){
