@@ -103,7 +103,7 @@ test('an old reading position cannot override the cloud account appearance',asyn
  ];
  let active=null;
  const h=harness({api:async(url,opts)=>{
-   if(url==='/api/cloud')return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[],states:state});
+   if(url==='/api/cloud')return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[{id:'e'.repeat(64),fileName:'test.fb2'}],states:state});
    const saved=JSON.parse(opts.body);state.push(saved);return Response.json({saved:true});
   },bookList:[{id:'e'.repeat(64),blocks:[{text:'test'}],appearanceSettings:null,appearanceUpdatedAt:0}],callbacks:{
    localAppearance:()=>null,
