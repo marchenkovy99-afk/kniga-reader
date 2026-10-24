@@ -20,3 +20,13 @@ export const putBook=book=>transaction('books','readwrite',s=>s.put(book));
 export const getPreference=key=>transaction('preferences','readonly',s=>s.get(key));
 export const setPreference=(key,value)=>transaction('preferences','readwrite',s=>s.put(value,key));
 export const deleteBook=id=>transaction('books','readwrite',s=>s.delete(id));
+
+export const deletePreference=key=>transaction('preferences','readwrite',s=>s.delete(key));
+export async function listPreferenceKeys(prefix=''){
+ const db=await database();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('preferences','readonly'),request=tx.objectStore('preferences').getAllKeys();
+  request.onsuccess=()=>resolve(request.result.filter(key=>typeof key==='string'&&key.startsWith(prefix)));
+  request.onerror=()=>reject(new Error('Не удалось восстановить ожидающие синхронизации изменения.'));
+ });
+}
