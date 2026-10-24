@@ -1,0 +1,1 @@
+export default function Home(){return <iframe src="/reader/index.html" title="Книга · личная читалка" style={{position:'fixed',inset:0,width:'100%',height:'100dvh',border:0}} allow="clipboard-write" />;}
