@@ -42,7 +42,8 @@ test('explicit instant mode stays instant and an unspecified preference follows 
  assert.equal(pageTurnMotion({},false).animate,true);
 });
 
-test('book curl lasts long enough to remain visible',()=>{
- assert.ok(pageTurnMotion({animation:true},false).flippingTime>=1200);
+test('book curl is responsive while preserving the physical page turn',()=>{
+ const duration=pageTurnMotion({animation:true},false).flippingTime;
+ assert.ok(duration>=650&&duration<=850);
  assert.equal(pageTurnMotion({animation:false},false).flippingTime,0);
 });

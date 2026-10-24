@@ -1,7 +1,7 @@
 export function pageTurnMotion(settings={},systemReducedMotion=false){
  const explicit=typeof settings.animation==='boolean';
  const animate=explicit?settings.animation:!systemReducedMotion;
- return {animate,respectReducedMotion:!explicit,flippingTime:animate?1300:0};
+ return {animate,respectReducedMotion:!explicit,flippingTime:animate?780:0};
 }
 
 /**
