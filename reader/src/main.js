@@ -1,4 +1,5 @@
 import {PageFlip} from 'page-flip';
+import {attachReaderChrome} from './chrome-controls.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
 import {paginate,applyTypography} from './pagination.js';
@@ -75,6 +76,7 @@ async function openBook(id){
  anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;
  document.body.classList.add('reading');theme();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status">Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="page-count"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
+ attachReaderChrome(document.querySelector('#book-stage'),turn);
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
  document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night'][(['paper','white','night'].indexOf(settings.theme)+1)%3];theme();saveSettings();};
@@ -172,7 +174,7 @@ function showSettings(){
  document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();saveSettings();showSettings();});
  document.querySelector('#reset-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();layout();};
 }
-document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
+document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){e.preventDefault();document.querySelector('.reader')?.classList.toggle('chrome-hidden');return;}if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistPosition();});
 window.addEventListener('pagehide',()=>persistPosition());
 window.addEventListener('offline',()=>message('Нет сети. Сохранённые книги доступны на этом устройстве.'));

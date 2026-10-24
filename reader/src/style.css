@@ -58,3 +58,7 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
 .cloud-login{display:grid;gap:14px}.cloud-login label{display:grid;gap:6px;font-size:14px}.cloud-login input{width:100%;min-height:46px;padding:10px 12px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:6px}.cloud-login [role=status]:empty{display:none}.cloud-login [role=status]{font-size:14px;line-height:1.5}
 
 .book-meta{padding-right:0}.book-meta span{padding-right:30px;min-height:18px}.book-more{top:auto;bottom:-12px;right:-10px}.book-meta h3,.book-meta p{position:relative;z-index:1;pointer-events:none}
+
+/* Distraction-free reading: no reserved blank bars; pagination follows the expanded stage. */
+.reader.chrome-hidden .reader-header,.reader.chrome-hidden .reader-footer{display:none}
+.reader.chrome-hidden .book-stage{flex:1}
