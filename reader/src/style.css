@@ -95,3 +95,10 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
 .note-item-actions{display:flex;gap:13px;flex-wrap:wrap}.note-item-actions button{color:var(--accent);font-size:13px;min-height:44px}
 #note-editor{font-size:16px;width:100%;min-height:110px;padding:12px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:9px;resize:vertical;line-height:1.55;margin:12px 0}
 .note-label{display:block;font-size:14px;font-weight:600;margin-top:16px}
+
+.reader-summary{font-size:10px;line-height:1.35;text-align:center;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.theme-options{flex-wrap:wrap}.theme-option{min-width:calc(25% - 12px)}
+.theme-sample.oled{background:#000;color:#eee;border-color:#444}
+.theme-sample.auto{background:linear-gradient(110deg,#fff 50%,#17201b 50%);color:#6d8b76}
+.chapter-row[hidden]{display:none}
+@media(max-width:359px){.theme-option{min-width:calc(33.333% - 12px)}}
