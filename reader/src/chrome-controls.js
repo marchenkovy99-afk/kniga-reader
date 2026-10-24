@@ -14,7 +14,7 @@ export function readerTapAction(start,end,rect){
  return null;
 }
 /** An edge tap or swipe turns the page; only a central tap toggles the controls. */
-export function attachReaderChrome(stage,turn){
+export function attachReaderChrome(stage,turn,{engineHandlesSwipes=false}={}){
  const reader=stage.closest('.reader');
  reader.classList.add('chrome-hidden');
  let down=null;
@@ -28,6 +28,8 @@ export function attachReaderChrome(stage,turn){
   if(!down)return;
   const start=down;down=null;
   if(blocked(event.target)||document.querySelector('dialog[open]')||window.getSelection()?.toString())return;
+  // Delegate physical drags to the curl engine, avoiding double navigation.
+  if(engineHandlesSwipes&&Math.hypot(event.clientX-start.x,event.clientY-start.y)>14)return;
   const action=readerTapAction(start,{pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now()},stage.getBoundingClientRect());
   if(action==='toggle')reader.classList.toggle('chrome-hidden');
   else if(action==='next')turn(1);
