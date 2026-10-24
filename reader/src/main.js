@@ -3,7 +3,7 @@ import {animatedTurn} from './page-turn.js';
 import {attachReaderChrome} from './chrome-controls.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
-import {paginate,applyTypography} from './pagination.js';
+import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
 import * as storage from './storage.js';
 import {CloudSync} from './cloud.js';
 import {supabase} from './supabase-client.js';
@@ -12,13 +12,15 @@ import {mergeAnnotations} from './reading-features.js';
 import './style.css';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
+import {createPaginationCache} from './pagination-cache.js';
 const app=document.querySelector('#app');
 const paths={moon:'M20.985 12.486a9 9 0 1 1-9.47-9.47c.405-.031.641.446.393.768a7 7 0 0 0 8.309 8.309c.322-.248.799-.012.768.393Z',cloud:'M7 18a5 5 0 0 1-.7-9.95A6 6 0 0 1 18 7a5.5 5.5 0 0 1 0 11H7Z',book:'M4 4h6a4 4 0 0 1 4 4v13a5 5 0 0 0-5-3H4V4Zm16 0h-6a4 4 0 0 0-4 4v13a5 5 0 0 1 5-3h5V4Z',plus:'M12 5v14M5 12h14',back:'m14 5-7 7 7 7',next:'m10 5 7 7-7 7',bookmark:'M6 3h12v18l-6-4-6 4V3Z',search:'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',list:'M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1',close:'m6 6 12 12M6 18 18 6',sun:'M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',sort:'M4 7h16M7 12h10M10 17h4',more:'M5 12h.01M12 12h.01M19 12h.01',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',check:'m5 12 4 4 10-10',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5'};
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
-let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],pageCache=new Map(),libraryStatusFilter='';
+let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
+const paginationCache=createPaginationCache({storage,paginate,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
 const statuses={reading:'Читаю',planned:'Хочу прочитать',finished:'Прочитано'};
@@ -93,7 +95,7 @@ function bookInfo(b){
  document.querySelector('#download-original').onclick=()=>downloadBook(b);const state=document.querySelector('#book-status');state.value=b.progress?.status||'reading';state.onchange=async()=>{b.progress={...(b.progress||{}),status:state.value};await saveBookMeta(b);};document.querySelector('#book-collection').onchange=async e=>{b.progress={...(b.progress||{}),collection:e.target.value.trim().slice(0,48)};await saveBookMeta(b);};
  document.querySelector('#remove-book').onclick=async()=>{
   closeSheet();openSheet('Убрать книгу с полки?',`<div class="prose"><p>«${esc(b.title)}» исчезнет с этого устройства. Исходный файл и облачная копия останутся.</p><div class="action-row"><button class="button secondary" id="keep-book">Оставить</button><button class="button primary" id="confirm-remove">Убрать с полки</button></div></div>`);
-  document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{if(cloud?.owner){const hidden=await storage.getPreference(`cloud-hidden:${cloud.owner}`)||[];await storage.setPreference(`cloud-hidden:${cloud.owner}`,[...new Set([...hidden,b.id])]);}await storage.deleteBook(b.id);books=books.filter(x=>x.id!==b.id);closeSheet();await library();}catch(e){message(e.message,true);}};
+  document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{if(cloud?.owner){const hidden=await storage.getPreference(`cloud-hidden:${cloud.owner}`)||[];await storage.setPreference(`cloud-hidden:${cloud.owner}`,[...new Set([...hidden,b.id])]);}await storage.deleteBook(b.id);await paginationCache.remove(b.id);books=books.filter(x=>x.id!==b.id);closeSheet();await library();}catch(e){message(e.message,true);}};
  };
 }
 async function openBook(id){
@@ -110,7 +112,7 @@ async function openBook(id){
  const effectiveAppearance=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:b.appearanceSettings||b.progress?.bookSettings,updatedAt:b.appearanceUpdatedAt||b.progress?.appearanceUpdatedAt||0});
  settings=restoreSettings(effectiveAppearance.settings);theme();
  document.body.classList.add('reading');theme();
- app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status">Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="page-count"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
+ app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="page-count"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  attachReaderChrome(document.querySelector('#book-stage'),turn);
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
@@ -126,11 +128,11 @@ async function layout(){
  const stage=document.querySelector('#book-stage');if(!stage)return;
  const width=Math.floor(stage.clientWidth),height=Math.floor(stage.clientHeight);if(width<100||height<80)return;
  lastSize=`${width}x${height}`;
- let loader=document.querySelector('#page-loading');if(!loader){loader=document.createElement('div');loader.id='page-loading';loader.className='page-loading';loader.setAttribute('role','status');stage.append(loader);}loader.textContent='Пересчитываем страницы…';
- const target={...anchor},snapshot={...settings};const cacheKey=current.id+'|'+width+'|'+height+'|'+JSON.stringify(snapshot);
+ let loader=document.querySelector('#page-loading');if(!loader){loader=document.createElement('div');loader.id='page-loading';loader.className='page-loading';loader.setAttribute('role','status');stage.append(loader);}loader.hidden=true;loader.textContent='Пересчитываем страницы…';
+ const target={...anchor},snapshot={...settings},bookSnapshot=current;
  try{
   await document.fonts.ready;
-  let result=pageCache.get(cacheKey);if(!result){result=await paginate(current.blocks,{width,height,settings:snapshot,signal:controller.signal,onProgress:p=>loader.textContent=`Готовим страницы · ${p}%`});pageCache.set(cacheKey,result);if(pageCache.size>3)pageCache.delete(pageCache.keys().next().value);}
+  const result=await paginationCache.load({bookId:bookSnapshot.id,blocks:bookSnapshot.blocks,width,height,settings:snapshot,environment:typographyEnvironment(snapshot,width),signal:controller.signal,onMiss:()=>{loader.hidden=false;},onProgress:p=>{if(!controller.signal.aborted)loader.textContent=`Готовим страницы · ${p}%`;}});
   if(controller.signal.aborted)return;
   if(flip){flip.destroy();flip=null;}
   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
@@ -143,7 +145,7 @@ async function layout(){
   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
   anchor=target; // Keep the precise source anchor through consecutive typography edits.
   updateProgress();scheduleSave();
- }catch(e){if(e.name!=='AbortError'){loader.textContent=e.message;loader.classList.add('layout-error');message(e.message,true);}}
+ }catch(e){if(e.name!=='AbortError'){loader.hidden=false;loader.textContent=e.message;loader.classList.add('layout-error');message(e.message,true);}}
 }
 function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
 function updateProgress(){

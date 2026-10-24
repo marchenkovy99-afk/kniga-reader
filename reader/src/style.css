@@ -251,3 +251,5 @@ body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
 @media(min-width:800px){.reader-footer{padding-left:26px;padding-right:26px}}
 @media(max-width:359px){.reader-footer{padding-left:8px;padding-right:8px}.reader-footer .nav-arrows{margin-left:4px;gap:0}}
 @media(prefers-reduced-motion:reduce){.reader-footer .icon-button{transition:none}.reader-footer .icon-button:active:not(:disabled){transform:none}}
+
+.page-loading[hidden]{display:none}
