@@ -1,0 +1,34 @@
+name: Build reader for GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reader/**'
+      - 'tests/**'
+      - 'package.json'
+      - '.github/workflows/build-reader.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  reader:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run check
+      - run: npm run build:pages
+      - name: Publish compiled reader
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs
+          if ! git diff --cached --quiet; then
+            git commit -m 'Build reader for GitHub Pages'
+            git push
+          fi

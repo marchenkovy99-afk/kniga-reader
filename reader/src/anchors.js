@@ -4,7 +4,7 @@ export function clampSettings(input={}) {
  for(const [key,min,max] of [['fontSize',12,48],['lineHeight',1,2.5],['margin',8,72],['paragraphGap',0,2],['indent',0,3],['letterSpacing',-0.5,3]]) {
   const n=Number(input[key]); if(Number.isFinite(n)) s[key]=Math.min(max,Math.max(min,n));
  }
- for(const [key,allowed] of [['font',['serif','literary','sans']],['theme',['paper','white','night']],['align',['left','justify']]]) if(allowed.includes(input[key]))s[key]=input[key];
+ for(const [key,allowed] of [['font',['serif','literary','sans']],['theme',['paper','white','night','oled','auto']],['align',['left','justify']]]) if(allowed.includes(input[key]))s[key]=input[key];
  for(const key of ['hyphens','animation'])if(typeof input[key]==='boolean')s[key]=input[key];
  return s;
 }
