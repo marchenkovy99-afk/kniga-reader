@@ -43,6 +43,8 @@ npm run build
 
 Дизайн: UI UX Pro Max и Impeccable. Анимация: [UI Animation](https://github.com/mblode/agent-skills/tree/main/skills/ui-animation) и [GSAP Performance](https://github.com/greensock/gsap-skills/tree/main/skills/gsap-performance). Эти руководства изучены для проекта; глобальная установка навыков не выполнялась. Для физики страницы используется [StPageFlip](https://github.com/Nodlik/StPageFlip), MIT.
 
-## GitHub Pages
+## GitHub Pages и Supabase
 
-Сборка: `npm run build:pages`, публикация ветки `main`, папки `/docs`. Эта версия хранит книги локально в браузере. Серверное облако доступно в [облачной версии](https://kniga-reader-valera.marchenkovy99.chatgpt.site); локальная библиотека Pages автоматически туда не переносится.
+Сборка: `npm run build:pages`, публикация ветки `main`, папки `/docs`.
+Вход в «Облако»: почта и пароль Supabase Auth. Книги: закрытый бакет `kniga-books`, метаданные `kniga_books`, состояния устройств `kniga_states`. RLS ограничивает операции владельцем. Опубликован только publishable key.
+Схема: `supabase/reader-schema.sql`. Приложения трекеров используют отдельные таблицы. Существующее облако Sites не мигрируется автоматически: добавьте книги в библиотеку Pages и войдите в Supabase.

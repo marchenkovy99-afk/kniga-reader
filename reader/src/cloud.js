@@ -2,6 +2,7 @@ import * as storage from './storage.js';
 import {importBook} from './importer.js';
 import {mergeMarks,newestState} from './sync-model.js';
 import {sha256} from 'js-sha256';
+import {supabaseTransport} from './supabase-client.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
 export class CloudSync{
  constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.timer=null;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;}
@@ -9,14 +10,13 @@ export class CloudSync{
   try{let id=sessionStorage.getItem('kniga-device');if(!id){id=uuid();sessionStorage.setItem('kniga-device',id);}this.deviceId=id;this.owner=await storage.getPreference('cloud-owner');this.pending=await storage.getPreference(`cloud-pending:${this.owner||'guest'}:${id}`)||{};await this.sync();}catch(e){this.setStatus(e.message||'Облако недоступно');}
  }
  setStatus(status){this.status=status;this.cb.status?.(status);}
- async api(url,options={}){const r=await fetch(url,{...options,credentials:'same-origin',cache:'no-store'});if(r.status===401){const e=new Error('Войдите через ChatGPT для синхронизации.');e.status=401;throw e;}if(!r.ok){let body;try{body=await r.json();}catch{}const e=new Error(body?.error||'Облако недоступно. Изменения сохранены на устройстве.');e.status=r.status;throw e;}return r;}
+ async api(url,options={}){if(import.meta.env.MODE==='pages')return supabaseTransport.api(url,options);const r=await fetch(url,{...options,credentials:'same-origin',cache:'no-store'});if(r.status===401){const e=new Error('Войдите через ChatGPT для синхронизации.');e.status=401;throw e;}if(!r.ok){let body;try{body=await r.json();}catch{}const e=new Error(body?.error||'Облако недоступно. Изменения сохранены на устройстве.');e.status=r.status;throw e;}return r;}
  async queue(key,payload,updatedAt=Date.now()){
   this.pending[key]={key,payload,clientUpdatedAt:updatedAt};
   try{await storage.setPreference(`cloud-pending:${this.owner||'guest'}:${this.deviceId}`,this.pending);}catch(e){this.setStatus(e.message);}
   clearTimeout(this.timer);this.timer=setTimeout(()=>this.sync(),1800);
  }
  async sync(){
-  if(import.meta.env.MODE==='pages'){this.setStatus('Облако доступно в облачной версии');return;}
   if(this.running)return;this.running=true;this.setStatus('Синхронизация…');
   try{
    const response=await this.api('/api/cloud');const snapshot=await response.json();
