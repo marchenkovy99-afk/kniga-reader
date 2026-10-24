@@ -148,3 +148,78 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
  .shelf-sort select{max-width:116px}
 }
 @media(prefers-reduced-motion:reduce){.status-tabs button{transition:none}}
+
+/* Library refresh: tactile coral actions, ink-blue identity, and quiet reading chrome. */
+body:not(.reading){--ui-coral:#cd432f;--ui-coral-pressed:#b73827;--ui-ink-blue:#20354f;--ui-motion:cubic-bezier(.22,1,.36,1)}
+.library{max-width:1040px}
+.library-top{min-height:84px}
+.library-heading{padding:28px 0 19px}
+.library-heading h1{font-weight:690;letter-spacing:-1px}
+.library-heading .import-button{
+ min-height:50px;padding:10px 21px;border:0;border-radius:999px;
+ background:var(--ui-coral);color:#fff;font-weight:650;letter-spacing:-.2px;
+ box-shadow:0 8px 22px #a7412e26,0 1px 3px #a7412e12;
+}
+.library-heading .import-button .icon{width:22px;height:22px;stroke-width:1.8}
+.library-search{min-height:54px;border-radius:17px;padding:0 17px;margin-bottom:26px;box-shadow:0 3px 15px #18232208}
+.library-search input{min-height:52px}
+.continue{padding:24px;border-radius:25px;box-shadow:0 8px 28px #111b160a;gap:24px}
+.continue-cover .cover{border-radius:7px 10px 10px 7px}
+.continue-copy h2{font-size:21px;font-weight:640}
+.continue-copy .text-button{color:var(--ui-coral);font-weight:680}
+.continue-progress progress::-webkit-progress-value{background:var(--ui-coral)}
+.continue-progress progress::-moz-progress-bar{background:var(--ui-coral)}
+.shelf-top{margin-bottom:14px}
+.shelf-heading h2{font-weight:650}
+.shelf-sort{background:var(--surface);border:1px solid var(--line);padding:0 13px;border-radius:999px;min-height:42px}
+.shelf-sort select{font-weight:560}
+.shelf-controls{margin-bottom:24px}
+.status-tabs{gap:5px}
+.status-tabs button{border-radius:999px;min-height:40px;padding:8px 16px}
+.status-tabs button[aria-pressed=true]{background:var(--ui-ink-blue);color:#fff}
+.shelf-collection select{border-radius:999px;padding:8px 15px}
+.book-card{border-radius:21px;padding:11px 12px 15px;transition:background-color .2s ease,box-shadow .22s ease,transform .24s var(--ui-motion)}
+.book-meta{padding-top:11px}
+.book-card .cover{border-radius:5px 9px 9px 5px}
+.library-theme-toggle{border-radius:999px;background:var(--surface);box-shadow:0 2px 9px #14221b08}
+.cloud-status{border-radius:999px}
+body:not(.reading) .sheet{border-radius:27px 27px 0 0}
+body:not(.reading) .sheet-header{padding-top:18px}
+body:not(.reading) .sheet-header h2{font-size:21px;letter-spacing:-.55px}
+body:not(.reading) .sheet .button.primary{background:var(--ui-coral);color:#fff;border-radius:999px}
+body:not(.reading) .sheet .button.secondary{border-radius:999px}
+body:not(.reading) .cloud-login input{border-radius:15px;min-height:52px;padding:12px 15px;font-size:16px}
+body:not(.reading) .cloud-login .button{min-height:50px}
+body:not(.reading) .sheet .chapter-row{border-radius:14px}
+body:not(.reading) .sheet .chapter-row:active{background:var(--soft)}
+body:not(.reading) .sync-state{display:block;padding:12px 14px;border-radius:15px;background:var(--soft);line-height:1.5}
+:root[data-theme=night] body:not(.reading),
+:root[data-theme=oled] body:not(.reading){--ui-coral:#d75a42;--ui-coral-pressed:#c2442e;--ui-ink-blue:#30495f}
+@media(hover:hover) and (pointer:fine){
+ .library-heading .import-button:hover{background:var(--ui-coral-pressed);transform:translateY(-2px);box-shadow:0 12px 30px #a7412e36}
+ .library .book-card:hover{background:var(--surface);box-shadow:0 10px 26px #13211b0e;transform:translateY(-2px)}
+ .library-theme-toggle:hover,.cloud-status:hover{background:var(--soft)}
+ .status-tabs button:hover:not([aria-pressed=true]){background:var(--soft)}
+}
+.library .button,.library .icon-button,.library .cloud-status,.library .status-tabs button,.library .shelf-sort,body:not(.reading) .sheet button{
+ transition:background-color .22s ease,transform .26s var(--ui-motion),box-shadow .26s ease,color .2s ease;
+}
+.library .button:active:not(:disabled),.library .icon-button:active:not(:disabled),.library .cloud-status:active:not(:disabled),body:not(.reading) .sheet button:active:not(:disabled){transform:scale(.965);opacity:1}
+@media(prefers-reduced-motion:no-preference){
+ .continue{animation:library-rise .38s var(--ui-motion) both}
+ .book-card{animation:library-rise .4s var(--ui-motion) both}
+ .book-card:nth-child(2){animation-delay:45ms}
+ .book-card:nth-child(3){animation-delay:90ms}
+ @keyframes library-rise{from{opacity:.65;transform:translateY(11px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(max-width:600px){
+ .library{padding-left:18px;padding-right:18px}
+ .library-heading .import-button{min-height:47px;padding:9px 15px}
+ .continue{border-radius:23px;padding:19px;gap:17px}
+ .continue-copy h2{font-size:18px}
+ .shelf-sort{padding:0 10px}
+ .book-card{padding:7px 7px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .library .button,.library .icon-button,.library .cloud-status,.library .status-tabs button,.library .shelf-sort,.library .book-card,body:not(.reading) .sheet button{transition:none!important;animation:none!important}
+}
