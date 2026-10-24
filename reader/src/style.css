@@ -84,3 +84,14 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
 .library-filters select{min-height:42px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:5px 8px;font-size:13px;max-width:148px}
 .library-backups button{font-size:12px;white-space:nowrap}
 @media(max-width:600px){.library-footer{flex-wrap:wrap}.library-filters select{max-width:133px}}
+
+.book-text mark.reading-highlight{box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:2px;background:#e8d39a70;color:inherit;padding:0;cursor:pointer}
+.book-text mark.reading-highlight.mint{background:#9dceae65}.book-text mark.reading-highlight.rose{background:#d7a0b17a}
+.quote-actions{position:fixed;left:50%;transform:translateX(-50%);bottom:max(22px,env(safe-area-inset-bottom));background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:14px;z-index:2000;padding:5px;display:flex;gap:3px;box-shadow:0 8px 35px #0003;max-width:calc(100vw - 16px)}
+.quote-actions button{min-height:44px;border-radius:8px;padding:10px 12px;font-size:13px;white-space:nowrap}
+.quote-actions button:active{background:var(--soft)}
+.notes-list{display:grid;gap:12px;padding:8px 0 12px}.note-item{border:1px solid var(--line);background:var(--surface);padding:14px;border-radius:12px}
+.note-item blockquote,.quoted{border-left:3px solid var(--accent);padding-left:11px;font:17px/1.55 Georgia,serif;margin:0 0 10px}.note-item p{font-size:14px;line-height:1.5;white-space:pre-wrap}
+.note-item-actions{display:flex;gap:13px;flex-wrap:wrap}.note-item-actions button{color:var(--accent);font-size:13px;min-height:44px}
+#note-editor{font-size:16px;width:100%;min-height:110px;padding:12px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:9px;resize:vertical;line-height:1.55;margin:12px 0}
+.note-label{display:block;font-size:14px;font-weight:600;margin-top:16px}

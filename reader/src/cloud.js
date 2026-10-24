@@ -1,6 +1,7 @@
 import * as storage from './storage.js';
 import {importBook} from './importer.js';
 import {mergeMarks,newestState} from './sync-model.js';
+import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
@@ -41,7 +42,7 @@ export class CloudSync{
    // Per-tab records isolate simultaneous devices. Upload only explicit local changes.
    for(const [key,record] of Object.entries({...this.pending})){
     let existing=this.remote.find(x=>x.deviceId===this.deviceId&&x.key===key);
-    if(key.startsWith('position:'))record.payload={...record.payload,marks:mergeMarks(record.payload.marks||[],...this.remote.filter(x=>x.key===key).map(x=>x.payload?.marks||[]))};
+    if(key.startsWith('position:'))record.payload={...record.payload,marks:mergeMarks(record.payload.marks||[],...this.remote.filter(x=>x.key===key).map(x=>x.payload?.marks||[])),annotations:mergeAnnotations(record.payload.annotations||[],...this.remote.filter(x=>x.key===key).map(x=>x.payload?.annotations||[]))};
     const headers={'Content-Type':'application/json',...(existing?.etag?{'If-Match':existing.etag}:{})};
     const response=await this.api('/api/cloud/state',{method:'PUT',headers,body:JSON.stringify({...record,deviceId:this.deviceId})});const saved=await response.json();
     const item={...record,deviceId:this.deviceId,etag:saved.etag};this.remote=this.remote.filter(x=>!(x.deviceId===this.deviceId&&x.key===key));this.remote.push(item);
@@ -52,7 +53,7 @@ export class CloudSync{
    for(const b of this.cb.books()){
     const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);if(!states.length)continue;
     const latest=newestState(states,key);const marks=mergeMarks(b.marks||[],...states.map(x=>x.payload?.marks||[]));
-    await this.cb.remotePosition(b,latest,marks);
+    await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[])));
    }
    this.setStatus('Синхронизировано');if(added)this.cb.libraryChanged?.();
   }catch(e){this.setStatus(e.status===401?'Войти для синхронизации':e.message);this.error=e;}finally{this.running=false;}
