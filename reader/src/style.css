@@ -108,3 +108,43 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
 @media(max-width:600px){.library-filters select#library-collection{max-width:133px}}
 
 .library-top .brand{gap:10px;font:500 27px/1 Georgia,"Times New Roman",serif;letter-spacing:-.9px}.library-top .brand-symbol{display:block;flex:none;width:31px;height:31px;border-radius:8px}
+
+/* Calm reader contrast: soften type, never dim controls or alter line geometry. */
+:root{--reading-ink:#353833}
+:root[data-theme=white]{--reading-ink:#444540}
+:root[data-theme=night]{--reading-ink:#c8cbc5}
+:root[data-theme=oled]{--reading-ink:#c5c6c2}
+.book-text{color:var(--reading-ink,var(--ink))}
+.theme-sample.night{color:#c8cbc5}
+.theme-sample.oled{color:#c5c6c2}
+
+/* A clear theme action, a restrained shelf heading and scroll-safe mobile filters. */
+.library-theme-toggle{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--surface)}
+.library-theme-toggle .icon{width:21px;height:21px;stroke-width:1.7}
+.library-theme-toggle[aria-pressed=true]{color:var(--accent)}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.shelf-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+.shelf-heading{display:flex;align-items:center;gap:9px;min-width:0;white-space:nowrap}
+.shelf-top .shelf-heading h2{font-size:21px;line-height:1.35;font-weight:650;letter-spacing:-.55px;margin:0}
+.shelf-count{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 7px;border-radius:99px;background:var(--soft);color:var(--accent);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.shelf-sort{display:inline-flex;align-items:center;gap:5px;color:var(--muted);min-height:42px;min-width:0;padding-left:5px}
+.shelf-sort .icon{width:17px;height:17px;stroke-width:1.7;flex:none}
+.shelf-sort select{appearance:none;-webkit-appearance:none;background:transparent;border:none;color:var(--muted);font-size:13px!important;font-weight:500;min-height:42px;max-width:142px;padding:6px 13px 6px 0;cursor:pointer;text-align:right}
+.shelf-controls{display:flex;align-items:center;gap:12px;margin-bottom:24px;min-width:0}
+.status-tabs{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.status-tabs::-webkit-scrollbar{display:none}
+.status-tabs button{white-space:nowrap;flex:none;min-height:40px;padding:8px 14px;border-radius:10px;color:var(--muted);font-size:13px;font-weight:550;transition:background-color 160ms ease,color 160ms ease}
+.status-tabs button[aria-pressed=true]{background:var(--soft);color:var(--accent)}
+.status-tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.shelf-collection{margin-left:auto;flex:none}
+.shelf-collection[hidden]{display:none}
+.shelf-collection select{background:var(--surface);border:1px solid var(--line);color:var(--ink);max-width:148px;min-height:40px;padding:7px 10px;border-radius:10px;font-size:13px!important}
+@media(max-width:600px){
+ .shelf-top .shelf-heading h2{font-size:19px}
+ .shelf-controls{flex-direction:column;align-items:stretch;gap:6px;margin-bottom:22px}
+ .status-tabs{width:100%;gap:2px}
+ .status-tabs button{padding:9px 12px;min-height:40px}
+ .shelf-collection{margin-left:0;align-self:flex-start}
+ .shelf-sort select{max-width:116px}
+}
+@media(prefers-reduced-motion:reduce){.status-tabs button{transition:none}}
