@@ -1,12 +1,12 @@
 import * as storage from './storage.js';
 import {importBook} from './importer.js';
-import {mergeMarks,newestState} from './sync-model.js';
+import {mergeMarks,newestState,pendingForAccount} from './sync-model.js';
 import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
 export class CloudSync{
- constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;this.lastSuccessfulAt=null;this.remoteBooksCount=0;}
+ constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;this.details={books:0,states:0,downloaded:0};this.lastSuccessfulAt=null;this.remoteBooksCount=0;}
  async init(){
   try{
    // Device ID must survive a full browser restart. The old session-only ID
@@ -47,13 +47,25 @@ export class CloudSync{
   this.running=true;this.setStatus('Синхронизация…');
   try{
    const response=await this.api('/api/cloud');const snapshot=await response.json();
-   if(this.owner&&this.owner!==snapshot.userId){this.pending={};}
+   // Preserve per-account unsent edits and adopt unauthenticated edits only
+   // on the first login. Switching accounts must never clear the other queue.
+   if(this.owner!==snapshot.userId){
+    const targetKey=`cloud-pending:${snapshot.userId}:${this.deviceId}`;
+    const accountPending=await storage.getPreference(targetKey)||{};
+    this.pending=pendingForAccount(this.owner,snapshot.userId,this.pending,accountPending);
+    await storage.setPreference(targetKey,this.pending);
+   }
    this.owner=snapshot.userId;this.user={id:snapshot.userId,name:snapshot.displayName};await storage.setPreference('cloud-owner',this.owner);
    this.remote=snapshot.states;
+   this.details={books:snapshot.books.length,states:snapshot.states.length,downloaded:0};
    const local=this.cb.books();const remoteIds=new Set(snapshot.books.map(b=>b.id));
    let added=false;
    for(const book of local){
-    if(book.id==='sample'||(book.cloudOwner&&book.cloudOwner!==this.owner)||remoteIds.has(book.id))continue;
+    if(book.id==='sample'||(book.cloudOwner&&book.cloudOwner!==this.owner))continue;
+    if(remoteIds.has(book.id)){
+     if(book.cloudOwner!==this.owner){book.cloudOwner=this.owner;await storage.putBook(book);}
+     continue;
+    }
     await this.api('/api/cloud/book/'+book.id,{method:'PUT',headers:{'Content-Type':'application/octet-stream','x-book-name':encodeURIComponent(book.fileName)},body:book.original});
     book.cloudOwner=this.owner;await storage.putBook(book);
    }
@@ -63,7 +75,7 @@ export class CloudSync{
     const response=await this.api('/api/cloud/book/'+entry.id);const original=await response.arrayBuffer();
     const id=sha256(original);
     if(id!==entry.id)throw new Error('Контрольная сумма облачной книги не совпала. Загрузка отменена.');
-    const parsed=await importBook(original,entry.fileName);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,addedAt:Date.now(),marks:[]};await storage.putBook(book);this.cb.addBook(book);added=true;
+    const parsed=await importBook(original,entry.fileName);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,addedAt:Date.now(),marks:[]};await storage.putBook(book);this.cb.addBook(book);this.details.downloaded++;added=true;
    }
    // Per-tab records isolate simultaneous devices. Upload only explicit local changes.
    for(const [key,record] of Object.entries({...this.pending})){
@@ -85,6 +97,8 @@ export class CloudSync{
    this.remoteBooksCount=snapshot.books.length+local.filter(b=>b.id!=='sample'&&b.cloudOwner===this.owner&&!remoteIds.has(b.id)).length;
    this.lastSuccessfulAt=Date.now();
    this.setStatus(Object.keys(this.pending).length?'Изменения ожидают отправки…':'Синхронизировано');
+   // A cloud sync result is only successful when all requested book files and
+   // per-device state writes returned without errors.
    if(added)this.cb.libraryChanged?.();
   }catch(e){
    if(e.status===401){this.user=null;this.remote=[];}
