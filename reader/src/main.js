@@ -116,6 +116,7 @@ async function openBook(id){
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
  document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night','oled','auto'][(['paper','white','night','oled','auto'].indexOf(settings.theme)+1)%5];theme();saveSettings();};
  document.querySelector('#prev-page').onclick=()=>turn(-1);document.querySelector('#next-page').onclick=()=>turn(1);
+ document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
  document.querySelector('#reading-progress').onchange=e=>goPage(Number(e.target.value));
  await layout();
  resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const key=`${Math.round(stage.clientWidth)}x${Math.round(stage.clientHeight)}`;if(key!==lastSize){clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>layout(),200);}});resizeObserver.observe(document.querySelector('#book-stage'));
@@ -151,7 +152,7 @@ function updateProgress(){
  const percent=Math.round(before/Math.max(1,current.chars)*100);
  document.querySelector('#reading-percent').textContent=`${Math.min(100,percent)}% книги`;
  document.querySelector('#page-count').textContent=`${pageIndex+1} / ${pages.length}`;
- const progress=document.querySelector('#reading-progress');progress.max=pages.length-1;progress.value=pageIndex;
+ const progress=document.querySelector('#reading-progress');progress.max=pages.length-1;progress.value=pageIndex;progress.style.setProperty('--reader-progress',`${pages.length>1?pageIndex/(pages.length-1)*100:0}%`);
  progress.setAttribute('aria-valuetext',`Страница ${pageIndex+1} из ${pages.length}`);
  document.querySelector('#prev-page').disabled=pageIndex===0;document.querySelector('#next-page').disabled=pageIndex>=pages.length-1;
  const marked=activeMarks(current).some(m=>pageForAnchor(pages,m.anchor)===pageIndex);

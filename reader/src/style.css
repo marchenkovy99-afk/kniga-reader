@@ -229,3 +229,25 @@ body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
 .reader{padding-top:env(safe-area-inset-top,0px)}
 /* Use the same compact insets for visible pages and the pagination measure. */
 .book-text{padding-top:8px;padding-bottom:2px}
+
+/* Compact reading controls: small glyphs, full touch targets, no ornamental dividers. */
+.reader-footer{padding:6px 16px 2px;background:var(--paper)}
+.reader-footer .page-status{padding:0 6px;font-size:10px;line-height:14px;letter-spacing:.15px;color:var(--muted)}
+.reader-footer .reading-progress{height:20px;margin:0;--reader-progress:0%;--reader-accent:#e99057}
+.reader-footer .reading-progress::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:linear-gradient(to right,var(--reader-accent) 0 var(--reader-progress),var(--line) var(--reader-progress) 100%)}
+.reader-footer .reading-progress::-webkit-slider-thumb{width:8px;height:8px;margin-top:-3px;border:0;box-shadow:none;background:var(--reader-accent);border-radius:50%}
+.reader-footer .reading-progress::-moz-range-track{height:2px;border-radius:2px;background:var(--line)}
+.reader-footer .reading-progress::-moz-range-progress{height:2px;border-radius:2px;background:var(--reader-accent)}
+.reader-footer .reading-progress::-moz-range-thumb{width:8px;height:8px;border:0;box-shadow:none;background:var(--reader-accent)}
+.reader-footer .reader-tools{height:44px;display:flex;justify-content:space-between;align-items:center;border:0;padding:0;gap:0}
+.reader-footer .reader-tools>.icon-button{flex:1;max-width:56px}
+.reader-footer .icon-button{width:44px;height:44px;border-radius:12px;color:var(--ink);transition:background-color 140ms ease,transform 140ms ease}
+.reader-footer .icon{width:20px;height:20px;stroke-width:1.5}
+.reader-footer .type-button{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:19px;font-weight:500;letter-spacing:-.8px}
+.reader-footer .nav-arrows{border:0;padding:0;margin-left:12px;gap:4px}
+.reader-footer .nav-arrows .icon{width:18px;height:18px}
+.reader-footer .icon-button:active:not(:disabled){background:var(--soft);transform:scale(.92);opacity:1}
+.reader-footer .icon-button:disabled{opacity:.25}
+@media(min-width:800px){.reader-footer{padding-left:26px;padding-right:26px}}
+@media(max-width:359px){.reader-footer{padding-left:8px;padding-right:8px}.reader-footer .nav-arrows{margin-left:4px;gap:0}}
+@media(prefers-reduced-motion:reduce){.reader-footer .icon-button{transition:none}.reader-footer .icon-button:active:not(:disabled){transform:none}}
