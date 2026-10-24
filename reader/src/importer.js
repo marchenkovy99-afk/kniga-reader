@@ -73,7 +73,7 @@ function convert(doc,root,ctx){
   if(n.nodeType!==1)return;
   const t=tag(n), id=ctx.id(n.getAttribute('id')||'')||sourceId;
   if(['script','style','iframe','object','embed','svg','math'].includes(t)){safe(n);return;}
-  if(t==='title'||/^h[1-6]$/.test(t)){add(n,'h2',id);return;}
+  if(t==='title'||/^h[1-6]$/.test(t)){add(n,/^h[3-6]$/.test(t)?'h3':'h2',id);return;}
   if(['p','v','subtitle','text-author','img','image','table','ul','ol','empty-line','pre'].includes(t)){add(n,t==='subtitle'?'h3':t==='v'?'verse':'p',id);return;}
   const hasBlock=elements(n).some(x=>['p','section','div','title','blockquote','poem','stanza','epigraph','cite','h1','h2','h3','h4','h5','h6','ul','ol','table','image','img','pre'].includes(tag(x)));
   if(!hasBlock&&n.textContent.trim()){add(n,'p',id);return;}
@@ -87,7 +87,7 @@ function finish(book){
  if(!book.blocks.length)throw new Error('В файле не найден текст книги.');
  const chars=book.blocks.reduce((a,b)=>a+b.text.length,0);
  if(chars>2_000_000)throw new Error('В черновой версии поддерживаются книги до 2 млн символов. Файл не усечён.');
- const chapters=book.blocks.flatMap((b,i)=>b.type==='h2'?[{title:b.text,block:i}]:[]);
+ const chapters=book.blocks.flatMap((b,i)=>['h2','h3'].includes(b.type)?[{title:b.text,block:i,level:b.type==='h3'?2:1}]:[]);
  return {...book,chapters:chapters.length?chapters:[{title:'Начало книги',block:0}],chars};
 }
 function fb2(bytes,name){
