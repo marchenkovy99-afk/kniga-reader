@@ -4,7 +4,7 @@ export async function PUT(request:Request){
  const c=await context(request,true);if(c.error)return c.error;
  try{
   const bytes=await limitedBody(request,256*1024);const data=JSON.parse(new TextDecoder().decode(bytes));
-  if(!/^[a-f0-9-]{36}$/i.test(data.deviceId)||! /^(settings|position:(sample|[a-f0-9]{64}))$/.test(data.key)||!Number.isFinite(data.clientUpdatedAt)||typeof data.payload!=='object'||!data.payload)return json({error:'Некорректные данные синхронизации.'},400);
+  if(!/^[a-f0-9-]{36}$/i.test(data.deviceId)||! /^(settings|(position|appearance):(sample|[a-f0-9]{64}))$/.test(data.key)||!Number.isFinite(data.clientUpdatedAt)||typeof data.payload!=='object'||!data.payload)return json({error:'Некорректные данные синхронизации.'},400);
   const record={deviceId:data.deviceId,key:data.key,payload:data.payload,clientUpdatedAt:data.clientUpdatedAt,serverUpdatedAt:Date.now()};
   const key=c.prefix+'states/'+data.deviceId+'/'+data.key.replace(':','_');
   const etag=request.headers.get('if-match');

@@ -16,7 +16,7 @@ export class SupabaseTransport {
   }
   if(url==='/api/cloud/state'&&method==='PUT'){
    const record=JSON.parse(options.body);
-   if(!/^[a-f0-9-]{36}$/i.test(record.deviceId)||! /^(settings|position:(sample|[a-f0-9]{64}))$/.test(record.key)||!Number.isFinite(record.clientUpdatedAt)||!record.payload||typeof record.payload!=='object')throw Error('Некорректные данные синхронизации.');
+   if(!/^[a-f0-9-]{36}$/i.test(record.deviceId)||! /^(settings|(position|appearance):(sample|[a-f0-9]{64}))$/.test(record.key)||!Number.isFinite(record.clientUpdatedAt)||!record.payload||typeof record.payload!=='object')throw Error('Некорректные данные синхронизации.');
    check(await c.from('kniga_states').upsert({user_id:user.id,device_id:record.deviceId,key:record.key,payload:record.payload,client_updated_at:record.clientUpdatedAt},{onConflict:'user_id,device_id,key'}));return result({saved:true});
   }
   const id=url.slice('/api/cloud/book/'.length);

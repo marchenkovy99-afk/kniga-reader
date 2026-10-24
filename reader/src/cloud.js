@@ -1,6 +1,6 @@
 import * as storage from './storage.js';
 import {importBook} from './importer.js';
-import {mergeMarks,newestState,pendingForAccount} from './sync-model.js';
+import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookAppearance} from './sync-model.js';
 import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
@@ -89,9 +89,22 @@ export class CloudSync{
    await storage.setPreference(`cloud-pending:${this.owner}:${this.deviceId}`,this.pending);
    const settings=newestState(this.remote,'settings');if(settings)await this.cb.remoteSettings?.(settings);
    for(const b of this.cb.books()){
-    const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);if(!states.length)continue;
-    const latest=newestState(states,key);const marks=mergeMarks(b.marks||[],...states.map(x=>x.payload?.marks||[]));
-    await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[])));
+    const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);
+    if(states.length){
+     const latest=newestState(states,key),marks=mergeMarks(b.marks||[],...states.map(x=>x.payload?.marks||[]));
+     await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[])));
+    }
+    const keyAppearance=bookAppearanceKey(b.id);
+    const independent=this.remote.some(x=>x.key===keyAppearance);
+    const remoteAppearance=latestBookAppearance(this.remote,b.id);
+    if(remoteAppearance)await this.cb.remoteAppearance?.(b,remoteAppearance,Boolean(this.pending[keyAppearance]));
+    const localAppearance=this.cb.localAppearance?.(b);
+    // Move old reader's appearance out of progress the first time we see it.
+    // Only upload a newer local appearance after an independent cloud record exists.
+    if(localAppearance?.settings&&Number(localAppearance.updatedAt)>0&&!this.pending[keyAppearance]&&
+       (!independent||Number(localAppearance.updatedAt)>Number(remoteAppearance?.clientUpdatedAt||0))){
+     await this.queue(keyAppearance,localAppearance.settings,localAppearance.updatedAt);
+    }
    }
    this.error=null;
    this.remoteBooksCount=snapshot.books.length+local.filter(b=>b.id!=='sample'&&b.cloudOwner===this.owner&&!remoteIds.has(b.id)).length;

@@ -28,3 +28,19 @@ export function pendingForAccount(previousOwner,nextOwner,previousPending={},acc
   ?merge({},accountPending)
   :merge(previousPending,accountPending);
 }
+
+/** Typography has an independent timestamp and sync key. A later page turn
+ * cannot replace a newer font size, theme, margin or line spacing. */
+export const bookAppearanceKey=id=>'appearance:'+id;
+export function latestBookAppearance(states,id){
+ const key=bookAppearanceKey(id);
+ const active=states.filter(r=>r.key===key&&r.payload&&typeof r.payload==='object');
+ if(active.length)return newestState(active,key);
+ const legacy=states.filter(r=>r.key==='position:'+id&&r.payload?.bookSettings&&typeof r.payload.bookSettings==='object');
+ const last=newestState(legacy,'position:'+id);
+ if(!last)return null;
+ return {key,deviceId:last.deviceId,payload:last.payload.bookSettings,clientUpdatedAt:Number(last.payload.appearanceUpdatedAt)||last.clientUpdatedAt,legacy:true};
+}
+export function preferRemoteAppearance(localAt,remoteAt,hasPending=false){
+ return !hasPending&&Number.isFinite(Number(remoteAt))&&Number(remoteAt)>Number(localAt||0);
+}

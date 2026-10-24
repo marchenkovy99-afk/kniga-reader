@@ -15,3 +15,16 @@ test('invalid book identifiers are rejected before accessing storage',async()=>{
  const t=new SupabaseTransport({auth:{getUser:async()=>signed()}});
  await assert.rejects(t.api('/api/cloud/book/../another-user',{method:'GET'}),/Некорректный/);
 });
+
+test('Supabase stores book appearance independently of reading position',async()=>{
+ const uid='11111111-1111-4111-8111-111111111111';
+ let saved;const t=new SupabaseTransport({
+  auth:{getUser:async()=>signed()},
+  from:()=>({upsert(values,options){saved={values,options};return Promise.resolve({error:null});}})
+ });
+ const key='appearance:'+'a'.repeat(64),payload={fontSize:35,margin:48,lineHeight:1.9,theme:'oled',font:'literary'};
+ const response=await t.api('/api/cloud/state',{method:'PUT',body:JSON.stringify({deviceId:uid,key,payload,clientUpdatedAt:200})});
+ assert.equal((await response.json()).saved,true);
+ assert.equal(saved.values.key,key);
+ assert.deepEqual(saved.values.payload,payload);
+});

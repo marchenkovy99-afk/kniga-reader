@@ -7,7 +7,7 @@ import {paginate,applyTypography} from './pagination.js';
 import * as storage from './storage.js';
 import {CloudSync} from './cloud.js';
 import {supabase} from './supabase-client.js';
-import {mergeMarks} from './sync-model.js';
+import {mergeMarks,preferRemoteAppearance,bookAppearanceKey} from './sync-model.js';
 import {mergeAnnotations} from './reading-features.js';
 import './style.css';
 import {sha256} from 'js-sha256';
@@ -98,7 +98,14 @@ async function openBook(id){
  const b=books.find(x=>x.id===id);if(!b)return;
  if(current)await persistPosition();dispose();current=b;
  try{const stored=await storage.getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
- anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;settings={...(b.progress?.bookSettings||globalSettings)};theme();
+ anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;
+ try{
+  const appearance=await storage.getPreference(bookAppearanceKey(id));
+  if(appearance?.settings&&Number(appearance.updatedAt)>Number(b.appearanceUpdatedAt||0)){
+   b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=appearance.updatedAt;
+  }
+ }catch(e){message('Настройки текста не загрузились: '+e.message,true);}
+ settings=restoreSettings(b.appearanceSettings||b.progress?.bookSettings||globalSettings);theme();
  document.body.classList.add('reading');theme();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status">Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="page-count"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  attachReaderChrome(document.querySelector('#book-stage'),turn);
@@ -179,7 +186,23 @@ function showNote(id){
  openSheet('Примечание',`<div class="note-text">${current.blocks.slice(i,end).map(b=>`<p>${b.html}</p>`).join('')}</div><button class="text-button" id="go-note">Перейти к этому месту ${icon('next')}</button>`);
  document.querySelector('#go-note').onclick=()=>jump({block:i,offset:0});
 }
-function saveSettings(){if(current){current.progress={...(current.progress||{}),bookSettings:{...settings}};scheduleSave();return;}globalSettings={...settings};settingsUpdatedAt=Date.now();storage.setPreference('settings-updatedAt',settingsUpdatedAt).catch(e=>message(e.message,true));storage.setPreference('settings',settings).catch(e=>message(e.message,true));cloud?.queue('settings',settings,settingsUpdatedAt);}
+function saveSettings(){
+ const saved=restoreSettings(settings),at=Date.now();
+ if(current){
+  const b=current;b.appearanceSettings={...saved};b.appearanceUpdatedAt=Math.max(at,(b.appearanceUpdatedAt||0)+1);
+  const version=b.appearanceUpdatedAt;
+  b.progress={...(b.progress||{}),bookSettings:{...saved},appearanceUpdatedAt:version};
+  storage.setPreference(bookAppearanceKey(b.id),{settings:saved,updatedAt:version})
+   .then(()=>{if(b.appearanceUpdatedAt===version)return cloud?.queue(bookAppearanceKey(b.id),saved,version);})
+   .catch(e=>message('Не удалось сохранить оформление: '+e.message,true));
+  scheduleSave();
+  return;
+ }
+ globalSettings={...saved};settingsUpdatedAt=Math.max(at,settingsUpdatedAt+1);
+ storage.setPreference('settings-updatedAt',settingsUpdatedAt).catch(e=>message(e.message,true));
+ storage.setPreference('settings',saved).catch(e=>message(e.message,true));
+ cloud?.queue('settings',saved,settingsUpdatedAt);
+}
 const ranges={fontSize:['Размер текста',12,48,1,'px'],lineHeight:['Межстрочный интервал',1,2.5,.05,'×'],margin:['Боковые поля',8,72,1,'px'],paragraphGap:['Между абзацами',0,2,.1,'em'],indent:['Отступ первой строки',0,3,.1,'em'],letterSpacing:['Между буквами',-.5,3,.1,'px']};
 function rangeControl(key){const [label,min,max,step,unit]=ranges[key];return `<div class="setting-control"><div class="setting-title"><label for="range-${key}">${label}</label><div class="exact-value"><input type="number" id="number-${key}" aria-label="${label}: точное значение" min="${min}" max="${max}" step="${step}" value="${settings[key]}"><span>${unit}</span></div></div><div class="range-row"><button class="step-button" data-step="${key}:-1" aria-label="Уменьшить: ${label}">−</button><input id="range-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-setting="${key}"><button class="step-button" data-step="${key}:1" aria-label="Увеличить: ${label}">+</button></div></div>`;}
 function showSettings(){
@@ -316,9 +339,26 @@ async function init(){
  try{
   settings=restoreSettings(await storage.getPreference('settings'));settingsUpdatedAt=await storage.getPreference('settings-updatedAt')||0;const storedSettings=await storage.getPreference('settings');globalSettings={...settings};if(storedSettings&&storedSettings.paragraphSpacingVersion!==1){settingsUpdatedAt=Date.now();await storage.setPreference('settings',settings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);}books=await storage.listBooks();
   if(!books.length){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);books=[book];}
-  for(const b of books){b.progress=await storage.getPreference(`position:${b.id}`);b.marks=b.progress?.marks||[];}
+  for(const b of books){
+    b.progress=await storage.getPreference(`position:${b.id}`);b.marks=b.progress?.marks||[];
+    const appearance=await storage.getPreference(bookAppearanceKey(b.id));
+    if(appearance?.settings){b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=Number(appearance.updatedAt)||0;}
+    else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=Number(b.progress.appearanceUpdatedAt||b.progress.updatedAt)||0;}
+   }
   await library();
-  cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},remoteSettings:async record=>{if(record.clientUpdatedAt>settingsUpdatedAt){globalSettings=restoreSettings(record.payload);if(!current)settings={...globalSettings};settingsUpdatedAt=record.clientUpdatedAt;await storage.setPreference('settings',globalSettings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);if(!current)theme();}},remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&current?.id!==book.id){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
+  cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
+   localAppearance:b=>b.appearanceSettings?{settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt||0}:null,
+   remoteAppearance:async(b,record,hasPending)=>{
+    if(!preferRemoteAppearance(b.appearanceUpdatedAt,record.clientUpdatedAt,hasPending))return;
+    const next=restoreSettings(record.payload),updatedAt=Number(record.clientUpdatedAt);
+    await storage.setPreference(bookAppearanceKey(b.id),{settings:next,updatedAt});
+    b.appearanceSettings=next;b.appearanceUpdatedAt=updatedAt;
+    if(current?.id===b.id){
+     settings={...next};theme();
+     clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>{if(current?.id===b.id)layout();},300);
+    }
+   },
+   remoteSettings:async record=>{if(record.clientUpdatedAt>settingsUpdatedAt){globalSettings=restoreSettings(record.payload);if(!current)settings={...globalSettings};settingsUpdatedAt=record.clientUpdatedAt;await storage.setPreference('settings',globalSettings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);if(!current)theme();}},remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&current?.id!==book.id){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
   await cloud.init();
   if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(()=>cloud?.sync(),0);});
   if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',settings,settingsUpdatedAt);
