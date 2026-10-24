@@ -1,3 +1,18 @@
+import {pageForAnchor} from './anchors.js';
+
+/** Remaining screen pages include the page currently being read. */
+export function chapterReadingStatus(pages,pageIndex,chapters=[]){
+ if(!pages.length)return null;
+ const index=Math.max(0,Math.min(pages.length-1,pageIndex));
+ const main=chapters.some(c=>c.level===1)?chapters.filter(c=>c.level===1):chapters;
+ const headings=[...main].sort((a,b)=>a.block-b.block),block=pages[index].start.block;
+ const active=headings.findLast(c=>c.block<=block),next=headings.find(c=>c.block>block);
+ const until=next?pageForAnchor(pages,{block:next.block,offset:0}):pages.length;
+ const remainingPages=Math.max(1,until-index);
+ const prefix=!headings.length?'До конца книги':active?'До конца главы':'До начала главы';
+ return {title:active?.title||'',remainingPages,label:`${prefix} · ${remainingPages} стр.`};
+}
+
 /** Merge stable IDs and deletion tombstones for synced quote annotations. */
 export function mergeAnnotations(...groups){
  const map=new Map();

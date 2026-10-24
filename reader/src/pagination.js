@@ -37,7 +37,7 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
  document.body.append(measure);
  const pages=[];let parts=[],start=null,end=null;
  const flush=()=>{if(parts.length){pages.push({html:parts.join(''),start,end});parts=[];start=null;measure.innerHTML='';}};
- const make=(b,i,from,to)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${from?'continued':''}" data-block="${i}" data-from="${from}" data-to="${to}">${sliceHTML(b.html,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
+ const make=(b,i,from,to)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${from?'continued':''} ${to<b.text.length?'page-continues':''}" data-block="${i}" data-from="${from}" data-to="${to}">${sliceHTML(b.html,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
  const fits=html=>{measure.innerHTML=parts.join('')+html;return measure.scrollHeight<=measure.clientHeight+1;};
  try{
   for(let i=0;i<blocks.length;i++){

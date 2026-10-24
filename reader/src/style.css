@@ -253,3 +253,9 @@ body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
 @media(prefers-reduced-motion:reduce){.reader-footer .icon-button{transition:none}.reader-footer .icon-button:active:not(:disabled){transform:none}}
 
 .page-loading[hidden]{display:none}
+
+/* A page break continues the paragraph: justify its last visible line too. */
+.book-text div.paragraph.page-continues:not(.verse){text-align-last:var(--text-align,left)}
+.reader-page-number{flex:0 0 18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;line-height:18px;font-variant-numeric:tabular-nums;pointer-events:none;user-select:none}
+.reader:not(.chrome-hidden) .reader-page-number{visibility:hidden}
+.chapter-progress{margin:0;padding:0 0 14px;font-size:12px;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums}
