@@ -256,12 +256,12 @@ body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
 
 /* A page break continues the paragraph: justify its last visible line too. */
 .book-text div.paragraph.page-continues:not(.verse){text-align-last:auto}
-.reader-page-number{flex:0 0 18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;line-height:18px;font-variant-numeric:tabular-nums;pointer-events:none;user-select:none}
-.reader:not(.chrome-hidden) .reader-page-number{visibility:hidden}
 .chapter-progress{margin:0;padding:0 0 14px;font-size:12px;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* Keep the remaining chapter pages visible in the reading toolbar. */
-.reader-footer .page-status{display:flex;align-items:center;justify-content:space-between;gap:12px;white-space:nowrap}
-.reader-chapter-remaining{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums}
+.reader-footer .page-status{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;white-space:nowrap}
+.reader-footer .page-status #reading-percent{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.reader-page-position{justify-self:center;color:var(--ink);font-size:11px;font-weight:600;letter-spacing:0;font-variant-numeric:tabular-nums}
+.reader-chapter-remaining{justify-self:end;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;text-align:right;font-variant-numeric:tabular-nums}
 /* Avoid placing the first line in the browser's edge overlay. */
 .reader{padding-top:max(8px,env(safe-area-inset-top,0px))}

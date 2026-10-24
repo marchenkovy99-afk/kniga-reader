@@ -16,3 +16,11 @@ test('word wraps preserve natural line endings',()=>{
  assert.ok(styles.includes('overflow-wrap:break-word;word-break:normal'));
  assert.ok(styles.includes('.book-text div.paragraph.page-continues:not(.verse){text-align-last:auto}'));
 });
+
+test('page number and total appear centered in the visible control panel, never over book text',()=>{
+ assert.ok(reader.includes('id="reader-page-position" class="reader-page-position"'));
+ assert.ok(reader.includes('document.querySelector(\'#reader-page-position\').textContent=`${pageIndex+1} из ${pages.length}`'));
+ assert.ok(!reader.includes('id="reader-page-number"'));
+ assert.ok(!styles.includes('.reader-page-number{'));
+ assert.ok(styles.includes('grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)'));
+});
