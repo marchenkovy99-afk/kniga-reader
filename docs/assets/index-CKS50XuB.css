@@ -3,3 +3,6 @@
 /* Distraction-free reading: no reserved blank bars; pagination follows the expanded stage. */
 .reader.chrome-hidden .reader-header,.reader.chrome-hidden .reader-footer{display:none}
 .reader.chrome-hidden .book-stage{flex:1}
+
+/* Allow horizontal swipe gestures without intercepting vertical scrolling. */
+.book-stage{touch-action:pan-y}

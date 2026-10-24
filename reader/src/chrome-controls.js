@@ -1,14 +1,19 @@
-/** Identify deliberate taps without treating a swipe, long press or page selection as a command. */
+/** Identify both reading directions without interpreting scrolling or text selection as navigation. */
 export function readerTapAction(start,end,rect){
- if(!start||!end||start.pointerId!==end.pointerId||end.time-start.time>500||end.time<start.time||Math.hypot(end.x-start.x,end.y-start.y)>14||!rect.width||!rect.height)return null;
- const x=(start.x-rect.left)/rect.width,y=(start.y-rect.top)/rect.height;
- if(y<0.12||y>0.88)return null;
- if(x>=0.28&&x<=0.72&&y>=0.2&&y<=0.8)return 'toggle';
- if(x<=0.22)return 'previous';
- if(x>=0.78)return 'next';
+ if(!start||!end||start.pointerId!==end.pointerId||!rect.width||!rect.height)return null;
+ const duration=end.time-start.time,dx=end.x-start.x,dy=end.y-start.y;
+ if(duration<0||duration>900)return null;
+ const y=(start.y-rect.top)/rect.height;
+ if(y<0.06||y>0.94)return null;
+ if(Math.abs(dx)>=44&&Math.abs(dx)>Math.abs(dy)*1.35)return dx>0?'previous':'next';
+ if(duration>500||Math.hypot(dx,dy)>14)return null;
+ const x=(start.x-rect.left)/rect.width;
+ if(x<=0.28)return 'previous';
+ if(x>=0.72)return 'next';
+ if(y>=0.15&&y<=0.85)return 'toggle';
  return null;
 }
-/** Keep controls hidden during page turns. The stage itself survives repagination. */
+/** An edge tap or swipe turns the page; only a central tap toggles the controls. */
 export function attachReaderChrome(stage,turn){
  const reader=stage.closest('.reader');
  reader.classList.add('chrome-hidden');
@@ -25,8 +30,8 @@ export function attachReaderChrome(stage,turn){
   if(blocked(event.target)||document.querySelector('dialog[open]')||window.getSelection()?.toString())return;
   const action=readerTapAction(start,{pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now()},stage.getBoundingClientRect());
   if(action==='toggle')reader.classList.toggle('chrome-hidden');
-  else if(reader.classList.contains('chrome-hidden')&&action==='next')turn(1);
-  else if(reader.classList.contains('chrome-hidden')&&action==='previous')turn(-1);
+  else if(action==='next')turn(1);
+  else if(action==='previous')turn(-1);
  },{capture:true});
  stage.addEventListener('pointercancel',()=>{down=null;},{capture:true});
 }

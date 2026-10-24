@@ -100,7 +100,7 @@ async function layout(){
   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
   const book=document.createElement('div');book.id='flipbook';book.setAttribute('aria-label','Книга с перелистыванием страниц');stage.append(book);
   const nodes=pages.map((p,i)=>{const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);node.innerHTML=`<div class="book-text" data-page="${i}">${p.html}</div>`;applyTypography(node.querySelector('.book-text'),snapshot,width);return node;});
-  flip=new PageFlip(book,{width,height,size:'fixed',minWidth:100,maxWidth:2000,minHeight:80,maxHeight:3000,usePortrait:true,autoSize:false,startPage:pageIndex,drawShadow:true,maxShadowOpacity:0.24,flippingTime:550,showCover:false,mobileScrollSupport:true,clickEventForward:true,useMouseEvents:!reduced(),showPageCorners:!reduced(),disableFlipByClick:true,swipeDistance:35});
+  flip=new PageFlip(book,{width,height,size:'fixed',minWidth:100,maxWidth:2000,minHeight:80,maxHeight:3000,usePortrait:true,autoSize:false,startPage:pageIndex,drawShadow:true,maxShadowOpacity:0.24,flippingTime:550,showCover:false,mobileScrollSupport:true,clickEventForward:true,useMouseEvents:false,showPageCorners:false,disableFlipByClick:true,swipeDistance:35});
   let initializing=true;
   flip.on('flip',e=>{if(initializing)return;pageIndex=e.data;anchor={...pages[pageIndex].start};updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
