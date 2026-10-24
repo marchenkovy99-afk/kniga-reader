@@ -223,3 +223,9 @@ body:not(.reading) .sync-state{display:block;padding:12px 14px;border-radius:15p
 @media(prefers-reduced-motion:reduce){
  .library .button,.library .icon-button,.library .cloud-status,.library .status-tabs button,.library .shelf-sort,.library .book-card,body:not(.reading) .sheet button{transition:none!important;animation:none!important}
 }
+
+/* Keep reading content clear of the system edge; the book stage owns navigation. */
+body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
+.reader{padding-top:env(safe-area-inset-top,0px)}
+/* Use the same compact insets for visible pages and the pagination measure. */
+.book-text{padding-top:8px;padding-bottom:2px}
