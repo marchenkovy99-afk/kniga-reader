@@ -1,4 +1,4 @@
-export const defaults = Object.freeze({fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0.7,indent:1.3,letterSpacing:0,font:'serif',theme:'paper',align:'left',hyphens:true,animation:true});
+export const defaults = Object.freeze({fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0,paragraphSpacingVersion:1,indent:1.3,letterSpacing:0,font:'serif',theme:'paper',align:'left',hyphens:true,animation:true});
 export function clampSettings(input={}) {
  const s={...defaults};
  for(const [key,min,max] of [['fontSize',12,48],['lineHeight',1,2.5],['margin',8,72],['paragraphGap',0,2],['indent',0,3],['letterSpacing',-0.5,3]]) {
@@ -13,4 +13,9 @@ export function pageForAnchor(pages,anchor={block:0,offset:0}) {
  let result=0;
  for(let i=0;i<pages.length;i++){if(compareAnchors(pages[i].start,anchor)<=0) result=i; else break;}
  return result;
+}
+
+export function restoreSettings(input={}) {
+ const previous=input&&typeof input==='object'?input:{};
+ return clampSettings({...previous,paragraphGap:previous.paragraphSpacingVersion===1?previous.paragraphGap:0});
 }
