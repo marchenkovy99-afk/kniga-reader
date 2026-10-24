@@ -1,5 +1,5 @@
 const BASE=new URL('./',self.registration.scope);
-const VERSION='kniga-v13-'+BASE.pathname;
-self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(c=>c.addAll(['./','index.html','sample.fb2','icon.svg','icon-192.png','apple-touch-icon.png','manifest.webmanifest'].map(p=>new URL(p,BASE).href))));self.skipWaiting();});
+const VERSION='kniga-v14-'+BASE.pathname;
+self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(c=>c.addAll(['./','index.html','sample.fb2','icon.svg','icon-192.png','apple-touch-icon-v2.png','manifest.webmanifest'].map(p=>new URL(p,BASE).href))));self.skipWaiting();});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('kniga-')&&k.endsWith(BASE.pathname)&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==BASE.origin||!url.pathname.startsWith(BASE.pathname)||url.pathname.includes('/api/')||url.pathname.includes('signin')||url.pathname.includes('signout')||url.pathname==='/callback')return;event.respondWith(fetch(event.request).then(response=>{if(response.ok&&response.type!=='opaqueredirect'){const copy=response.clone();caches.open(VERSION).then(c=>c.put(event.request,copy));}return response;}).catch(()=>caches.match(event.request).then(r=>r||Promise.reject(new Error('offline')))));});
