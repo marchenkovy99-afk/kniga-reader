@@ -1,6 +1,6 @@
 import * as storage from './storage.js';
 import {importBook} from './importer.js';
-import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookAppearance} from './sync-model.js';
+import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings} from './sync-model.js';
 import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
@@ -87,7 +87,7 @@ export class CloudSync{
     if(this.pending[key]?.clientUpdatedAt===record.clientUpdatedAt)delete this.pending[key];
    }
    await storage.setPreference(`cloud-pending:${this.owner}:${this.deviceId}`,this.pending);
-   const settings=newestState(this.remote,'settings');if(settings)await this.cb.remoteSettings?.(settings);
+   const settings=latestReadingSettings(this.remote);if(settings)await this.cb.remoteSettings?.(settings);
    for(const b of this.cb.books()){
     const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);
     if(states.length){

@@ -44,3 +44,12 @@ export function latestBookAppearance(states,id){
 export function preferRemoteAppearance(localAt,remoteAt,hasPending=false){
  return !hasPending&&Number.isFinite(Number(remoteAt))&&Number(remoteAt)>Number(localAt||0);
 }
+
+/** Use only typography revisions; reading progress is never a typography edit. */
+export function latestReadingSettings(records){
+ return records.filter(r=>(r.key==='settings'||r.key.startsWith('appearance:'))&&r.payload&&typeof r.payload==='object'&&Number.isFinite(r.clientUpdatedAt))
+  .sort((a,b)=>b.clientUpdatedAt-a.clientUpdatedAt||Number(b.key==='settings')-Number(a.key==='settings'))[0]||null;
+}
+export function resolveReadingAppearance(account,book){
+ return book?.settings&&Number(book.updatedAt)>Number(account?.updatedAt||0)?book:account;
+}

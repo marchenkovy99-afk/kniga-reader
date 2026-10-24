@@ -2,9 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,resolveReadingAppearance} from '../reader/src/sync-model.js';
 
 const original=readFileSync(new URL('../reader/src/cloud.js',import.meta.url),'utf8');
-function harness({preferences={},session={},api=null}={}){
+function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={}){
  const prefs=new Map(Object.entries(preferences)),tabs=new Map(Object.entries(session)),timers=new Map();
  let timerIndex=0,fetchCount=0,uploads=[];
  const storage={
@@ -21,7 +22,7 @@ function harness({preferences={},session={},api=null}={}){
    uploads.push(JSON.parse(opts.body));return Response.json({saved:true});
   }
  };
- const context={crypto:globalThis.crypto,Response,storage,sessionStorage:{getItem:k=>tabs.get(k)||null,setItem:(k,v)=>tabs.set(k,v)},
+ const context={pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,crypto:globalThis.crypto,Response,storage,sessionStorage:{getItem:k=>tabs.get(k)||null,setItem:(k,v)=>tabs.set(k,v)},
    supabaseTransport:transport,
    mergeMarks:(...groups)=>groups.flat(),mergeAnnotations:(...groups)=>groups.flat(),
    newestState:(rows,key)=>rows.filter(x=>x.key===key).sort((a,b)=>b.clientUpdatedAt-a.clientUpdatedAt)[0],
@@ -33,7 +34,7 @@ function harness({preferences={},session={},api=null}={}){
    .replace('export class CloudSync','class CloudSync');
  code+='\nglobalThis.ReaderCloud=CloudSync;';
  vm.runInNewContext(code,context);
- const cloud=new context.ReaderCloud({books:()=>[],status:()=>{}});
+ const cloud=new context.ReaderCloud({books:()=>bookList,status:()=>{},...callbacks});
  return {cloud,prefs,tabs,timers,uploads,get fetchCount(){return fetchCount;},async flush(){const all=[...timers.values()];timers.clear();for(const fn of all)await fn();await new Promise(setImmediate);}};
 }
 test('offline position survives reader restart and old session queue is recovered',async()=>{
@@ -64,4 +65,32 @@ test('a second sync request while one is running triggers another network fetch'
  await h.flush();
  assert.equal(calls,2);
  assert.equal(h.cloud.status,'Синхронизировано');
+});
+
+
+test('two reader sessions exchange every typography field and keep newer account values over stale book values',async()=>{
+ const records=new Map();
+ const api=async(url,opts={})=>{
+  if(url==='/api/cloud')return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[],states:[...records.values()]});
+  if(url!=='/api/cloud/state')throw Error('Unexpected request: '+url);
+  const record=JSON.parse(opts.body);records.set(record.deviceId+'|'+record.key,record);return Response.json({saved:true});
+ };
+ const appearance={fontSize:33,font:'literary',lineHeight:1.9,margin:44,paragraphGap:0,indent:1.7,letterSpacing:.6,align:'justify',hyphens:false,theme:'oled'};
+ const a=harness({api});a.cloud.deviceId='device-a';a.cloud.owner='owner-1';
+ await a.cloud.queue('settings',appearance,800);
+ await a.cloud.queue('appearance:sample',appearance,800);
+ await a.cloud.sync();
+ let account={settings:{fontSize:22},updatedAt:100};
+ let book={settings:{fontSize:18},updatedAt:200};let shown;
+ const b=harness({api,bookList:[{id:'sample'}],callbacks:{
+  remoteSettings:async r=>{account={settings:r.payload,updatedAt:r.clientUpdatedAt};shown=resolveReadingAppearance(account,book).settings;},
+  remoteAppearance:async(_b,r)=>{book={settings:r.payload,updatedAt:r.clientUpdatedAt};shown=resolveReadingAppearance(account,book).settings;},
+  localAppearance:()=>book
+ }});b.cloud.deviceId='device-b';b.cloud.owner='owner-1';
+ await b.cloud.sync();
+ assert.deepEqual(shown,appearance);assert.equal(b.cloud.status,'Синхронизировано');
+ await b.cloud.queue('position:sample',{anchor:{block:2,offset:0},bookSettings:{fontSize:17}},1000);await b.cloud.sync();
+ assert.deepEqual(shown,appearance);
+ const reloaded=harness({api,preferences:Object.fromEntries(b.prefs),callbacks:{remoteSettings:async r=>{shown=r.payload;}}});
+ await reloaded.cloud.init();assert.deepEqual(shown,appearance);
 });

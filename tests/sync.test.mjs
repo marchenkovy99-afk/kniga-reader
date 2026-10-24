@@ -58,3 +58,23 @@ test('newest appearance record is selected for each book independently',()=>{
   {key:bookAppearanceKey(id),clientUpdatedAt:22,payload:{fontSize:24}}
  ],id).payload.fontSize,24);
 });
+
+test('a newer account typography profile overrides an old book profile on another device',async()=>{
+ const {resolveReadingAppearance}=await import('../reader/src/sync-model.js');
+ const r=resolveReadingAppearance({settings:{fontSize:32,margin:40,lineHeight:1.8},updatedAt:300},{settings:{fontSize:18,margin:12},updatedAt:200});
+ assert.equal(r.settings.fontSize,32);assert.equal(r.settings.margin,40);assert.equal(r.updatedAt,300);
+});
+test('a newer explicit book profile wins over account defaults',async()=>{
+ const {resolveReadingAppearance}=await import('../reader/src/sync-model.js');
+ assert.equal(resolveReadingAppearance({settings:{fontSize:22},updatedAt:100},{settings:{fontSize:29},updatedAt:200}).settings.fontSize,29);
+});
+test('restoring typography uses its own version rather than the last page-turn time',async()=>{
+ const {resolveReadingAppearance}=await import('../reader/src/sync-model.js');
+ const r=resolveReadingAppearance({settings:{fontSize:30},updatedAt:300},{settings:{fontSize:17},updatedAt:100});
+ assert.equal(r.settings.fontSize,30);
+});
+test('older clients book-only changes recover the account profile by the appearance timestamp',async()=>{
+ const {latestReadingSettings}=await import('../reader/src/sync-model.js');
+ const r=latestReadingSettings([{key:'settings',clientUpdatedAt:100,payload:{fontSize:22}},{key:'appearance:sample',clientUpdatedAt:300,payload:{fontSize:31}},{key:'position:sample',clientUpdatedAt:500,payload:{bookSettings:{fontSize:16}}}]);
+ assert.equal(r.payload.fontSize,31);assert.equal(r.clientUpdatedAt,300);
+});
