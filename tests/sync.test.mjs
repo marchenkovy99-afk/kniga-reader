@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookAppearance,preferRemoteAppearance} from '../reader/src/sync-model.js';
+import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookAppearance,preferRemoteAppearance,legacyAppearanceTimestamp} from '../reader/src/sync-model.js';
 test('bookmarks merge across devices and deleted bookmarks do not reappear',()=>{
  const a={anchor:{block:2,offset:10},label:'A',changedAt:10},b={anchor:{block:5,offset:0},label:'B',changedAt:11};
  const merged=mergeMarks([a,b],[{...a,deleted:true,changedAt:12}]);
@@ -77,4 +77,20 @@ test('older clients book-only changes recover the account profile by the appeara
  const {latestReadingSettings}=await import('../reader/src/sync-model.js');
  const r=latestReadingSettings([{key:'settings',clientUpdatedAt:100,payload:{fontSize:22}},{key:'appearance:sample',clientUpdatedAt:300,payload:{fontSize:31}},{key:'position:sample',clientUpdatedAt:500,payload:{bookSettings:{fontSize:16}}}]);
  assert.equal(r.payload.fontSize,31);assert.equal(r.clientUpdatedAt,300);
+});
+
+test('a new page-turn timestamp never becomes a typography edit',()=>{
+ const old={anchor:{block:10,offset:20},updatedAt:5000,bookSettings:{fontSize:13}};
+ assert.equal(legacyAppearanceTimestamp(old),0);
+ assert.equal(latestBookAppearance([{key:'position:'+'c'.repeat(64),deviceId:'a',clientUpdatedAt:5000,payload:old}],'c'.repeat(64)),null);
+});
+test('legacy settings are ordered by their own edits, not reading positions',()=>{
+ const id='d'.repeat(64),key='position:'+id;
+ const records=[
+  {deviceId:'a',key,clientUpdatedAt:9000,payload:{bookSettings:{fontSize:12},appearanceUpdatedAt:200}},
+  {deviceId:'b',key,clientUpdatedAt:1000,payload:{bookSettings:{fontSize:28},appearanceUpdatedAt:800}}
+ ];
+ const latest=latestBookAppearance(records,id);
+ assert.equal(latest.payload.fontSize,28);
+ assert.equal(latest.clientUpdatedAt,800);
 });

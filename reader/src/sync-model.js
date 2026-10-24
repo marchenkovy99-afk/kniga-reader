@@ -32,14 +32,21 @@ export function pendingForAccount(previousOwner,nextOwner,previousPending={},acc
 /** Typography has an independent timestamp and sync key. A later page turn
  * cannot replace a newer font size, theme, margin or line spacing. */
 export const bookAppearanceKey=id=>'appearance:'+id;
+/** Reading progress timestamps are NOT typography timestamps. In old builds a
+ * page turn copied bookSettings but did not mean their appearance was edited. */
+export function legacyAppearanceTimestamp(progress){
+ const timestamp=Number(progress?.appearanceUpdatedAt);
+ return Number.isFinite(timestamp)&&timestamp>0?timestamp:0;
+}
 export function latestBookAppearance(states,id){
  const key=bookAppearanceKey(id);
  const active=states.filter(r=>r.key===key&&r.payload&&typeof r.payload==='object');
  if(active.length)return newestState(active,key);
- const legacy=states.filter(r=>r.key==='position:'+id&&r.payload?.bookSettings&&typeof r.payload.bookSettings==='object');
- const last=newestState(legacy,'position:'+id);
+ const legacy=states.filter(r=>r.key==='position:'+id&&r.payload?.bookSettings&&typeof r.payload.bookSettings==='object'&&legacyAppearanceTimestamp(r.payload)>0);
+ // A recently turned page must never resurrect unstamped, years-old typography.
+ const last=legacy.sort((a,b)=>legacyAppearanceTimestamp(b.payload)-legacyAppearanceTimestamp(a.payload))[0];
  if(!last)return null;
- return {key,deviceId:last.deviceId,payload:last.payload.bookSettings,clientUpdatedAt:Number(last.payload.appearanceUpdatedAt)||last.clientUpdatedAt,legacy:true};
+ return {key,deviceId:last.deviceId,payload:last.payload.bookSettings,clientUpdatedAt:legacyAppearanceTimestamp(last.payload),legacy:true};
 }
 export function preferRemoteAppearance(localAt,remoteAt,hasPending=false){
  return !hasPending&&Number.isFinite(Number(remoteAt))&&Number(remoteAt)>Number(localAt||0);

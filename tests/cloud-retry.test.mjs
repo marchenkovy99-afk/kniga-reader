@@ -94,3 +94,25 @@ test('two reader sessions exchange every typography field and keep newer account
  const reloaded=harness({api,preferences:Object.fromEntries(b.prefs),callbacks:{remoteSettings:async r=>{shown=r.payload;}}});
  await reloaded.cloud.init();assert.deepEqual(shown,appearance);
 });
+
+test('an old reading position cannot override the cloud account appearance',async()=>{
+ const oldKey='position:'+'e'.repeat(64);
+ const state=[
+  {deviceId:'new-device',key:'settings',payload:{fontSize:33,theme:'oled'},clientUpdatedAt:2000},
+  {deviceId:'old-device',key:oldKey,payload:{anchor:{block:1,offset:0},bookSettings:{fontSize:15,theme:'paper'}},clientUpdatedAt:9000}
+ ];
+ let active=null;
+ const h=harness({api:async(url,opts)=>{
+   if(url==='/api/cloud')return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[],states:state});
+   const saved=JSON.parse(opts.body);state.push(saved);return Response.json({saved:true});
+  },bookList:[{id:'e'.repeat(64),blocks:[{text:'test'}],appearanceSettings:null,appearanceUpdatedAt:0}],callbacks:{
+   localAppearance:()=>null,
+   remoteAppearance:async(_b,record)=>{active=record.payload},
+   remoteSettings:async record=>{active=record.payload},
+   remotePosition:async()=>{}
+  }});
+ h.cloud.deviceId='third-device';h.cloud.owner='owner-1';
+ await h.cloud.sync();
+ assert.deepEqual(active,{fontSize:33,theme:'oled'});
+ assert.equal(h.cloud.status,'Синхронизировано');
+});

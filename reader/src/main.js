@@ -7,7 +7,7 @@ import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
 import * as storage from './storage.js';
 import {CloudSync} from './cloud.js';
 import {supabase} from './supabase-client.js';
-import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance} from './sync-model.js';
+import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance,legacyAppearanceTimestamp} from './sync-model.js';
 import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
 import {createReadingFullscreen} from './reading-fullscreen.js';
 import './style.css';
@@ -353,13 +353,17 @@ function showCloud(){
 async function init(){
  app.innerHTML='<div class="boot"><div class="brand">'+icon('book')+'<span>Книга.</span></div><p>Открываем библиотеку…</p></div>';
  try{
-  settings=restoreSettings(await storage.getPreference('settings'));settingsUpdatedAt=await storage.getPreference('settings-updatedAt')||0;const storedSettings=await storage.getPreference('settings');globalSettings={...settings};if(storedSettings&&storedSettings.paragraphSpacingVersion!==1){settingsUpdatedAt=Date.now();await storage.setPreference('settings',settings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);}books=await storage.listBooks();
+  settings=restoreSettings(await storage.getPreference('settings'));settingsUpdatedAt=await storage.getPreference('settings-updatedAt')||0;const storedSettings=await storage.getPreference('settings');globalSettings={...settings};if(storedSettings&&storedSettings.paragraphSpacingVersion!==1){
+    // Normalizing old paragraph spacing is not a user edit. Giving it a fresh
+    // timestamp overwrote newer typography from other devices on startup.
+    await storage.setPreference('settings',settings);
+   }books=await storage.listBooks();
   if(!books.length){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);books=[book];}
   for(const b of books){
     b.progress=await storage.getPreference(`position:${b.id}`);b.marks=b.progress?.marks||[];
     const appearance=await storage.getPreference(bookAppearanceKey(b.id));
     if(appearance?.settings){b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=Number(appearance.updatedAt)||0;}
-    else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=Number(b.progress.appearanceUpdatedAt||b.progress.updatedAt)||0;}
+    else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=legacyAppearanceTimestamp(b.progress);}
    }
   await library();
   cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
