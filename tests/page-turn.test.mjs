@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {animatedTurn} from '../reader/src/page-turn.js';
+import {animatedTurn,pageTurnMotion} from '../reader/src/page-turn.js';
 const fake=(current=3,opts={})=>{
  const calls=[];
  const engine={
@@ -30,4 +30,14 @@ test('forward end, animation in progress and disabled turn all respect bounds',(
  assert.equal(animatedTurn(busy.engine,-1,6),false);
  assert.equal(animatedTurn(blocked.engine,-1,6),false);
  assert.deepEqual(end.calls,[]);assert.deepEqual(busy.calls,[]);assert.deepEqual(blocked.calls,[]);
+});
+test('explicit page-curl setting overrides the system reduction in both the app and engine',()=>{
+ const motion=pageTurnMotion({animation:true},true);
+ assert.equal(motion.animate,true);assert.equal(motion.respectReducedMotion,false);assert.ok(motion.flippingTime>=550);
+});
+test('explicit instant mode stays instant and an unspecified preference follows the system',()=>{
+ assert.equal(pageTurnMotion({animation:false},false).animate,false);
+ assert.equal(pageTurnMotion({animation:false},true).flippingTime,0);
+ assert.equal(pageTurnMotion({},true).animate,false);
+ assert.equal(pageTurnMotion({},false).animate,true);
 });
