@@ -18,7 +18,7 @@ export function attachReaderChrome(stage,turn){
  const reader=stage.closest('.reader');
  reader.classList.add('chrome-hidden');
  let down=null;
- const blocked=target=>target instanceof Element&&!!target.closest('a,button,[data-note],input,textarea,select,[contenteditable="true"]');
+ const blocked=target=>target instanceof Element&&!!target.closest('a,button,[data-note],[data-annotation],input,textarea,select,[contenteditable="true"]');
  stage.addEventListener('pointerdown',event=>{
   down=null;
   if(event.isPrimary===false||(event.pointerType==='mouse'&&event.button!==0)||blocked(event.target))return;

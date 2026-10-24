@@ -7,6 +7,7 @@ import * as storage from './storage.js';
 import {CloudSync} from './cloud.js';
 import {supabase} from './supabase-client.js';
 import {mergeMarks} from './sync-model.js';
+import {mergeAnnotations} from './reading-features.js';
 import './style.css';
 import {sha256} from 'js-sha256';
 const app=document.querySelector('#app');
@@ -18,6 +19,7 @@ let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],pag
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
 const statuses={reading:'Читаю',planned:'Хочу прочитать',finished:'Прочитано'};
+const activeNotes=()=> (current?.progress?.annotations||[]).filter(x=>!x.deleted);let noteSelectTimer;
 let readingStamp=0;
 function recordReading(){if(!current||!readingStamp)return;const now=Date.now(),dt=now-readingStamp;readingStamp=now;if(dt>=0&&dt<=120000)current.progress={...(current.progress||{}),readingMs:(current.progress?.readingMs||0)+dt};}
 async function saveBookMeta(book){book.progress={...(book.progress||{}),updatedAt:Date.now()};await storage.setPreference('position:'+book.id,book.progress);cloud?.queue('position:'+book.id,book.progress,book.progress.updatedAt);}
@@ -115,12 +117,12 @@ async function layout(){
   let initializing=true;
   flip.on('flip',e=>{if(initializing)return;recordReading();pageIndex=e.data;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
-  book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);}});
+  book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
   anchor=target; // Keep the precise source anchor through consecutive typography edits.
   updateProgress();scheduleSave();
  }catch(e){if(e.name!=='AbortError'){loader.textContent=e.message;loader.classList.add('layout-error');message(e.message,true);}}
 }
-function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';}}
+function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
 function updateProgress(){
  if(!current||!pages.length)return;
  const before=current.blocks.slice(0,anchor.block).reduce((sum,b)=>sum+b.text.length,0)+anchor.offset;
@@ -146,8 +148,8 @@ function toggleBookmark(){
 }
 function showContents(){
  const marks=activeMarks(current);
- openSheet('Оглавление и закладки',`<div class="contents-list">${current.chapters.map(c=>`<button class="chapter-row" data-jump="${c.block}"><span>${esc(c.title)}</span>${icon('next')}</button>`).join('')}</div><h3 class="subheading">Закладки <span>${marks.length}</span></h3>${marks.length?marks.map((m,i)=>`<button class="chapter-row bookmark-row" data-mark="${i}">${icon('bookmark')}<span>${esc(m.label)}</span></button>`).join(''):'<p class="muted small-copy">Нажмите значок закладки над страницей, чтобы вернуться к этому месту.</p>'}`);
- document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jump({block:Number(b.dataset.jump),offset:0}));document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>jump(marks[Number(b.dataset.mark)].anchor));
+ openSheet('Оглавление и закладки',`<div class="contents-list">${current.chapters.map(c=>`<button class="chapter-row" data-jump="${c.block}"><span>${esc(c.title)}</span>${icon('next')}</button>`).join('')}</div><button class="chapter-row" id="open-reader-notes">Цитаты и заметки <span>${activeNotes().length}</span></button><h3 class="subheading">Закладки <span>${marks.length}</span></h3>${marks.length?marks.map((m,i)=>`<button class="chapter-row bookmark-row" data-mark="${i}">${icon('bookmark')}<span>${esc(m.label)}</span></button>`).join(''):'<p class="muted small-copy">Нажмите значок закладки над страницей, чтобы вернуться к этому месту.</p>'}`);
+ document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jump({block:Number(b.dataset.jump),offset:0}));document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>jump(marks[Number(b.dataset.mark)].anchor));document.querySelector('#open-reader-notes').onclick=()=>showReadingNotes();
 }
 function showSearch(){
  openSheet('Поиск по книге','<label class="search-field">'+icon('search')+'<input id="book-search" type="search" placeholder="Слово или фраза" aria-label="Найти в тексте книги"></label><div id="search-results" class="search-results"><p class="muted">Введите хотя бы два символа.</p></div>');
@@ -186,6 +188,84 @@ function showSettings(){
  document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();saveSettings();showSettings();});
  document.querySelector('#reset-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();layout();};
 }
+
+/** Inject highlights into original text nodes without changing text length or character anchors. */
+function renderNotesOnPage(page){
+ const annotations=activeNotes();if(!annotations.length)return;
+ for(const paragraph of page.querySelectorAll('.paragraph[data-block]')){
+  const block=Number(paragraph.dataset.block),startAt=Number(paragraph.dataset.from||0);
+  const matches=annotations.filter(a=>a.start.block<=block&&a.end.block>=block);
+  if(!matches.length)continue;
+  const walker=document.createTreeWalker(paragraph,NodeFilter.SHOW_TEXT),parts=[];let node,pos=startAt;
+  while((node=walker.nextNode())){parts.push({node,from:pos,to:pos+node.length});pos+=node.length;}
+  for(const part of parts){
+   const edges=[part.from,part.to];
+   for(const ann of matches){
+    const from=ann.start.block===block?ann.start.offset:0,to=ann.end.block===block?ann.end.offset:Infinity;
+    if(from>part.from&&from<part.to)edges.push(from);
+    if(to>part.from&&to<part.to)edges.push(to);
+   }
+   const cuts=[...new Set(edges.sort((a,b)=>a-b))],fragment=document.createDocumentFragment();
+   for(let i=0;i<cuts.length-1;i++){
+    const from=cuts[i],to=cuts[i+1],str=part.node.nodeValue.slice(from-part.from,to-part.from);
+    const active=matches.filter(a=>(a.start.block<block||a.start.offset<=from)&&(a.end.block>block||a.end.offset>=to)).sort((a,b)=>b.changedAt-a.changedAt)[0];
+    if(active){const mark=document.createElement('mark');mark.className='reading-highlight '+active.color;mark.dataset.annotation=active.id;mark.textContent=str;fragment.append(mark);}
+    else fragment.append(document.createTextNode(str));
+   }
+   part.node.replaceWith(fragment);
+  }
+ }
+}
+function refreshNotesOnPage(){
+ for(const node of pageNodes){if(node?.dataset.ready==='yes'){node.dataset.ready='';node.replaceChildren();}}
+ hydrateAround(pageIndex);
+}
+function selectionAnchor(){
+ const sel=window.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim())return null;
+ const range=sel.getRangeAt(0);
+ const sourcePoint=(node,offset)=>{
+  const el=node.nodeType===1?node:node.parentElement,paragraph=el?.closest('.paragraph[data-block]');
+  if(!paragraph||!paragraph.closest('#book-stage'))return null;
+  const prefix=document.createRange();prefix.selectNodeContents(paragraph);
+  try{prefix.setEnd(node,offset);}catch{return null;}
+  return {block:Number(paragraph.dataset.block),offset:Number(paragraph.dataset.from||0)+prefix.toString().length};
+ };
+ const start=sourcePoint(range.startContainer,range.startOffset),end=sourcePoint(range.endContainer,range.endOffset);
+ if(!start||!end||end.block<start.block||(end.block===start.block&&end.offset<=start.offset))return null;
+ return {start,end,text:sel.toString().slice(0,3000)};
+}
+function offerQuoteActions(){
+ document.querySelector('#quote-actions')?.remove();
+ if(!current||document.querySelector('dialog[open]'))return;
+ const quote=selectionAnchor();if(!quote)return;
+ const tools=document.createElement('div');tools.id='quote-actions';tools.className='quote-actions';
+ tools.innerHTML='<button id="quote-save">Выделить</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button>';
+ document.body.append(tools);tools.addEventListener('pointerdown',e=>e.preventDefault());
+ const save=note=>{const value={...quote,id:crypto.randomUUID(),note,color:'gold',changedAt:Date.now(),deleted:false};
+  current.progress={...(current.progress||{}),annotations:mergeAnnotations(current.progress?.annotations||[],[value])};
+  tools.remove();window.getSelection()?.removeAllRanges();refreshNotesOnPage();scheduleSave();message('Цитата сохранена.');
+ };
+ tools.querySelector('#quote-save').onclick=()=>save('');
+ tools.querySelector('#quote-copy').onclick=async()=>{try{await navigator.clipboard.writeText(quote.text);message('Скопировано.');}catch{message('Скопировать не удалось.',true);}tools.remove();};
+ tools.querySelector('#quote-note').onclick=()=>{tools.remove();
+  openSheet('Заметка к цитате',`<blockquote class="quoted">${esc(quote.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000"></textarea><button id="note-save" class="button primary">Сохранить</button>`);
+  document.querySelector('#note-save').onclick=()=>{const value=document.querySelector('#note-editor').value;closeSheet();save(value);};
+ };
+}
+function showReadingNotes(focus=''){
+ const notes=activeNotes(),shown=focus?[...notes].sort((a,b)=>(a.id===focus?-1:0)-(b.id===focus?-1:0)):notes;
+ openSheet('Цитаты и заметки',`<p class="small-copy muted">Выделите текст на странице, чтобы сохранить цитату.</p><div class="notes-list">${shown.length?shown.map(n=>`<article class="note-item"><blockquote>${esc(n.text)}</blockquote>${n.note?`<p>${esc(n.note)}</p>`:''}<div class="note-item-actions"><button data-annotation-jump="${esc(n.id)}">Перейти</button><button data-annotation-edit="${esc(n.id)}">Изменить</button><button data-annotation-delete="${esc(n.id)}">Удалить</button></div></article>`).join(''):'<p class="muted">Пока нет заметок.</p>'}</div><button id="export-notes" class="button secondary">Экспортировать в Markdown</button>`);
+ document.querySelectorAll('[data-annotation-jump]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationJump);if(note)jump(note.start);});
+ document.querySelectorAll('[data-annotation-edit]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationEdit);if(!note)return;
+  openSheet('Редактировать заметку',`<blockquote class="quoted">${esc(note.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000">${esc(note.note)}</textarea><button id="note-save" class="button primary">Сохранить</button>`);
+  document.querySelector('#note-save').onclick=()=>{current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,note:document.querySelector('#note-editor').value,changedAt:Date.now()}]);scheduleSave();showReadingNotes(note.id);};
+ });
+ document.querySelectorAll('[data-annotation-delete]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationDelete);if(!note)return;current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,changedAt:Date.now(),deleted:true}]);scheduleSave();refreshNotesOnPage();showReadingNotes();});
+ document.querySelector('#export-notes').onclick=()=>{const text='# '+current.title+'\n\n'+notes.map(n=>'> '+n.text.replace(/\n/g,'\n> ')+'\n\n'+(n.note?n.note+'\n\n':'')).join('---\n\n');downloadText('kniga-notes.md',text,'text/markdown');};
+}
+document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,250);});
+document.addEventListener('pointerup',()=>{if(current){clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,260);}});
+
 document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){e.preventDefault();document.querySelector('.reader')?.classList.toggle('chrome-hidden');return;}if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistPosition();});
 window.addEventListener('pagehide',()=>persistPosition());matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(settings.theme==='auto')theme();});
@@ -223,7 +303,7 @@ async function init(){
   if(!books.length){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);books=[book];}
   for(const b of books){b.progress=await storage.getPreference(`position:${b.id}`);b.marks=b.progress?.marks||[];}
   await library();
-  cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},remoteSettings:async record=>{if(record.clientUpdatedAt>settingsUpdatedAt){settings=restoreSettings(record.payload);settingsUpdatedAt=record.clientUpdatedAt;await storage.setPreference('settings',settings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);theme();if(current)layout();}},remotePosition:async(book,record,marks)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&current?.id!==book.id){book.progress={anchor:p.anchor,marks,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks};await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
+  cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},remoteSettings:async record=>{if(record.clientUpdatedAt>settingsUpdatedAt){settings=restoreSettings(record.payload);settingsUpdatedAt=record.clientUpdatedAt;await storage.setPreference('settings',settings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);theme();if(current)layout();}},remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&current?.id!==book.id){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
   await cloud.init();
   if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',settings,settingsUpdatedAt);
   for(const b of books)if(b.progress?.updatedAt&&!cloud.remote.some(r=>r.key==='position:'+b.id&&r.clientUpdatedAt>=b.progress.updatedAt))cloud.queue('position:'+b.id,b.progress,b.progress.updatedAt);
