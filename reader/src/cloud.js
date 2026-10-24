@@ -16,6 +16,7 @@ export class CloudSync{
   clearTimeout(this.timer);this.timer=setTimeout(()=>this.sync(),1800);
  }
  async sync(){
+  if(import.meta.env.MODE==='pages'){this.setStatus('Облако доступно в облачной версии');return;}
   if(this.running)return;this.running=true;this.setStatus('Синхронизация…');
   try{
    const response=await this.api('/api/cloud');const snapshot=await response.json();

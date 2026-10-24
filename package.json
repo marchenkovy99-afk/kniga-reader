@@ -12,7 +12,8 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "build:reader": "vite build --config reader/vite.config.js",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check reader/src/main.js && node --check reader/src/importer.js && node --check reader/src/pagination.js && node --check reader/src/cloud.js && tsc --noEmit"
+    "check": "node --check reader/src/main.js && node --check reader/src/importer.js && node --check reader/src/pagination.js && node --check reader/src/cloud.js && tsc --noEmit",
+    "build:pages": "vite build --config reader/vite.config.js --mode pages"
   },
   "dependencies": {
     "fflate": "0.8.3",
