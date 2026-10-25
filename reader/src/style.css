@@ -294,3 +294,6 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 @media(prefers-reduced-motion:reduce){.library *, .appearance-sheet{animation:none!important;transition:none!important}}
 .library .cover-title{overflow-wrap:normal;word-break:normal;hyphens:auto;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
 .library .cover-author{overflow:hidden;text-overflow:ellipsis;max-height:3em}
+
+/* Keep native selection handles, but use the reader actions over book text. */
+.book-text{-webkit-touch-callout:none;-webkit-user-select:text;user-select:text}
