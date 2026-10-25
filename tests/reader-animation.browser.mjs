@@ -105,4 +105,27 @@ try{
  assert.equal(fieldMenu,false);
  assert.equal(requests.length,initialReads,'page turns and annotation edits must not re-download the full library');
  assert.deepEqual(errors,[]);console.log('PASS: instant navigation, word press, draggable handles, anchored toolbar, saved quote/note, native field menus.');
+ const showControls=async()=>{
+  if(await page.locator('.reader.chrome-hidden').count()){
+   const stage=await page.locator('#book-stage').boundingBox();
+   await page.touchscreen.tap(stage.x+stage.width/2,stage.y+stage.height/2);
+  }
+ };
+ for(let cycle=0;cycle<3;cycle++){
+  await showControls();
+  const before=await position();
+  for(const selector of ['#contents','#search-book','#appearance']){
+   await page.locator(selector).tap();
+   await page.locator('dialog[open]').waitFor();
+   assert.equal(await position(),before,`${selector} must open a sheet without navigating`);
+   await page.locator('#close-sheet').tap();
+  }
+  await page.locator('#next-page').tap();assert.notEqual(await position(),before);
+  await page.locator('#prev-page').tap();assert.equal(await position(),before);
+  await page.locator('#to-library').tap();await page.locator('.library').waitFor();
+  await page.locator('[data-book]').first().tap();
+  await page.locator('.book-text[data-page]').first().waitFor({state:'attached'});
+  assert.equal(await position(),before,'returning to the library must preserve the page');
+ }
+ assert.deepEqual(errors,[]);console.log('PASS: repeated settings/contents/search, toolbar arrows, library return and saved reading position.');
 }finally{await browser.close();}
