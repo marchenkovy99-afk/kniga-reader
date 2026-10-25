@@ -15,7 +15,7 @@ test('curl engine receives real swipes and does not double-handle the drag',()=>
 });
 test('word wraps preserve natural line endings',()=>{
  assert.ok(styles.includes('overflow-wrap:break-word;word-break:normal'));
- assert.ok(styles.includes('.book-text div.paragraph.page-continues:not(.verse){text-align-last:auto}'));
+ assert.ok(styles.includes('.book-text div.paragraph.page-continues:not(.verse){text-align-last:var(--text-align,left)}'));
 });
 
 test('page number and total appear centered in the visible control panel, never over book text',()=>{
