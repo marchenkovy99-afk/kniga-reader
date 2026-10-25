@@ -1,18 +1,3 @@
-export function pageTurnMotion(settings={},systemReducedMotion=false){
- const explicit=typeof settings.animation==='boolean';
- const animate=explicit?settings.animation:!systemReducedMotion;
- return {animate,respectReducedMotion:!explicit,flippingTime:animate?780:0};
-}
+// Page transitions are always instant, including restored cloud preferences.
+export function pageTurnMotion(){return {animate:false,respectReducedMotion:true,flippingTime:0};}
 
-/**
- * Keep previous/next identical: both use the flipbook curl animation and bottom corner.
- * Use the engine's authoritative page index (UI progress may update later).
- */
-export function animatedTurn(engine,direction,totalPages){
- if(!engine||!engine.isReady()||engine.isAnimating()||![-1,1].includes(direction))return false;
- const current=engine.getCurrentPageIndex();
- const next=current+direction;
- if(next<0||next>=totalPages)return false;
- if(!engine.canTurn(direction===-1?'prev':'next'))return false;
- return direction===-1?engine.flipPrev('bottom'):engine.flipNext('bottom');
-}

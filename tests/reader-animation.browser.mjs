@@ -48,17 +48,17 @@ try{
  const box=await page.locator('#book-stage').boundingBox();
  const frames=async()=>page.evaluate(()=>[...document.querySelectorAll('.stf__item')].map(e=>e.style.cssText).filter(s=>/rotate|clip-path/.test(s)));
  await page.mouse.click(box.x+box.width*.9,box.y+box.height*.65);
- await page.waitForTimeout(220);assert.ok((await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'forward must curl');
+ await page.waitForTimeout(220);assert.ok(!(await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'forward stays instant');
  await page.waitForTimeout(1000);const forward=await position();assert.notEqual(forward,initial);
  await page.mouse.click(box.x+box.width*.1,box.y+box.height*.65);
- await page.waitForTimeout(220);assert.ok((await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'backward must curl');
+ await page.waitForTimeout(220);assert.ok(!(await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'backward stays instant');
  await page.waitForTimeout(1000);assert.equal(await position(),initial);
  const cdp=await context.newCDPSession(page);
  const swipe=async(from,to)=>{
   const y=box.y+box.height*.6;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:from,y}]});
   for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from+(to-from)*i/8,y}]});await page.waitForTimeout(25);}
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(220);assert.ok((await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'swipe must curl after release');await page.waitForTimeout(1200);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(220);assert.ok(!(await frames()).some(s=>/rotate\((?!0rad)/.test(s)),'swipe stays instant');await page.waitForTimeout(1200);
  };
  await swipe(box.x+box.width*.9,box.x+box.width*.15);assert.notEqual(await position(),initial);
  await swipe(box.x+box.width*.1,box.x+box.width*.85);assert.equal(await position(),initial);
@@ -67,12 +67,14 @@ try{
   const walker=document.createTreeWalker(text,NodeFilter.SHOW_TEXT),node=walker.nextNode();
   const range=document.createRange();range.setStart(node,0);range.setEnd(node,Math.min(12,node.length));
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  const selectedText=sel.toString();
   const menu=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});text.dispatchEvent(menu);
-  return {cancelled:menu.defaultPrevented,text:sel.toString(),select:getComputedStyle(text.closest('.book-text')).webkitUserSelect};
+  return {cancelled:menu.defaultPrevented,text:selectedText,nativeSelection:sel.toString(),custom:!!document.querySelector('#quote-selection span'),select:getComputedStyle(text.closest('.book-text')).webkitUserSelect};
  });
- assert.equal(selection.cancelled,true);assert.equal(selection.select,'text');assert.ok(selection.text.length>0);
+ assert.equal(selection.cancelled,true);assert.equal(selection.select,'text');assert.ok(selection.text.length>0);assert.equal(selection.nativeSelection,'');assert.equal(selection.custom,true);
  await page.locator('#quote-actions').waitFor();assert.equal(await page.locator('#quote-actions button').count(),3);
+ await page.locator('#quote-save').click();assert.equal(await page.locator('.reading-highlight').count()>0,true);assert.equal(await page.locator('#quote-selection').count(),0);
  const fieldMenu=await page.evaluate(()=>{const input=document.createElement('textarea');document.body.append(input);const event=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});input.dispatchEvent(event);input.remove();return event.defaultPrevented;});
  assert.equal(fieldMenu,false);
- assert.deepEqual(errors,[]);console.log('PASS: animated navigation, book selection, reader-only context actions, native menus in fields.');
+ assert.deepEqual(errors,[]);console.log('PASS: instant navigation, custom selection after native dismissal, saved highlight, native field menus.');
 }finally{await browser.close();}

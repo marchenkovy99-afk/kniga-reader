@@ -1,49 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {animatedTurn,pageTurnMotion} from '../reader/src/page-turn.js';
-const fake=(current=3,opts={})=>{
- const calls=[];
- const engine={
-  isReady:()=>opts.ready!==false,isAnimating:()=>opts.animating===true,
-  getCurrentPageIndex:()=>current,canTurn:(d)=>opts.blocked!==d,
-  flipPrev:(corner)=>{calls.push(['prev',corner]);return true;},
-  flipNext:(corner)=>{calls.push(['next',corner]);return true;}
- };
- return {engine,calls};
-};
-test('backward has the SAME animated book-curl corner as forward',()=>{
- const a=fake(),b=fake();
- assert.equal(animatedTurn(a.engine,-1,6),true);
- assert.equal(animatedTurn(b.engine,1,6),true);
- assert.deepEqual(a.calls,[['prev','bottom']]);
- assert.deepEqual(b.calls,[['next','bottom']]);
-});
-test('reverse turn uses engine index and cannot cross start',()=>{
- const one=fake(1),zero=fake(0);
- assert.equal(animatedTurn(one.engine,-1,6),true);
- assert.equal(animatedTurn(zero.engine,-1,6),false);
- assert.equal(zero.calls.length,0);
-});
-test('forward end, animation in progress and disabled turn all respect bounds',()=>{
- const end=fake(5),busy=fake(3,{animating:true}),blocked=fake(3,{blocked:'prev'});
- assert.equal(animatedTurn(end.engine,1,6),false);
- assert.equal(animatedTurn(busy.engine,-1,6),false);
- assert.equal(animatedTurn(blocked.engine,-1,6),false);
- assert.deepEqual(end.calls,[]);assert.deepEqual(busy.calls,[]);assert.deepEqual(blocked.calls,[]);
-});
-test('explicit page-curl setting overrides the system reduction in both the app and engine',()=>{
- const motion=pageTurnMotion({animation:true},true);
- assert.equal(motion.animate,true);assert.equal(motion.respectReducedMotion,false);assert.ok(motion.flippingTime>=550);
-});
-test('explicit instant mode stays instant and an unspecified preference follows the system',()=>{
- assert.equal(pageTurnMotion({animation:false},false).animate,false);
- assert.equal(pageTurnMotion({animation:false},true).flippingTime,0);
- assert.equal(pageTurnMotion({},true).animate,false);
- assert.equal(pageTurnMotion({},false).animate,true);
-});
-
-test('book curl is responsive while preserving the physical page turn',()=>{
- const duration=pageTurnMotion({animation:true},false).flippingTime;
- assert.ok(duration>=650&&duration<=850);
- assert.equal(pageTurnMotion({animation:false},false).flippingTime,0);
+import {pageTurnMotion} from '../reader/src/page-turn.js';
+import {restoreSettings} from '../reader/src/anchors.js';
+test('all page transitions stay instant despite old cloud animation settings',()=>{
+ for(const animation of [true,false,undefined])for(const reduced of [true,false]){
+  const motion=pageTurnMotion({animation},reduced);
+  assert.equal(motion.animate,false);assert.equal(motion.flippingTime,0);
+  assert.equal(restoreSettings({animation}).animation,false);
+ }
 });
