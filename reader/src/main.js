@@ -19,7 +19,7 @@ const paths={grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
-let libraryView='grid';
+let libraryView='grid',readingTouched=false;
 let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
 const readingFullscreen=createReadingFullscreen(document);
@@ -56,8 +56,9 @@ function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.cr
 function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
 function dispose(){abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
-async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:Date.now()};current.progress=data;try{await storage.setPreference(`position:${id}`,data);cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
+// Passive saves preserve the revision; only user edits may outrank another device.
+async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await storage.setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
+function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
 function progressFor(b){const a=b.progress?.anchor;if(!a)return 0;const before=b.blocks.slice(0,a.block).reduce((sum,x)=>sum+x.text.length,0)+a.offset;return Math.max(0,Math.min(100,Math.round(before/Math.max(1,b.chars)*100)));}
 function cover(b,small=false){return `<div class="cover ${small?'small':''}" data-color="${b.id==='sample'?'green':'brown'}">${b.cover?`<img src="${b.cover}" alt="Обложка книги ${esc(b.title)}">`:`<div class="cover-author">${esc(b.author)}</div><div class="cover-title">${esc(b.title)}</div><div class="cover-rule"></div><span class="cover-format">${esc(b.format)}</span>`}</div>`;}
 async function library(){
@@ -120,7 +121,7 @@ function bookInfo(b){
 async function openBook(id){
  const b=books.find(x=>x.id===id);if(!b)return;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
- if(current)await persistPosition();dispose();current=b;
+ if(current)await persistPosition();dispose();current=b;readingTouched=false;
  try{const stored=await storage.getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
  anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;
  try{
@@ -165,7 +166,7 @@ async function layout(){
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
   anchor=target; // Keep the precise source anchor through consecutive typography edits.
-  updateProgress();scheduleSave();
+  updateProgress();
  }catch(e){if(e.name!=='AbortError'){loader.hidden=false;loader.textContent=e.message;loader.classList.add('layout-error');message(e.message,true);}}
 }
 function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
@@ -400,7 +401,7 @@ async function init(){
     await storage.setPreference('settings',globalSettings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);
     const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},current?{settings:current.appearanceSettings,updatedAt:current.appearanceUpdatedAt||0}:null);
     applyLiveAppearance(effective.settings);
-   },remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&current?.id!==book.id){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
+   },remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
   await cloud.init();
   if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(()=>cloud?.sync(),0);});
   if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',globalSettings,settingsUpdatedAt);
