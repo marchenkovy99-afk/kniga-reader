@@ -133,7 +133,7 @@ async function openBook(id){
  settings=restoreSettings(effectiveAppearance.settings);theme();
  document.body.classList.add('reading');theme();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
- attachReaderChrome(document.querySelector('#book-stage'),turn,{engineHandlesSwipes:true});
+ attachReaderChrome(document.querySelector('#book-stage'),turn,{nativeDrag:()=>!!flip});
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
  document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night','oled','auto'][(['paper','white','night','oled','auto'].indexOf(settings.theme)+1)%5];theme();saveSettings();};
@@ -159,7 +159,7 @@ async function layout(){
   const book=document.createElement('div');book.id='flipbook';book.setAttribute('aria-label','Книга с перелистыванием страниц');stage.append(book);
   const nodes=pages.map((p,i)=>{const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);return node;});pageNodes=nodes;hydrateAround(pageIndex);
   const motion=pageTurnMotion(snapshot,matchMedia('(prefers-reduced-motion: reduce)').matches);
-  flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:true,respectInteractiveContent:true,pointerInput:['touch','pen','mouse'],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
+  flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:['touch','pen','mouse'],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
   let initializing=true;
   flip.on('flip',e=>{if(initializing)return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
@@ -410,4 +410,5 @@ async function init(){
  if('serviceWorker' in navigator&&import.meta.env.PROD)navigator.serviceWorker.register(import.meta.env.MODE==='pages'?import.meta.env.BASE_URL+'sw.js':'/sw.js').catch(()=>message('Офлайн-режим не включился. Сохранение книг работает, но для открытия приложения понадобится сеть.',true));
 }
 init();
+
 
