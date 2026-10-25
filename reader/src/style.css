@@ -297,3 +297,6 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 
 /* Keep native selection handles, but use the reader actions over book text. */
 .book-text{-webkit-touch-callout:none;-webkit-user-select:text;user-select:text}
+
+#quote-selection{position:fixed;inset:0;z-index:90;pointer-events:none}
+#quote-selection span{position:absolute;background:rgba(236,153,49,.32);border-radius:2px;pointer-events:none}

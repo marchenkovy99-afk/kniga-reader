@@ -1,5 +1,5 @@
 import {PageFlip} from '@gullabs/flipbook-core';
-import {animatedTurn,pageTurnMotion} from './page-turn.js';
+import {pageTurnMotion} from './page-turn.js';
 import {attachReaderChrome} from './chrome-controls.js';
 import {attachBookSelectionMenu} from './selection-menu.js';
 import {importBook,escapeHTML as esc} from './importer.js';
@@ -56,7 +56,7 @@ function fileInput(){return '<input id="file-input" type="file" accept=".fb2,.fb
 function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();});}}
 function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
-function dispose(){abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
+function dispose(){clearQuoteActions();abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
 async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await storage.setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
@@ -189,8 +189,8 @@ function updateProgress(){
  // Only the active page is exposed to assistive technology; physical page layers stay visual.
  document.querySelectorAll('.book-page').forEach((el,i)=>el.setAttribute('aria-hidden',String(i!==pageIndex)));
 }
-function turn(dir){if(!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady()||flip.isAnimating())return;hydrateAround(next);if(reduced()){goPage(next);return;}animatedTurn(flip,dir,pages.length);}
-function goPage(index){if(!flip||!pages.length)return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();}
+function turn(dir){if(!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
+function goPage(index){clearQuoteActions();if(!flip||!pages.length)return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();}
 function jump(target){closeSheet();if(!pages.length)return;goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
  if(!current||!pages.length)return;
@@ -246,7 +246,7 @@ function showSettings(){
  const tabs=`<div class="segmented" role="tablist" aria-label="Раздел настроек"><button role="tab" data-tab="text" aria-selected="${settingsTab==='text'}">Текст</button><button role="tab" data-tab="page" aria-selected="${settingsTab==='page'}">Страница</button><button role="tab" data-tab="themes" aria-selected="${settingsTab==='themes'}">Тема</button></div>`;
  let html='';
  if(settingsTab==='text')html=`<label class="select-setting"><span>Шрифт</span><select id="font-select" aria-label="Шрифт"><option value="serif">Книжный</option><option value="literary">Классический</option><option value="sans">Без засечек</option></select></label>${rangeControl('fontSize')}${rangeControl('lineHeight')}${rangeControl('letterSpacing')}<details class="advanced"><summary>Абзацы и выравнивание</summary>${rangeControl('paragraphGap')}${rangeControl('indent')}<label class="select-setting"><span>Выравнивание</span><select id="align-select" aria-label="Выравнивание"><option value="left">По левому краю</option><option value="justify">По ширине</option></select></label><label class="switch-row"><span>Переносы слов</span><input type="checkbox" id="hyphens-check" ${settings.hyphens?'checked':''}></label></details>`;
- if(settingsTab==='page')html=`${rangeControl('margin')}<p class="small-copy muted">Поля применяются симметрично. На узком экране сохраняется место для читаемого текста.</p><label class="switch-row"><span>Переворот страницы</span><input type="checkbox" id="animation-check" ${settings.animation?'checked':''}></label><p class="small-copy muted">Загиб листа с тенью в обе стороны. Включённый переключатель имеет приоритет над системным уменьшением движения; выключенный включает мгновенное листание.</p><p class="small-copy muted">Листайте свайпом в обе стороны, касанием края или стрелками. Потяните страницу за угол для загиба листа.</p>`;
+ if(settingsTab==='page')html=`${rangeControl('margin')}<p class="small-copy muted">Поля применяются симметрично. Листайте свайпом в обе стороны, касанием края или стрелками.</p>`;
  if(settingsTab==='themes')html=`<div class="theme-options">${[['paper','Бумага'],['white','Светлая'],['night','Ночная'],['oled','Чёрная'],['auto','Авто']].map(([key,label])=>`<button class="theme-option" data-theme-choice="${key}" aria-pressed="${settings.theme===key}"><span class="theme-sample ${key}">Aa</span><span>${label}</span>${settings.theme===key?icon('check'):''}</button>`).join('')}</div><p class="small-copy muted">Тема меняет фон страницы и интерфейса. Положение в книге сохраняется.</p>`;
  openSheet('Оформление',tabs+`<div class="settings-body">${html}</div><div class="settings-bottom"><span>Изменения видны сразу</span><button id="reset-settings" class="text-button">Сбросить</button></div>`);
  const sheet=document.querySelector('#sheet');sheet.classList.add('appearance-sheet');
@@ -258,7 +258,7 @@ function showSettings(){
  for(const key of Object.keys(ranges)){const input=document.getElementById('number-'+key);if(input){input.oninput=()=>{const n=Number(input.value);if(input.value!==''&&Number.isFinite(n)&&n>=ranges[key][1]&&n<=ranges[key][2])change(key,n);};input.onchange=()=>{change(key,input.value===''?defaults[key]:Number(input.value));input.value=settings[key];};}}
  document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const[key,d]=b.dataset.step.split(':');change(key,Math.round((settings[key]+Number(d)*ranges[key][3])*100)/100);});
  for(const [id,key] of [['font-select','font'],['align-select','align']]){const e=document.getElementById(id);if(e){e.value=settings[key];e.onchange=()=>change(key,e.value);}}
- for(const [id,key] of [['hyphens-check','hyphens'],['animation-check','animation']]){const e=document.getElementById(id);if(e)e.onchange=()=>change(key,e.checked);}
+ for(const [id,key] of [['hyphens-check','hyphens']]){const e=document.getElementById(id);if(e)e.onchange=()=>change(key,e.checked);}
  document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();saveSettings();showSettings();});
  document.querySelector('#reset-settings').onclick=()=>{settings={...(current?globalSettings:defaults)};theme();saveSettings();showSettings();layout();};
 }
@@ -308,20 +308,31 @@ function selectionAnchor(){
  if(!start||!end||end.block<start.block||(end.block===start.block&&end.offset<=start.offset))return null;
  return {start,end,text:sel.toString().slice(0,3000)};
 }
+function clearQuoteActions(){document.querySelector('#quote-actions')?.remove();document.querySelector('#quote-selection')?.remove();}
 function offerQuoteActions(){
- document.querySelector('#quote-actions')?.remove();
  if(!current||document.querySelector('dialog[open]'))return;
  const quote=selectionAnchor();if(!quote)return;
+ clearQuoteActions();
+ // Keep a visual copy, then dismiss native selection so iOS has no selection menu to show.
+ if(matchMedia('(pointer:coarse)').matches){
+  const range=window.getSelection().getRangeAt(0).cloneRange();
+  const overlay=document.createElement('div');overlay.id='quote-selection';overlay.setAttribute('aria-hidden','true');
+  for(const rect of range.getClientRects()){
+   if(!rect.width||!rect.height)continue;
+   const mark=document.createElement('span');mark.style.cssText=`left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;overlay.append(mark);
+  }
+  document.body.append(overlay);window.getSelection().removeAllRanges();
+ }
  const tools=document.createElement('div');tools.id='quote-actions';tools.className='quote-actions';
  tools.innerHTML='<button id="quote-save">Выделить</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button>';
  document.body.append(tools);tools.addEventListener('pointerdown',e=>e.preventDefault());
  const save=note=>{const value={...quote,id:crypto.randomUUID(),note,color:'gold',changedAt:Date.now(),deleted:false};
   current.progress={...(current.progress||{}),annotations:mergeAnnotations(current.progress?.annotations||[],[value])};
-  tools.remove();window.getSelection()?.removeAllRanges();refreshNotesOnPage();scheduleSave();message('Цитата сохранена.');
+  clearQuoteActions();window.getSelection()?.removeAllRanges();refreshNotesOnPage();scheduleSave();message('Цитата сохранена.');
  };
  tools.querySelector('#quote-save').onclick=()=>save('');
- tools.querySelector('#quote-copy').onclick=async()=>{try{await navigator.clipboard.writeText(quote.text);message('Скопировано.');}catch{message('Скопировать не удалось.',true);}tools.remove();};
- tools.querySelector('#quote-note').onclick=()=>{tools.remove();
+ tools.querySelector('#quote-copy').onclick=async()=>{try{await navigator.clipboard.writeText(quote.text);message('Скопировано.');}catch{message('Скопировать не удалось.',true);}clearQuoteActions();};
+ tools.querySelector('#quote-note').onclick=()=>{clearQuoteActions();
   openSheet('Заметка к цитате',`<blockquote class="quoted">${esc(quote.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000"></textarea><button id="note-save" class="button primary">Сохранить</button>`);
   document.querySelector('#note-save').onclick=()=>{const value=document.querySelector('#note-editor').value;closeSheet();save(value);};
  };
@@ -337,6 +348,7 @@ function showReadingNotes(focus=''){
  document.querySelectorAll('[data-annotation-delete]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationDelete);if(!note)return;current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,changedAt:Date.now(),deleted:true}]);scheduleSave();refreshNotesOnPage();showReadingNotes();});
  document.querySelector('#export-notes').onclick=()=>{const text='# '+current.title+'\n\n'+notes.map(n=>'> '+n.text.replace(/\n/g,'\n> ')+'\n\n'+(n.note?n.note+'\n\n':'')).join('---\n\n');downloadText('kniga-notes.md',text,'text/markdown');};
 }
+document.addEventListener('pointerdown',event=>{if(!event.target.closest?.('#quote-actions'))clearQuoteActions();},{capture:true});
 document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,250);});
 document.addEventListener('pointerup',()=>{if(current){clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,260);}});
 
