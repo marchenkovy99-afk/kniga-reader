@@ -8,9 +8,9 @@ test('chapter status is shown in the reader toolbar, not the appearance sheet',(
  assert.ok(reader.includes("document.querySelector('#reader-chapter-remaining').textContent=chapterReadingStatus"));
  assert.ok(!reader.includes('settings-chapter-progress'));
 });
-test('curl engine receives real swipes and does not double-handle the drag',()=>{
- assert.ok(reader.includes("pointerInput:['touch','pen','mouse']"));
- assert.ok(reader.includes('nativeDrag:()=>!!flip'));
+test('reader owns navigation gestures while the engine renders programmatic curls',()=>{
+ assert.ok(reader.includes("pointerInput:[]"));
+ assert.ok(reader.includes("attachReaderChrome(document.querySelector('#book-stage'),turn);"));
  assert.ok(reader.includes('allowTouchScroll:false'));
 });
 test('word wraps preserve natural line endings',()=>{
