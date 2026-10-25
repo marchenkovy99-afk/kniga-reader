@@ -59,21 +59,19 @@ input,select,textarea{font-size:16px!important}.cloud-status{display:inline-flex
 
 .book-meta{padding-right:0}.book-meta span{padding-right:30px;min-height:18px}.book-more{top:auto;bottom:-12px;right:-10px}.book-meta h3,.book-meta p{position:relative;z-index:1;pointer-events:none}
 
-/* Distraction-free reading: no reserved blank bars; pagination follows the expanded stage. */
-.reader.chrome-hidden .reader-header,.reader.chrome-hidden .reader-footer{display:none}
-.reader.chrome-hidden .book-stage{flex:1}
-
 /* Allow horizontal swipe gestures without intercepting vertical scrolling. */
 .book-stage{touch-action:pan-y}
 
 /* Fixed page geometry and lightweight overlay controls: toggling chrome never repaginates. */
-.reader{position:relative}
-.reader-header,.reader-footer{position:absolute;left:0;right:0;z-index:120;background:var(--paper);transition:opacity .18s ease,visibility .18s ease}
+.reader{position:relative;isolation:isolate}
+.reader-header,.reader-footer{position:absolute;left:0;right:0;z-index:120;background:var(--paper);pointer-events:auto}
 .reader-header{top:env(safe-area-inset-top)}
 .reader-footer{bottom:env(safe-area-inset-bottom)}
-.reader.chrome-hidden .reader-header,.reader.chrome-hidden .reader-footer{display:flex;opacity:0;visibility:hidden;pointer-events:none}
-.reader.chrome-hidden .reader-footer{display:block}
-.reader .book-stage{min-height:0;flex:1}
+/* Switch painting and hit testing together; fading controls used to expose the
+   book to taps while their buttons were still visibly on screen. */
+.reader.chrome-hidden .reader-header,.reader.chrome-hidden .reader-footer{display:none}
+/* Keep the engine's transformed pages inside a lower, clipped stacking layer. */
+.reader .book-stage{min-height:0;flex:1;z-index:0;overflow:hidden;contain:paint}
 :root[data-theme=oled]{--paper:#000;--ink:#f2f2ef;--muted:#aaa;--line:#3b3b3b;--accent:#b7d9bd;--surface:#171717;--sheet:#171717;--soft:#252525;color-scheme:dark}
 :root[data-theme=oled] body:not(.reading){--paper:#090a0a;--ink:#fff;--muted:#a1aaa7;--line:#313735;--accent:#b7d9bd;--surface:#151a18;--sheet:#151a18;--soft:#202725;color-scheme:dark}
 .preset-strip{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
