@@ -1,0 +1,3 @@
+# Reader selection design
+Approved by the user in chat on 2026-10-25.
+Long press selects a word. Two custom draggable handles adjust selection across words and lines. One floating menu near the range offers «Цитата», «Заметка», «Копировать». Hide the menu while dragging; disable page navigation while selecting. Tap outside to dismiss; retain saved annotations and cloud sync. Do not restore page-curl effects. Use custom selection from gesture start on touch devices instead of native selection followed by timed removal. Desktop retains native mouse selection. Fields retain native editing. Exact pixel matching of native LitRes/Yandex screens is not asserted.

@@ -1,6 +1,7 @@
 import {PageFlip} from '@gullabs/flipbook-core';
 import {pageTurnMotion} from './page-turn.js';
 import {attachReaderChrome} from './chrome-controls.js';
+import {createBookSelection} from './selection-controller.js';
 import {attachBookSelectionMenu} from './selection-menu.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
@@ -20,7 +21,7 @@ const paths={grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
-let libraryView='grid',readingTouched=false;
+let libraryView='grid',readingTouched=false,selectionUI=null;
 let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
 const readingFullscreen=createReadingFullscreen(document);
@@ -56,7 +57,7 @@ function fileInput(){return '<input id="file-input" type="file" accept=".fb2,.fb
 function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();});}}
 function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
-function dispose(){clearQuoteActions();abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
+function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
 async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await storage.setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
@@ -136,7 +137,8 @@ async function openBook(id){
  document.body.classList.add('reading');theme();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  // One gesture owner: the reader recognizes swipes; the engine renders the curl.
- attachReaderChrome(document.querySelector('#book-stage'),turn);
+ selectionUI=createBookSelection(document.querySelector('#book-stage'),{onSelect:offerQuoteActions,onDismiss:()=>document.querySelector('#quote-actions')?.remove()});
+ attachReaderChrome(document.querySelector('#book-stage'),turn,{canNavigate:()=>!selectionUI?.active});
  attachBookSelectionMenu(document.querySelector('#book-stage'),offerQuoteActions);
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
@@ -148,7 +150,7 @@ async function openBook(id){
  resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const key=`${Math.round(stage.clientWidth)}x${Math.round(stage.clientHeight)}`;if(key!==lastSize){clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>layout(),200);}});resizeObserver.observe(document.querySelector('#book-stage'));
 }
 async function layout(){
- if(!current)return;abort?.abort();const controller=new AbortController();abort=controller;
+ if(!current)return;clearQuoteActions();abort?.abort();const controller=new AbortController();abort=controller;
  const stage=document.querySelector('#book-stage');if(!stage)return;
  const width=Math.floor(stage.clientWidth),height=Math.floor(stage.clientHeight);if(width<100||height<80)return;
  lastSize=`${width}x${height}`;
@@ -189,7 +191,7 @@ function updateProgress(){
  // Only the active page is exposed to assistive technology; physical page layers stay visual.
  document.querySelectorAll('.book-page').forEach((el,i)=>el.setAttribute('aria-hidden',String(i!==pageIndex)));
 }
-function turn(dir){if(!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
+function turn(dir){if(selectionUI?.active||!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
 function goPage(index){clearQuoteActions();if(!flip||!pages.length)return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();}
 function jump(target){closeSheet();if(!pages.length)return;goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
@@ -294,9 +296,10 @@ function refreshNotesOnPage(){
  for(const node of pageNodes){if(node?.dataset.ready==='yes'){node.dataset.ready='';node.replaceChildren();}}
  hydrateAround(pageIndex);
 }
-function selectionAnchor(){
- const sel=window.getSelection();if(!sel||sel.isCollapsed||!sel.toString().trim())return null;
- const range=sel.getRangeAt(0);
+function selectionAnchor(selectedRange){
+ const sel=window.getSelection();
+ const range=selectedRange||((sel&&!sel.isCollapsed&&sel.rangeCount)?sel.getRangeAt(0):null);
+ if(!range||range.collapsed||!range.toString().trim())return null;
  const sourcePoint=(node,offset)=>{
   const el=node.nodeType===1?node:node.parentElement,paragraph=el?.closest('.paragraph[data-block]');
   if(!paragraph||!paragraph.closest('#book-stage'))return null;
@@ -306,26 +309,23 @@ function selectionAnchor(){
  };
  const start=sourcePoint(range.startContainer,range.startOffset),end=sourcePoint(range.endContainer,range.endOffset);
  if(!start||!end||end.block<start.block||(end.block===start.block&&end.offset<=start.offset))return null;
- return {start,end,text:sel.toString().slice(0,3000)};
+ return {start,end,text:range.toString()};
 }
-function clearQuoteActions(){document.querySelector('#quote-actions')?.remove();document.querySelector('#quote-selection')?.remove();}
-function offerQuoteActions(){
+function clearQuoteActions(){selectionUI?.clear();document.querySelector('#quote-actions')?.remove();document.querySelector('#quote-selection')?.remove();}
+function offerQuoteActions(selectedRange){
  if(!current||document.querySelector('dialog[open]'))return;
- const quote=selectionAnchor();if(!quote)return;
- clearQuoteActions();
- // Keep a visual copy, then dismiss native selection so iOS has no selection menu to show.
- if(matchMedia('(pointer:coarse)').matches){
-  const range=window.getSelection().getRangeAt(0).cloneRange();
-  const overlay=document.createElement('div');overlay.id='quote-selection';overlay.setAttribute('aria-hidden','true');
-  for(const rect of range.getClientRects()){
-   if(!rect.width||!rect.height)continue;
-   const mark=document.createElement('span');mark.style.cssText=`left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;overlay.append(mark);
-  }
-  document.body.append(overlay);window.getSelection().removeAllRanges();
- }
+ const quote=selectionAnchor(selectedRange);if(!quote)return;
+ document.querySelector('#quote-actions')?.remove();
+ const range=selectedRange||(window.getSelection().rangeCount?window.getSelection().getRangeAt(0).cloneRange():null);
  const tools=document.createElement('div');tools.id='quote-actions';tools.className='quote-actions';
- tools.innerHTML='<button id="quote-save">Выделить</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button>';
- document.body.append(tools);tools.addEventListener('pointerdown',e=>e.preventDefault());
+ tools.innerHTML='<button id="quote-save">Цитата</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button>';
+ document.body.append(tools);tools.setAttribute('role','toolbar');tools.setAttribute('aria-label','Действия с выбранным текстом');
+ const bounds=range?.getBoundingClientRect(),view=window.visualViewport;
+ const left=view?.offsetLeft||0,top=view?.offsetTop||0,width=view?.width||innerWidth,height=view?.height||innerHeight;
+ const size=tools.getBoundingClientRect(),x=bounds?bounds.left+bounds.width/2:left+width/2;
+ const y=bounds&&bounds.top-size.height-12>=top+8?bounds.top-size.height-12:Math.min(top+height-size.height-8,(bounds?.bottom||top)+12);
+ tools.style.left=`${Math.max(left+8,Math.min(x-size.width/2,left+width-size.width-8))}px`;tools.style.top=`${Math.max(top+8,y)}px`;
+ tools.addEventListener('pointerdown',e=>e.preventDefault());
  const save=note=>{const value={...quote,id:crypto.randomUUID(),note,color:'gold',changedAt:Date.now(),deleted:false};
   current.progress={...(current.progress||{}),annotations:mergeAnnotations(current.progress?.annotations||[],[value])};
   clearQuoteActions();window.getSelection()?.removeAllRanges();refreshNotesOnPage();scheduleSave();message('Цитата сохранена.');
@@ -348,11 +348,11 @@ function showReadingNotes(focus=''){
  document.querySelectorAll('[data-annotation-delete]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationDelete);if(!note)return;current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,changedAt:Date.now(),deleted:true}]);scheduleSave();refreshNotesOnPage();showReadingNotes();});
  document.querySelector('#export-notes').onclick=()=>{const text='# '+current.title+'\n\n'+notes.map(n=>'> '+n.text.replace(/\n/g,'\n> ')+'\n\n'+(n.note?n.note+'\n\n':'')).join('---\n\n');downloadText('kniga-notes.md',text,'text/markdown');};
 }
-document.addEventListener('pointerdown',event=>{if(!event.target.closest?.('#quote-actions'))clearQuoteActions();},{capture:true});
-document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,250);});
-document.addEventListener('pointerup',()=>{if(current){clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,260);}});
+document.addEventListener('pointerdown',event=>{if(!matchMedia('(pointer:coarse)').matches&&!event.target.closest?.('#quote-actions'))clearQuoteActions();},{capture:true});
+document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);if(!matchMedia('(pointer:coarse)').matches)noteSelectTimer=setTimeout(offerQuoteActions,250);});
+document.addEventListener('pointerup',()=>{if(current&&!matchMedia('(pointer:coarse)').matches){clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,260);}});
 
-document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(e.key==='Escape'){e.preventDefault();document.querySelector('.reader')?.classList.toggle('chrome-hidden');return;}if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
+document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(selectionUI?.active){if(e.key==='Escape'){e.preventDefault();clearQuoteActions();}else if(['ArrowRight','ArrowLeft','PageDown','PageUp'].includes(e.key))e.preventDefault();return;}if(e.key==='Escape'){e.preventDefault();document.querySelector('.reader')?.classList.toggle('chrome-hidden');return;}if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistPosition();});
 window.addEventListener('pagehide',()=>persistPosition());matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(settings.theme==='auto')theme();});
 window.addEventListener('offline',()=>message('Нет сети. Сохранённые книги доступны на этом устройстве.'));

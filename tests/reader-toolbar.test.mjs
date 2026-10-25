@@ -10,7 +10,7 @@ test('chapter status is shown in the reader toolbar, not the appearance sheet',(
 });
 test('reader owns navigation gestures while the engine renders programmatic curls',()=>{
  assert.ok(reader.includes("pointerInput:[]"));
- assert.ok(reader.includes("attachReaderChrome(document.querySelector('#book-stage'),turn);"));
+ assert.ok(reader.includes("attachReaderChrome(document.querySelector('#book-stage'),turn,{canNavigate:()=>!selectionUI?.active});"));
  assert.ok(reader.includes('allowTouchScroll:false'));
 });
 test('word wraps preserve natural line endings',()=>{
