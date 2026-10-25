@@ -1,6 +1,7 @@
 import {PageFlip} from '@gullabs/flipbook-core';
 import {animatedTurn,pageTurnMotion} from './page-turn.js';
 import {attachReaderChrome} from './chrome-controls.js';
+import {attachBookSelectionMenu} from './selection-menu.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
 import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
@@ -136,6 +137,7 @@ async function openBook(id){
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  // One gesture owner: the reader recognizes swipes; the engine renders the curl.
  attachReaderChrome(document.querySelector('#book-stage'),turn);
+ attachBookSelectionMenu(document.querySelector('#book-stage'),offerQuoteActions);
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
  document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night','oled','auto'][(['paper','white','night','oled','auto'].indexOf(settings.theme)+1)%5];theme();saveSettings();};

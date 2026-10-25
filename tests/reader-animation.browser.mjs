@@ -62,5 +62,17 @@ try{
  };
  await swipe(box.x+box.width*.9,box.x+box.width*.15);assert.notEqual(await position(),initial);
  await swipe(box.x+box.width*.1,box.x+box.width*.85);assert.equal(await position(),initial);
- assert.deepEqual(errors,[]);console.log('PASS: animated forward/backward edge taps and touch swipes.');
+ const selection=await page.evaluate(()=>{
+  const text=document.querySelector('.book-page[aria-hidden="false"] .paragraph');
+  const walker=document.createTreeWalker(text,NodeFilter.SHOW_TEXT),node=walker.nextNode();
+  const range=document.createRange();range.setStart(node,0);range.setEnd(node,Math.min(12,node.length));
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+  const menu=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});text.dispatchEvent(menu);
+  return {cancelled:menu.defaultPrevented,text:sel.toString(),select:getComputedStyle(text.closest('.book-text')).webkitUserSelect};
+ });
+ assert.equal(selection.cancelled,true);assert.equal(selection.select,'text');assert.ok(selection.text.length>0);
+ await page.locator('#quote-actions').waitFor();assert.equal(await page.locator('#quote-actions button').count(),3);
+ const fieldMenu=await page.evaluate(()=>{const input=document.createElement('textarea');document.body.append(input);const event=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});input.dispatchEvent(event);input.remove();return event.defaultPrevented;});
+ assert.equal(fieldMenu,false);
+ assert.deepEqual(errors,[]);console.log('PASS: animated navigation, book selection, reader-only context actions, native menus in fields.');
 }finally{await browser.close();}
