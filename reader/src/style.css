@@ -300,3 +300,18 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 
 #quote-selection{position:fixed;inset:0;z-index:90;pointer-events:none}
 #quote-selection span{position:absolute;background:rgba(236,153,49,.32);border-radius:2px;pointer-events:none}
+
+/* One selection layer with finger-sized handles and a menu beside the passage. */
+.book-stage.custom-selection .book-text,.book-stage.custom-selection .book-text *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#quote-selection{z-index:2200}
+#quote-selection .selection-fill{background:rgba(227,143,36,.28);border-radius:2px}
+#quote-selection .selection-handle{position:fixed;width:44px;height:44px;padding:0;pointer-events:auto;touch-action:none;background:transparent;border:0;z-index:1;transform:translate(-50%,-50%)}
+#quote-selection .selection-handle::before{content:"";position:absolute;width:2px;height:24px;background:var(--accent);left:21px}
+#quote-selection .selection-handle::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent);left:15.5px;box-shadow:0 0 0 2px var(--paper)}
+#quote-selection .selection-handle.start::before{top:22px}
+#quote-selection .selection-handle.start::after{top:10px}
+#quote-selection .selection-handle.end::before{bottom:22px}
+#quote-selection .selection-handle.end::after{bottom:10px}
+#quote-actions{left:0;top:0;bottom:auto;transform:none;z-index:2300;border-radius:12px;padding:4px;gap:0;max-width:calc(100vw - 16px);box-shadow:0 5px 24px #0002;animation:none}
+#quote-actions button{min-height:44px;padding:10px 15px;font-size:14px;font-weight:550}
+#quote-actions button+button{border-left:1px solid var(--line);border-radius:0}

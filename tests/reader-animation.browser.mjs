@@ -62,19 +62,44 @@ try{
  };
  await swipe(box.x+box.width*.9,box.x+box.width*.15);assert.notEqual(await position(),initial);
  await swipe(box.x+box.width*.1,box.x+box.width*.85);assert.equal(await position(),initial);
- const selection=await page.evaluate(()=>{
-  const text=document.querySelector('.book-page[aria-hidden="false"] .paragraph');
-  const walker=document.createTreeWalker(text,NodeFilter.SHOW_TEXT),node=walker.nextNode();
-  const range=document.createRange();range.setStart(node,0);range.setEnd(node,Math.min(12,node.length));
-  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
-  const selectedText=sel.toString();
-  const menu=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});text.dispatchEvent(menu);
-  return {cancelled:menu.defaultPrevented,text:selectedText,nativeSelection:sel.toString(),custom:!!document.querySelector('#quote-selection span'),select:getComputedStyle(text.closest('.book-text')).webkitUserSelect};
- });
- assert.equal(selection.cancelled,true);assert.equal(selection.select,'text');assert.ok(selection.text.length>0);assert.equal(selection.nativeSelection,'');assert.equal(selection.custom,true);
- await page.locator('#quote-actions').waitFor();assert.equal(await page.locator('#quote-actions button').count(),3);
+ const textPoint=async offset=>page.evaluate(offset=>{
+  const p=document.querySelector('.book-page[aria-hidden="false"] .paragraph');
+  const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let node=walker.nextNode();
+  const r=document.createRange();r.setStart(node,Math.min(offset,node.length-1));r.setEnd(node,Math.min(offset+1,node.length));
+  const rect=r.getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+ },offset);
+ const select=async()=>{const p=await textPoint(20);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await page.waitForTimeout(500);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.locator('#quote-actions').waitFor();};
+ await select();
+ assert.equal(await page.locator('.selection-handle').count(),2);
+ assert.equal(await page.evaluate(()=>window.getSelection().toString()),'');
+ assert.equal(await page.locator('#quote-save').textContent(),'Цитата');
+ const selectedPage=await position();
+ const drag=async(edge,offset)=>{
+  const handle=await page.locator(`[data-selection-handle="${edge}"]`).boundingBox(),target=await textPoint(offset);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:handle.x+22,y:handle.y+22}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:target.x,y:target.y}]});await page.waitForTimeout(100);
+  assert.equal(await page.locator('#quote-actions').count(),0,'hide menu while adjusting boundaries');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.locator('#quote-actions').waitFor();
+ };
+ await drag('end',130);await drag('start',0);
+ await page.locator('[data-selection-handle="start"]').focus();await page.keyboard.press('ArrowRight');
+ assert.equal(await position(),selectedPage,'handle arrows must never turn the page');
+ assert.equal(await page.locator('.selection-handle').count(),2);
+ assert.equal(await position(),selectedPage,'selection drag cannot turn pages');
+ assert.ok(await page.locator('.selection-fill').count()>1,'range spans multiple lines');
+ await page.screenshot({path:'/tmp/reader-selection-review.png'});
+ const menu=await page.locator('#quote-actions').boundingBox();assert.ok(menu.x>=0&&menu.x+menu.width<=393&&menu.y>=0&&menu.y+menu.height<=852);
  await page.locator('#quote-save').click();assert.equal(await page.locator('.reading-highlight').count()>0,true);assert.equal(await page.locator('#quote-selection').count(),0);
+ await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copied=text;}}}));
+ await select();await page.locator('#quote-copy').click();assert.ok((await page.evaluate(()=>window.__copied)).length>0);assert.equal(await page.locator('#quote-actions').count(),0);
+ await select();await page.locator('#quote-note').click();await page.locator('#note-editor').fill('Проверка заметки');await page.locator('#note-save').click();assert.equal(await page.locator('#quote-selection').count(),0);
+ await select();await page.mouse.click(390,700);assert.equal(await page.locator('#quote-actions').count(),0);assert.equal(await position(),selectedPage,'outside dismissal must not turn page');
+ await select();const pendingHandle=await page.locator('[data-selection-handle="end"]').boundingBox();
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:pendingHandle.x+22,y:pendingHandle.y+22}]});
+ await page.setViewportSize({width:390,height:852});await page.waitForTimeout(500);
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:200,y:300}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const fieldMenu=await page.evaluate(()=>{const input=document.createElement('textarea');document.body.append(input);const event=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});input.dispatchEvent(event);input.remove();return event.defaultPrevented;});
  assert.equal(fieldMenu,false);
- assert.deepEqual(errors,[]);console.log('PASS: instant navigation, custom selection after native dismissal, saved highlight, native field menus.');
+ assert.deepEqual(errors,[]);console.log('PASS: instant navigation, word press, draggable handles, anchored toolbar, saved quote/note, native field menus.');
 }finally{await browser.close();}
