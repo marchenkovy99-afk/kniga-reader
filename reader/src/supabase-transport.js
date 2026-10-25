@@ -10,6 +10,9 @@ export class SupabaseTransport {
   const c=this.client;const auth=await c.auth.getUser();const user=auth.data?.user;
   if(auth.error||!user)throw fail('Войдите в облако по почте и паролю.',401);
   const method=options.method||'GET';
+  const expectedOwner=options.headers?.['x-cloud-owner'];
+  if(expectedOwner&&expectedOwner!==user.id)throw fail('Учётная запись изменилась. Повторяем синхронизацию.',409);
+  if(url==='/api/cloud/identity'&&method==='GET')return result({userId:user.id,displayName:user.email});
   if(url==='/api/cloud'&&method==='GET'){
    const [books,states]=await Promise.all([allRows(c,'kniga_books'),allRows(c,'kniga_states')]);
    return result({userId:user.id,displayName:user.email,books:books.map(b=>({id:b.id,fileName:b.file_name,size:b.size_bytes})),states:states.map(s=>({deviceId:s.device_id,key:s.key,payload:s.payload,clientUpdatedAt:s.client_updated_at}))});

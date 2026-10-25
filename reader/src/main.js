@@ -22,7 +22,7 @@ const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="no
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
 let libraryView='grid',readingTouched=false,selectionUI=null;
-let cloud=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
+let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
 const readingFullscreen=createReadingFullscreen(document);
 const paginationCache=createPaginationCache({storage,paginate,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
@@ -66,7 +66,7 @@ function cover(b,small=false){return `<div class="cover ${small?'small':''}" dat
 async function library(){
  await readingFullscreen.leave();
  const previousPagination=current&&pages.length?{id:current.id,pages:[...pages]}:null;
- await persistPosition();dispose();current=null;settings={...globalSettings};document.body.classList.remove('reading');libraryStatusFilter='';theme();
+ await persistPosition();dispose();current=null;scheduleCloudPoll();settings={...globalSettings};document.body.classList.remove('reading');libraryStatusFilter='';theme();
  app.innerHTML=`<div class="library"><header class="library-top"><a class="brand" href="#" aria-label="Книга: библиотека">книга</a><div class="library-actions">${button('search','Поиск книг','toggle-library-search')}<button id="cloud-status" class="cloud-status" aria-label="Профиль и синхронизация">${icon('user')}<span>Облако</span></button></div></header><main><div class="library-heading"><h1>Библиотека</h1><button class="icon-button import-button" aria-label="Добавить книгу">${icon('plus')}</button></div><div class="status-tabs" role="group" aria-label="Фильтр книг"><button data-library-status="" aria-pressed="true">Все</button><button data-library-status="reading" aria-pressed="false">Читаю</button><button data-library-status="finished" aria-pressed="false">Прочитано</button></div><label class="library-search" hidden>${icon('search')}<input id="library-search" type="search" placeholder="Название книги или автор" aria-label="Найти книгу в библиотеке"></label><section id="continue-slot" aria-label="Продолжить чтение"></section><div class="shelf-top"><h2>Мои книги</h2><div class="shelf-view">${button('grid','Показать сеткой','view-grid','aria-pressed="true"')}${button('list','Показать списком','view-list','aria-pressed="false"')}</div></div><div id="book-grid" class="book-grid"></div><div class="library-utilities"><button id="library-theme" class="icon-button" aria-label="Переключить тему">${icon('moon')}</button><button id="library-tools" class="text-button">Управление библиотекой</button></div></main><nav class="library-nav" aria-label="Основная навигация"><button id="nav-library" aria-current="page">${icon('book')}<span>Библиотека</span></button><button id="nav-bookmarks">${icon('bookmark')}<span>Закладки</span></button></nav></div>${fileInput()}<input id="backup-file" type="file" accept=".json,application/json" hidden>`;
  document.querySelector('#toggle-library-search').onclick=()=>{const el=document.querySelector('.library-search');el.hidden=!el.hidden;if(!el.hidden)document.querySelector('#library-search').focus();};
  for(const view of ['grid','list'])document.querySelector('#view-'+view).onclick=()=>{libraryView=view;renderGrid(document.querySelector('#library-search').value);};
@@ -134,7 +134,7 @@ async function openBook(id){
  }catch(e){message('Настройки текста не загрузились: '+e.message,true);}
  const effectiveAppearance=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:b.appearanceSettings||b.progress?.bookSettings,updatedAt:b.appearanceUpdatedAt||b.progress?.appearanceUpdatedAt||0});
  settings=restoreSettings(effectiveAppearance.settings);theme();
- document.body.classList.add('reading');theme();
+ document.body.classList.add('reading');theme();scheduleCloudPoll();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  // One gesture owner: the reader recognizes swipes; the engine renders the curl.
  selectionUI=createBookSelection(document.querySelector('#book-stage'),{onSelect:offerQuoteActions,onDismiss:()=>document.querySelector('#quote-actions')?.remove()});
@@ -353,9 +353,14 @@ document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);i
 document.addEventListener('pointerup',()=>{if(current&&!matchMedia('(pointer:coarse)').matches){clearTimeout(noteSelectTimer);noteSelectTimer=setTimeout(offerQuoteActions,260);}});
 
 document.addEventListener('keydown',e=>{if(!current||document.querySelector('dialog[open]')||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(selectionUI?.active){if(e.key==='Escape'){e.preventDefault();clearQuoteActions();}else if(['ArrowRight','ArrowLeft','PageDown','PageUp'].includes(e.key))e.preventDefault();return;}if(e.key==='Escape'){e.preventDefault();document.querySelector('.reader')?.classList.toggle('chrome-hidden');return;}if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();turn(1);}if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();turn(-1);}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistPosition();});
+
 window.addEventListener('pagehide',()=>persistPosition());matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(settings.theme==='auto')theme();});
 window.addEventListener('offline',()=>message('Нет сети. Сохранённые книги доступны на этом устройстве.'));
+function scheduleCloudPoll(){
+ clearTimeout(cloudPoll);cloudPoll=null;
+ if(!cloud?.user||cloud.error||document.visibilityState!=='visible'||navigator.onLine===false)return;
+ cloudPoll=setTimeout(async()=>{cloudPoll=null;await cloud.sync();scheduleCloudPoll();},current?120000:60000);
+}
 function updateCloudStatus(){const el=document.querySelector('#cloud-status');if(el){const label=cloud?.user?(cloud.running?'Синхронизация':cloud.status==='Синхронизировано'?'Сохранено':cloud.error?'Ошибка облака':'Проверить облако'):'Облако';el.innerHTML=icon('user')+'<span>'+label+'</span>';el.setAttribute('aria-label','Профиль: '+label);el.dataset.state=cloud?.user&&cloud.status==='Синхронизировано'?'saved':'idle';el.title=cloud?.status||'Облачная синхронизация';}}
 function showCloud(){
 
@@ -370,7 +375,7 @@ function showCloud(){
     const {data,error}=signup?await supabase.auth.signUp({email,password}):await supabase.auth.signInWithPassword({email,password});
     if(error)throw error;
     if(!data.session){feedback.textContent='Подтвердите адрес по письму Supabase, затем вернитесь сюда и нажмите «Войти». После подтверждения письма можно закрыть открывшуюся страницу.';return;}
-    document.querySelector('#cloud-password').value='';await cloud.sync();showCloud();
+    document.querySelector('#cloud-password').value='';await cloud.sync();scheduleCloudPoll();showCloud();
    }catch(e){feedback.textContent=e.message==='Invalid login credentials'?'Неверная почта или пароль. Проверьте данные и подтверждение почты.':e.message;}finally{buttons.forEach(b=>b.disabled=false);}
   };
   form.onsubmit=e=>{e.preventDefault();authenticate(false);};document.querySelector('#cloud-signup').onclick=()=>authenticate(true);return;
@@ -401,7 +406,7 @@ async function init(){
     else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=legacyAppearanceTimestamp(b.progress);}
    }
   await library();
-  cloud=new CloudSync({books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
+  cloud=new CloudSync({onSettled:()=>{if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
    localAppearance:b=>b.appearanceSettings?{settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt||0}:null,
    remoteAppearance:async(b,record,hasPending)=>{
     if(!preferRemoteAppearance(b.appearanceUpdatedAt,record.clientUpdatedAt,hasPending))return;
@@ -416,12 +421,22 @@ async function init(){
     await storage.setPreference('settings',globalSettings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);
     const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},current?{settings:current.appearanceSettings,updatedAt:current.appearanceUpdatedAt||0}:null);
     applyLiveAppearance(effective.settings);
-   },remotePosition:async(book,record,marks,annotations)=>{book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};await storage.setPreference('position:'+book.id,book.progress);if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}});
+   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;if(previous!==JSON.stringify(stored)){await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}}});
   await cloud.init();
-  if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(()=>cloud?.sync(),0);});
+  if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(async()=>{cloud?.resume();await cloud?.sync();scheduleCloudPoll();},0);});
   if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',globalSettings,settingsUpdatedAt);
   for(const b of books)if(b.progress?.updatedAt&&!cloud.remote.some(r=>r.key==='position:'+b.id&&r.clientUpdatedAt>=b.progress.updatedAt))cloud.queue('position:'+b.id,b.progress,b.progress.updatedAt);
-  setInterval(()=>{if(document.visibilityState==='visible')cloud.sync();},30000);window.addEventListener('online',()=>cloud.sync());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')cloud.sync();});
+  scheduleCloudPoll();
+  window.addEventListener('online',async()=>{cloud.resume();await cloud.sync();scheduleCloudPoll();});
+  window.addEventListener('offline',()=>{cloud.pause();clearTimeout(cloudPoll);cloudPoll=null;});
+  document.addEventListener('visibilitychange',async()=>{
+   if(document.visibilityState==='visible'){cloud.resume();await cloud.sync();scheduleCloudPoll();}
+   else{
+    cloud.pause();clearTimeout(cloudPoll);cloudPoll=null;
+    // One best-effort final upload; pending records remain durable if iOS suspends us.
+    await persistPosition();if(navigator.onLine!==false)await cloud.sync({uploadOnly:true,allowHidden:true});
+   }
+  });
  }catch(e){app.innerHTML=`<div class="startup-error"><h1>Библиотека недоступна</h1><p>${esc(e.message)}</p><button class="button primary" id="retry">Попробовать снова</button></div>`;document.querySelector('#retry').onclick=init;}
  if('serviceWorker' in navigator&&import.meta.env.PROD)navigator.serviceWorker.register(import.meta.env.MODE==='pages'?import.meta.env.BASE_URL+'sw.js':'/sw.js').catch(()=>message('Офлайн-режим не включился. Сохранение книг работает, но для открытия приложения понадобится сеть.',true));
 }

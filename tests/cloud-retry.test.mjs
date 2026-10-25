@@ -6,7 +6,7 @@ import {pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSe
 
 const original=readFileSync(new URL('../reader/src/cloud.js',import.meta.url),'utf8');
 function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={}){
- const prefs=new Map(Object.entries(preferences)),tabs=new Map(Object.entries(session)),timers=new Map();
+ const prefs=new Map(Object.entries(preferences)),tabs=new Map(Object.entries(session)),timers=new Map(),delays=[];
  let timerIndex=0,fetchCount=0,uploads=[];
  const storage={
    getPreference:async key=>prefs.get(key),
@@ -18,6 +18,7 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
  const transport={
   api:async (url,opts={})=>{
    if(api)return api(url,opts);
+   if(url==='/api/cloud/identity')return Response.json({userId:'owner-1'});
    if(url==='/api/cloud'){fetchCount++;return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[],states:[]});}
    uploads.push(JSON.parse(opts.body));return Response.json({saved:true});
   }
@@ -27,7 +28,7 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
    mergeMarks:(...groups)=>groups.flat(),mergeAnnotations:(...groups)=>groups.flat(),
    newestState:(rows,key)=>rows.filter(x=>x.key===key).sort((a,b)=>b.clientUpdatedAt-a.clientUpdatedAt)[0],
    sha256:()=>'',importBook:async()=>{},
-   setTimeout:(fn)=>{const id=++timerIndex;timers.set(id,fn);return id;},
+   setTimeout:(fn,delay)=>{delays.push(delay);const id=++timerIndex;timers.set(id,fn);return id;},
    clearTimeout:id=>timers.delete(id)};
  let code=original.replace(/^import .*?;\s*$/gm,'')
    .replaceAll("import.meta.env.MODE==='pages'","true")
@@ -35,7 +36,7 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
  code+='\nglobalThis.ReaderCloud=CloudSync;';
  vm.runInNewContext(code,context);
  const cloud=new context.ReaderCloud({books:()=>bookList,status:()=>{},...callbacks});
- return {cloud,prefs,tabs,timers,uploads,get fetchCount(){return fetchCount;},async flush(){const all=[...timers.values()];timers.clear();for(const fn of all)await fn();await new Promise(setImmediate);}};
+ return {cloud,prefs,tabs,timers,delays,uploads,get fetchCount(){return fetchCount;},async flush(){const all=[...timers.values()];timers.clear();for(const fn of all)await fn();await new Promise(setImmediate);}};
 }
 test('offline position survives reader restart and old session queue is recovered',async()=>{
  const key='position:'+'a'.repeat(64);
@@ -115,4 +116,44 @@ test('an old reading position cannot override the cloud account appearance',asyn
  await h.cloud.sync();
  assert.deepEqual(active,{fontSize:33,theme:'oled'});
  assert.equal(h.cloud.status,'Синхронизировано');
+});
+
+test('page progress uploads without fetching the complete cloud snapshot again',async()=>{
+ const calls=[];
+ const h=harness({api:async(url,opts={})=>{calls.push(url);if(url==='/api/cloud/identity')return Response.json({userId:'owner-1'});if(url==='/api/cloud')return Response.json({userId:'owner-1',books:[],states:[]});return Response.json({saved:true});}});
+ await h.cloud.init();calls.length=0;
+ await h.cloud.queue('position:sample',{anchor:{block:1,offset:3}},200);
+ await h.cloud.sync({uploadOnly:true});
+ assert.deepEqual(calls,['/api/cloud/identity','/api/cloud/state']);
+ assert.equal(Object.keys(h.cloud.pending).length,0);
+});
+test('pause preserves offline edits and suppresses automatic network attempts',async()=>{
+ const h=harness();await h.cloud.init();const count=h.fetchCount;
+ h.cloud.pause();await h.cloud.queue('settings',{fontSize:31},300);await h.cloud.sync();await h.flush();
+ assert.equal(h.fetchCount,count);assert.equal(h.cloud.pending.settings.clientUpdatedAt,300);
+ h.cloud.resume();await h.cloud.sync();assert.equal(h.cloud.pending.settings,undefined);
+});
+test('an account switch during a lightweight upload cannot send the old account queue',async()=>{
+ let writes=0;
+ const h=harness({api:async(url)=>{if(url==='/api/cloud/identity')return Response.json({userId:'owner-2'});if(url==='/api/cloud')return Response.json({userId:'owner-1',books:[],states:[]});writes++;return Response.json({saved:true});}});
+ await h.cloud.init();await h.cloud.queue('settings',{fontSize:31},300);await h.cloud.sync({uploadOnly:true});
+ assert.equal(writes,0);assert.ok(h.cloud.pending.settings);
+});
+test('passive duplicate saves do not create a new pending upload',async()=>{
+ const h=harness();await h.cloud.init();const payload={anchor:{block:2,offset:0},marks:[],annotations:[]};
+ await h.cloud.queue('position:sample',payload,500);await h.cloud.sync();
+ await h.cloud.queue('position:sample',payload,500);
+ assert.equal(Object.keys(h.cloud.pending).length,0);
+});
+
+test('connection failures back off and paused requests never start a retry timer',async()=>{
+ const h=harness({api:async()=>{throw new Error('offline');}});
+ await h.cloud.init();assert.equal(h.delays.at(-1),15000);
+ await h.cloud.sync();assert.equal(h.delays.at(-1),30000);
+ h.cloud.pause();const count=h.delays.length;await h.cloud.sync();assert.equal(h.delays.length,count);assert.equal(h.timers.size,0);
+});
+
+test('recovered startup retry restarts the automatic polling lifecycle',async()=>{
+ let calls=0,schedules=0;const h=harness({api:async()=>{if(++calls===1)throw Error('temporary network failure');return Response.json({userId:'owner-1',books:[],states:[]});},callbacks:{onSettled:()=>{if(h.cloud.user&&!h.cloud.error)schedules++;}}});
+ await h.cloud.init();assert.equal(schedules,0);await h.flush();assert.equal(schedules,1);
 });

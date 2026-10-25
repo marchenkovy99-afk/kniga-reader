@@ -26,7 +26,8 @@ try{
   if(path.includes('kniga_books')){await gate;return json([{id,file_name:'test.txt',size_bytes:100}]);}
   return route.fulfill({status:500,body:'Unexpected '+path});
  });
- const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const requests=[];
+ const page=await context.newPage();page.on('request',r=>{if(r.method()==='GET'&&/\/rest\/v1\/(kniga_states|kniga_books)/.test(r.url()))requests.push(r.url());});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('https://reader.test/empty');
  await page.evaluate(async({user,id})=>{
   const token=btoa(JSON.stringify({alg:'HS256',typ:'JWT'}))+'.'+btoa(JSON.stringify({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,aud:'authenticated'}))+'.fake';
@@ -43,6 +44,7 @@ try{
  const result=await page.evaluate(async id=>({font:document.querySelector('.book-text').style.getPropertyValue('--font-size'),theme:document.documentElement.dataset.theme,progress:await new Promise(resolve=>{const r=indexedDB.open('kniga-reader',1);r.onsuccess=()=>{const q=r.result.transaction('preferences').objectStore('preferences').get('position:'+id);q.onsuccess=()=>resolve(q.result);};})}),id);
  assert.equal(result.font,'23px');assert.equal(result.theme,'night');assert.equal(result.progress.anchor.block,47);assert.equal(result.progress.updatedAt,300);assert.equal(writes.length,0,'opening/reflow must not upload stale progress');assert.deepEqual(errors,[]);
  console.log('PASS: book opened before delayed cloud response; latest typography and position applied; no stale progress uploaded.',result);
+ const initialReads=requests.length;
  const position=()=>page.locator('#reader-page-position').textContent();
  const initial=await position();
  const box=await page.locator('#book-stage').boundingBox();
@@ -101,5 +103,6 @@ try{
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const fieldMenu=await page.evaluate(()=>{const input=document.createElement('textarea');document.body.append(input);const event=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});input.dispatchEvent(event);input.remove();return event.defaultPrevented;});
  assert.equal(fieldMenu,false);
+ assert.equal(requests.length,initialReads,'page turns and annotation edits must not re-download the full library');
  assert.deepEqual(errors,[]);console.log('PASS: instant navigation, word press, draggable handles, anchored toolbar, saved quote/note, native field menus.');
 }finally{await browser.close();}
