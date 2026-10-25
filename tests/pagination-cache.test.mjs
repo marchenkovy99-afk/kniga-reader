@@ -31,6 +31,7 @@ test('typography, viewport, browser and source changes each require new paginati
   {settings:{...defaults,indent:2}},{settings:{...defaults,letterSpacing:1}},{settings:{...defaults,paragraphGap:1}},
   {width:780,height:390},{environment:'different-browser'},
   {blocks:[{text:'Новая редакция',html:'Новая редакция'}]},
+  {blocks:[{text:'Пример текста',html:'Пример текста',presentation:{role:'epigraph'}}]},
  ]){
   const storage=disk();let calculations=0;const paginate=async()=>{calculations++;return structuredClone(pages);};
   await createPaginationCache({storage,paginate}).load(input());

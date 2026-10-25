@@ -1,4 +1,5 @@
 import { unzipSync } from 'fflate';
+import {PRESENTATION_VERSION,sourceStyles,blockPresentation,presentationClasses} from './book-presentation.js';
 const MAX_FILE=20*1024*1024, MAX_EXPANDED=60*1024*1024;
 const elements=n=>Array.from(n.childNodes||[]).filter(x=>x.nodeType===1);
 const tag=n=>(n.localName||n.nodeName||'').split(':').at(-1).toLowerCase();
@@ -13,11 +14,23 @@ export function decode(bytes) {
  try {return new TextDecoder(encoding||'utf-8',{fatal:true}).decode(bytes);} catch {return new TextDecoder('windows-1251').decode(bytes);}
 }
 function xml(text){
- if(/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error('DTD и DOCTYPE в книге не поддерживаются.');
+ const markup=text.replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->/g,'');
+ if(/<!DOCTYPE|<!ENTITY/i.test(markup)) throw new Error('DTD и DOCTYPE в книге не поддерживаются.');
  let doc;
  try {doc=new DOMParser({onError:()=>{throw new Error('XML');}}).parseFromString(text,'application/xml');}catch{throw new Error('XML книги повреждён. Проверьте файл.');}
  if(!doc.documentElement||first(doc,'parsererror')||tag(doc.documentElement)==='parsererror')throw new Error('XML книги повреждён. Проверьте файл.');
  return doc;
+}
+function epubSource(bytes){
+ let source=decode(bytes);
+ // Only a conventional declaration in the prolog is removed. Internal subsets
+ // and entity definitions still reach xml()'s rejection; no DTD is ever resolved.
+ source=source.replace(/^(\s*(?:<\?xml[\s\S]*?\?>\s*)?(?:<!--[\s\S]*?-->\s*)*)<!DOCTYPE\s+html\b[^>]*>/i,(whole,prolog)=>{
+  const declaration=whole.slice(prolog.length);
+  return !/[\[\]]/.test(declaration)&&/^<!DOCTYPE\s+html(?:\s+PUBLIC\s+(?:"[^"]*"|'[^']*')\s+(?:"[^"]*"|'[^']*')|\s+SYSTEM\s+(?:"[^"]*"|'[^']*'))?\s*>$/i.test(declaration)?prolog:whole;
+ });
+ const entities={nbsp:160,ensp:8194,emsp:8195,thinsp:8201,ndash:8211,mdash:8212,hellip:8230,laquo:171,raquo:187,lsquo:8216,rsquo:8217,ldquo:8220,rdquo:8221,bull:8226,middot:183,copy:169,reg:174,trade:8482,euro:8364,shy:173};
+ return source.replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->|&([A-Za-z][A-Za-z0-9]+);/g,(whole,name)=>entities[name]?`&#${entities[name]};`:whole);
 }
 function unzip(bytes){
  let total=0,count=0;
@@ -40,7 +53,10 @@ function imageData(bytes,mime){if(!bytes||!/^image\/(png|jpeg|gif|webp)$/.test(m
 function convert(doc,root,ctx){
  const blocks=[];
  function safe(n){
-  if(n.nodeType===3||n.nodeType===4)return escapeHTML(n.nodeValue.replace(/\s+/g,' '));
+  if(n.nodeType===3||n.nodeType===4){
+   let pre=false;for(let p=n.parentNode;p?.nodeType===1;p=p.parentNode)if(tag(p)==='pre'){pre=true;break;}
+   return escapeHTML(pre?n.nodeValue:n.nodeValue.replace(/[ \t\r\n]+/g,' '));
+  }
   if(n.nodeType!==1)return '';
   const t=tag(n);
   if(['script','style','iframe','object','embed','form','input','button','audio','video','svg','math'].includes(t)){ctx.warnings.add('Исполняемые или неподдерживаемые элементы не отображаются.');return '';}
@@ -57,16 +73,20 @@ function convert(doc,root,ctx){
    return id?`<a href="#" data-note="${escapeHTML(id)}">${inner()}</a>`:inner();
   }
   if(['br','empty-line'].includes(t))return '<br/>';
+  // FB2 stanza containers formerly flattened their lines into one paragraph.
+  // BR retains the original text offsets while restoring the visual line breaks.
+  if(t==='stanza')return elements(n).map(safe).join('<br/>');
   const mapped={emphasis:'em',strong:'strong',em:'em',b:'strong',i:'em',sup:'sup',sub:'sub',strikethrough:'s',s:'s',code:'code',u:'u',td:'td',th:'th',tr:'tr',tbody:'tbody',thead:'thead',table:'table',li:'li',ul:'ul',ol:'ol'}[t];
-  return mapped?`<${mapped}>${inner()}</${mapped}>`:inner();
+  const classes=presentationClasses(ctx.style?.(n));
+  return mapped?`<${mapped}${classes?` class="${classes}"`:''}>${inner()}</${mapped}>`:classes?`<span class="${classes}">${inner()}</span>`:inner();
  }
  const add=(n,type,sourceId)=>{
   let html=tag(n)==='title'?elements(n).map(safe).join('<br/>'):Array.from(n.childNodes).map(safe).join('');
   if(['img','image','empty-line'].includes(tag(n)))html=safe(n);
-  if(['table','ul','ol'].includes(tag(n)))html=safe(n);
+  if(['table','ul','ol','stanza'].includes(tag(n)))html=safe(n);
   const text=xml(`<r>${html}</r>`).documentElement.textContent;
   if(!text.trim()&&!html.includes('<img')&&!html.includes('<br'))return;
-  blocks.push({id:`b${ctx.index++}`,type,html,text,sourceId:sourceId||ctx.id(n.getAttribute('id')||'')||null});
+  blocks.push({id:`b${ctx.index++}`,type,html,text,sourceId:sourceId||ctx.id(n.getAttribute('id')||'')||null,presentation:blockPresentation(n,ctx.style)});
  };
  function visit(n,sourceId=null){
   if(n.nodeType===3){if(n.nodeValue.trim())add(n.parentNode,'p',sourceId);return;}
@@ -88,7 +108,7 @@ function finish(book){
  const chars=book.blocks.reduce((a,b)=>a+b.text.length,0);
  if(chars>2_000_000)throw new Error('В черновой версии поддерживаются книги до 2 млн символов. Файл не усечён.');
  const chapters=book.blocks.flatMap((b,i)=>['h2','h3'].includes(b.type)?[{title:b.text,block:i,level:b.type==='h3'?2:1}]:[]);
- return {...book,chapters:chapters.length?chapters:[{title:'Начало книги',block:0}],chars};
+  return {...book,presentationVersion:PRESENTATION_VERSION,chapters:chapters.length?chapters:[{title:'Начало книги',block:0}],chars};
 }
 function fb2(bytes,name){
  const doc=xml(decode(bytes));
@@ -101,7 +121,7 @@ function fb2(bytes,name){
   const data=node.textContent.replace(/\s/g,'');if(!/^[A-Za-z0-9+/]*={0,2}$/.test(data))return null;
   return `data:${mime};base64,${data}`;
  };
- const ctx={index:0,warnings,image,id:x=>x||null,link:x=>x.startsWith('#')?x.slice(1):null};
+ const ctx={index:0,warnings,image,style:sourceStyles(),id:x=>x||null,link:x=>x.startsWith('#')?x.slice(1):null};
  const blocks=elements(doc.documentElement).filter(x=>tag(x)==='body').flatMap(x=>convert(doc,x,ctx));
  const authors=info?all(info,'author').map(x=>['first-name','middle-name','last-name'].map(t=>content(first(x,t))).filter(Boolean).join(' ')).filter(Boolean).join(', '):'';
  const cover=info?first(first(info,'coverpage')||info,'image'):null;
@@ -122,9 +142,13 @@ function epub(files,name){
   const item=manifest.get(entry.getAttribute('idref'));const file=item&&path(opfPath,item.getAttribute('href'));
   if(!file||!files[file])throw new Error('Одна из глав EPUB отсутствует. Импорт отменён, чтобы не потерять текст.');
   if(!['application/xhtml+xml','text/html'].includes(item.getAttribute('media-type')))throw new Error('Одна из глав EPUB имеет неподдерживаемый формат.');
-  let source=decode(files[file]).replace(/<!DOCTYPE\s+html\s*>/gi,'');
+  const source=epubSource(files[file]);
   const doc=xml(source);const body=first(doc,'body');if(!body)throw new Error('Повреждена глава EPUB.');
-  const ctx={index,warnings,id:x=>x?`${file}#${x}`:null,link:ref=>{
+  const localStyles=all(doc,'link').filter(n=>(n.getAttribute('rel')||'').split(/\s+/).includes('stylesheet')).flatMap(n=>{
+   const ref=path(file,n.getAttribute('href')||'');return ref&&files[ref]?[decode(files[ref])]:[];
+  });
+  const style=sourceStyles([...localStyles,...all(doc,'style').map(n=>n.textContent)]);
+  const ctx={index,warnings,style,id:x=>x?`${file}#${x}`:null,link:ref=>{
    if(!ref.includes('#'))return null;const [dest,id]=ref.split('#');const p=dest?path(file,dest):file;return p?`${p}#${id}`:null;
   },image:ref=>{const p=ref&&path(file,ref);return p?imageData(files[p],mimeFor(p)):null;}};
   const part=convert(doc,body,ctx);if(part[0]&&!part[0].sourceId)part[0].sourceId=`${file}#top`;
