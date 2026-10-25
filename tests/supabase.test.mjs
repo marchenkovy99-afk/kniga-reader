@@ -28,3 +28,13 @@ test('Supabase stores book appearance independently of reading position',async()
  assert.equal(saved.values.key,key);
  assert.deepEqual(saved.values.payload,payload);
 });
+
+test('lightweight identity check never downloads tables',async()=>{
+ let reads=0;const t=new SupabaseTransport({auth:{getUser:async()=>signed()},from:()=>{reads++;throw Error('unexpected table read');}});
+ const r=await t.api('/api/cloud/identity');assert.equal((await r.json()).userId,signed().data.user.id);assert.equal(reads,0);
+});
+test('account changed between identity check and upload rejects before writing',async()=>{
+ let wrote=false;const t=new SupabaseTransport({auth:{getUser:async()=>signed()},from:()=>{wrote=true;throw Error('unexpected write');}});
+ await assert.rejects(t.api('/api/cloud/state',{method:'PUT',headers:{'x-cloud-owner':'different-owner'},body:'{}'}),e=>e.status===409);
+ assert.equal(wrote,false);
+});
