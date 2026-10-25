@@ -10,7 +10,8 @@ test('chapter status is shown in the reader toolbar, not the appearance sheet',(
 });
 test('curl engine receives real swipes and does not double-handle the drag',()=>{
  assert.ok(reader.includes("pointerInput:['touch','pen','mouse']"));
- assert.ok(reader.includes('engineHandlesSwipes:true'));
+ assert.ok(reader.includes('nativeDrag:()=>!!flip'));
+ assert.ok(reader.includes('allowTouchScroll:false'));
 });
 test('word wraps preserve natural line endings',()=>{
  assert.ok(styles.includes('overflow-wrap:break-word;word-break:normal'));
