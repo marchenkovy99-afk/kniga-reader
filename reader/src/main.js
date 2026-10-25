@@ -4,6 +4,7 @@ import {attachReaderChrome} from './chrome-controls.js';
 import {createBookSelection} from './selection-controller.js';
 import {attachBookSelectionMenu} from './selection-menu.js';
 import {importBook,escapeHTML as esc} from './importer.js';
+import {upgradeBookPresentation} from './book-upgrade.js';
 import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
 import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
 import * as storage from './storage.js';
@@ -84,7 +85,7 @@ async function library(){
  document.querySelectorAll('.import-button').forEach(b=>b.onclick=()=>document.querySelector('#file-input').click());
  document.querySelector('#file-input').onchange=e=>handleFiles(e.target.files);document.querySelector('#backup-file').onchange=e=>restoreBackup(e.target.files[0]);
 }
-function showAbout(){openSheet('О читалке',`<div class="prose"><p>Читалка для ваших FB2, FB2.zip, EPUB без DRM и TXT. Файл книги, настройки и место чтения сохраняются на этом устройстве. При включённом облаке они доступны и на других устройствах.</p><p>При очистке данных браузера библиотека удалится. Исходный файл можно скачать в меню книги. ${import.meta.env.MODE==='pages'?'Для синхронизации войдите в облако по почте и паролю.':'Облачная синхронизация доступна после входа через ChatGPT.'} Книги и прогресс привязаны к вашей учётной записи.</p><p>Формат PDF и EPUB с фиксированной вёрсткой пока не поддерживаются. Издательские стили EPUB заменяются настройками читалки.</p><p>Лимиты черновика: файл 20 МБ, распаковка 60 МБ, 2 млн символов. Неподдерживаемые файлы отклоняются целиком.</p></div>`);
+function showAbout(){openSheet('О читалке',`<div class="prose"><p>Читалка для ваших FB2, FB2.zip, EPUB без DRM и TXT. Файл книги, настройки и место чтения сохраняются на этом устройстве. При включённом облаке они доступны и на других устройствах.</p><p>При очистке данных браузера библиотека удалится. Исходный файл можно скачать в меню книги. ${import.meta.env.MODE==='pages'?'Для синхронизации войдите в облако по почте и паролю.':'Облачная синхронизация доступна после входа через ChatGPT.'} Книги и прогресс привязаны к вашей учётной записи.</p><p>Формат PDF и EPUB с фиксированной вёрсткой пока не поддерживаются. Шрифт, размер, интервалы и поля определяются вашими настройками. Оформление цитат, эпиграфов, стихов и подписей сохраняется, когда оно распознано в файле.</p><p>Лимиты черновика: файл 20 МБ, распаковка 60 МБ, 2 млн символов. Неподдерживаемые файлы отклоняются целиком.</p></div>`);
 }
 function renderGrid(query){
  const filter=libraryStatusFilter,sort='recent',collection='';const found=books.filter(b=>(b.title+' '+b.author+' '+(b.progress?.collection||'')).toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))&&(!filter||(b.progress?.status||'reading')===filter)&&(!collection||b.progress?.collection===collection));found.sort((a,b)=>sort==='title'?a.title.localeCompare(b.title,'ru'):sort==='author'?a.author.localeCompare(b.author,'ru'):sort==='progress'?progressFor(b)-progressFor(a):(b.progress?.updatedAt||b.addedAt||0)-(a.progress?.updatedAt||a.addedAt||0));
@@ -124,6 +125,7 @@ async function openBook(id){
  const b=books.find(x=>x.id===id);if(!b)return;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
  if(current)await persistPosition();dispose();current=b;readingTouched=false;
+ await upgradeBookPresentation(b,{saveBook:storage.putBook});
  try{const stored=await storage.getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
  anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;
  try{

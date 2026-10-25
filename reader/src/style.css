@@ -313,3 +313,27 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 #quote-actions{left:0;top:0;bottom:auto;transform:none;z-index:2300;border-radius:12px;padding:4px;gap:0;max-width:calc(100vw - 16px);box-shadow:0 5px 24px #0002;animation:none}
 #quote-actions button{min-height:44px;padding:10px 15px;font-size:14px;font-weight:550}
 #quote-actions button+button{border-left:1px solid var(--line);border-radius:0}
+
+/* Book structure stays distinct without importing publisher fonts or sizes. */
+.book-text{font-kerning:normal;hyphenate-limit-chars:6 3 3;-webkit-hyphenate-limit-before:3;-webkit-hyphenate-limit-after:3}
+.book-text .book-italic{font-style:italic}.book-text .book-roman{font-style:normal}
+.book-text .book-bold{font-weight:700}.book-text .book-regular{font-weight:400}
+.book-text .book-underline{text-decoration:underline}.book-text .book-line-through{text-decoration:line-through}
+.book-text .paragraph.book-epigraph{margin-inline-start:min(1.25em,6%);text-indent:0;font-style:italic}
+.book-text .paragraph.book-quote{margin-inline:min(1em,5%);text-indent:0}
+.book-text .paragraph.book-attribution{margin-top:.25em;text-indent:0;text-align:right}
+.book-text .paragraph.book-caption{margin-top:.4em;text-indent:0;text-align:center}
+.book-text .paragraph.book-subtitle{text-indent:0;font-weight:600}
+.book-text .paragraph.book-verse{white-space:pre-line;text-indent:0;text-align:left}
+.book-text .paragraph.book-preformatted{white-space:pre-wrap;text-indent:0;text-align:left}
+.book-text .paragraph.book-align-left{text-align:left}.book-text .paragraph.book-align-right{text-align:right}
+.book-text .paragraph.book-align-center{text-align:center}.book-text .paragraph.book-align-justify{text-align:justify}
+.book-text .book-glue{white-space:nowrap}
+/* Continued prose fills its last line; semantic inserts retain their own alignment. */
+.book-text div.paragraph.page-continues.book-verse,.book-text div.paragraph.page-continues.book-preformatted{text-align-last:auto}
+.book-text div.paragraph.page-continues.book-attribution{text-align-last:right}
+.book-text div.paragraph.page-continues.book-caption{text-align-last:center}
+.book-text div.paragraph.page-continues.book-align-left{text-align-last:left}
+.book-text div.paragraph.page-continues.book-align-right{text-align-last:right}
+.book-text div.paragraph.page-continues.book-align-center{text-align-last:center}
+.book-text div.paragraph.page-continues.book-align-justify{text-align-last:justify}

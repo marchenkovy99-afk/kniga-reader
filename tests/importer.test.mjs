@@ -56,3 +56,45 @@ test('ZIP entry sizes are checked before inflation',async()=>{
  const z=zipSync({'bomb.fb2':new Uint8Array(61*1024*1024)});
  await assert.rejects(importBook(z,'bomb.fb2.zip'),/60|распаков/i);
 });
+test('FB2 keeps epigraph, attribution, quotation and stanza presentation without changing block text',async()=>{
+ const b=await parse('<FictionBook><body><section><epigraph><p>Эпиграф.</p><text-author>Автор</text-author></epigraph><cite><p>Цитата.</p></cite><poem><stanza><v>Первая строка</v><v>Вторая строка</v></stanza></poem><p>Обычный текст.</p></section></body></FictionBook>');
+ assert.deepEqual(b.blocks.map(x=>x.text),['Эпиграф.','Автор','Цитата.','Первая строкаВторая строка','Обычный текст.']);
+ assert.deepEqual(b.blocks.map(x=>x.presentation?.role||''),['epigraph','attribution','quote','verse','']);
+ assert.match(b.blocks[3].html,/Первая строка<br\/>Вторая строка/);
+ assert.equal(b.presentationVersion,1);
+});
+test('EPUB reads safe local presentation styles but never imports publisher sizes, fonts or executable CSS',async()=>{
+ const files={
+  'META-INF/container.xml':strToU8('<container><rootfile full-path="OPS/book.opf"/></container>'),
+  'OPS/book.opf':strToU8('<package><metadata><title>Стиль</title></metadata><manifest><item id="c" href="c.xhtml" media-type="application/xhtml+xml"/><item id="css" href="styles/book.css" media-type="text/css"/></manifest><spine><itemref idref="c"/></spine></package>'),
+  'OPS/styles/book.css':strToU8('.epigraph p {text-align:right;font-size:99px;font-family:evil;color:red;background:url(https://evil.test);} .emph {font-style:italic;font-weight:700}'),
+  'OPS/c.xhtml':strToU8('<html><head><link rel="stylesheet" href="styles/book.css"/><style>.caption {text-align:center}</style></head><body><div class="epigraph"><p>Текст эпиграфа</p><p class="attribution">Автор</p></div><p>Обычный <span class="emph">акцент</span>.</p><figure><img src="pic.png"/><figcaption class="caption">Подпись</figcaption></figure></body></html>'),
+  'OPS/pic.png':new Uint8Array([137,80,78,71]),
+ };
+ const b=await importBook(zipSync(files),'styles.epub');
+ assert.equal(b.blocks[0].presentation.role,'epigraph');assert.equal(b.blocks[0].presentation.align,'right');
+ assert.equal(b.blocks[1].presentation.role,'attribution');
+ assert.equal(b.blocks.at(-1).presentation.role,'caption');assert.equal(b.blocks.at(-1).presentation.align,'center');
+ assert.match(b.blocks[2].html,/book-italic/);assert.match(b.blocks[2].html,/book-bold/);
+ assert.doesNotMatch(JSON.stringify(b.blocks),/99px|font-family|evil\.test|background:|color:red/);
+ assert.equal(b.blocks[2].text,'Обычный акцент.');
+});
+test('preformatted text retains significant whitespace while ordinary source alignment cannot override reader preferences',async()=>{
+ const b=await parse('<FictionBook><body><p style="text-align:right;font-size:90px">Проза</p><pre>строка  с пробелами\n  вторая строка</pre></body></FictionBook>');
+ assert.equal(b.blocks[0].presentation.align,undefined);
+ assert.equal(b.blocks[1].text,'строка  с пробелами\n  вторая строка');
+ assert.equal(b.blocks[1].presentation.role,'preformatted');
+});
+test('conventional XHTML EPUB declarations and common HTML entities open without external DTD resolution',async()=>{
+ const wrap=source=>zipSync({
+  'META-INF/container.xml':strToU8('<container><rootfile full-path="book.opf"/></container>'),
+  'book.opf':strToU8('<package><manifest><item id="c" href="c.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>'),
+  'c.xhtml':strToU8(source),
+ });
+ for(const declaration of ['<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">','<!DOCTYPE html SYSTEM "https://example.test/xhtml.dtd">']){
+  const b=await importBook(wrap('<?xml version="1.0"?><!-- EPUB -->'+declaration+'<html><body><p>Текст&nbsp;&mdash; цитата&hellip;</p><pre><![CDATA[&nbsp; <!DOCTYPE html>]]></pre></body></html>'),'compat.epub');
+  assert.equal(b.blocks[0].text,'Текст\u00a0— цитата…');
+  assert.equal(b.blocks[1].text,'&nbsp; <!DOCTYPE html>','CDATA examples must remain literal');
+ }
+ await assert.rejects(importBook(wrap('<!DOCTYPE html [<!ENTITY secret SYSTEM "file:///secret">]><html><body><p>&secret;</p></body></html>'),'unsafe.epub'),/DTD|DOCTYPE/);
+});

@@ -6,7 +6,8 @@ const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXEC
 try{
  const page=await browser.newPage({viewport:{width:393,height:852}});
  const css=readFileSync(new URL('../reader/src/style.css',import.meta.url),'utf8');
- const source=readFileSync(new URL('../reader/src/pagination.js',import.meta.url),'utf8');
+ const presentation='data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../reader/src/book-presentation.js',import.meta.url),'utf8')).toString('base64');
+ const source=readFileSync(new URL('../reader/src/pagination.js',import.meta.url),'utf8').replace('./book-presentation.js',presentation);
  await page.setContent(`<html lang="ru"><head><style>${css}</style></head><body></body></html>`);
  const result=await page.evaluate(async source=>{
   const {paginate,applyTypography}=await import('data:text/javascript;base64,'+btoa(unescape(encodeURIComponent(source))));
