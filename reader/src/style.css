@@ -255,7 +255,7 @@ body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
 .page-loading[hidden]{display:none}
 
 /* A page break continues the paragraph: justify its last visible line too. */
-.book-text div.paragraph.page-continues:not(.verse){text-align-last:auto}
+.book-text div.paragraph.page-continues:not(.verse){text-align-last:var(--text-align,left)}
 .chapter-progress{margin:0;padding:0 0 14px;font-size:12px;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* Keep the remaining chapter pages visible in the reading toolbar. */
