@@ -48,12 +48,13 @@ try{
  });
  assert.equal(result.headings.rendered[0].parts.some(p=>p.block===1),false,'subheading must move with at least two lines of its next paragraph');
  const paragraphParts=result.widows.rendered.flatMap(p=>p.parts.filter(b=>b.block===1));
- assert.ok(paragraphParts.length>1);assert.ok(paragraphParts.every(p=>p.lines>=2),'avoid a one-line paragraph fragment when two lines can fit');
+ assert.ok(paragraphParts.length>1);assert.ok(paragraphParts.every(p=>p.lines>=1));
+ assert.equal(result.widows.rendered[0].parts.reduce((n,p)=>n+p.lines,0),6,'fill the last available row instead of reserving it for widow control');
  assert.equal(result.captions.rendered.length,1,'short caption must share its image page');
  for(const example of [result.headings,result.widows,result.captions,...result.typography]){
   assert.equal(example.restored,example.source,'rendering must preserve every original character');
   assert.ok(example.rendered.every(p=>!p.overflow),'no page may clip text: '+JSON.stringify(example));
  }
  assert.ok(result.typography[0].groups>0,'short Russian prepositions, initials and units stay together');
- console.log('PASS: subheading keep-with-next, two-line fragments, image/caption, Russian typography, narrow 48px text and exact source reconstruction.');
+ console.log('PASS: subheading keep-with-next, full reading pages, image/caption, Russian typography, narrow 48px text and exact source reconstruction.');
 }finally{await browser.close();}

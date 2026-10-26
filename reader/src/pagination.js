@@ -104,13 +104,6 @@ function lineBoxes(element){
  }
  return lines.sort((a,b)=>a.top-b.top);
 }
-function lineStart(element,top){
- const nodes=[],walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);let node,total=0;
- while(node=walker.nextNode()){nodes.push({node,start:total,end:total+node.length});total+=node.length;}
- let low=0,high=total;
- while(low<high){const mid=Math.floor((low+high)/2),part=nodes.find(n=>n.end>mid);if(!part)break;const r=document.createRange();r.setStart(part.node,mid-part.start);r.setEnd(part.node,mid-part.start+1);if(r.getBoundingClientRect().top>=top-2)high=mid;else low=mid+1;}
- return low;
-}
 export function applyTypography(element,s,width){
  const margin=Math.min(s.margin,Math.max(8,(width-150)/2));
  const variables={'--font-size':`${s.fontSize}px`,'--line-height':s.lineHeight,'--page-margin':`${margin}px`,'--paragraph-gap':`${s.paragraphGap}em`,'--indent':`${s.indent}em`,'--letter-spacing':`${s.letterSpacing}px`,'--text-align':s.align,'--hyphens':s.hyphens?'auto':'none'};
@@ -143,7 +136,7 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
   return sliceHTML(prepared.html,from,to)+(to<blocks[i].text.length&&prepared.hyphens?.includes(to)?'<span class="book-page-hyphen" aria-hidden="true"></span>':'');
  };
  const make=(b,i,from,to,reserve=0)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${presentationClasses(b.presentation)} ${from?'continued':''} ${to<b.text.length?'page-continues':''}" data-block="${i}" data-from="${from}" data-to="${to}"${reserve?` style="height:${Math.max(1,contentHeight-reserve)}px"`:''}>${content(i,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
- const fits=html=>{measure.innerHTML=parts.join('')+html;return measure.scrollHeight<=measure.clientHeight+1;};
+ const fits=html=>{measure.innerHTML=parts.join('')+html;return measure.scrollHeight<=measure.clientHeight;};
  const cutAtWord=(text,cut,offset,i)=>{
   if(cut<text.length&&!/\s/.test(text[cut-1])&&!/\s/.test(text[cut])){
    const before=text.slice(offset,cut).search(/\s+\S*$/),wordStart=before>0?offset+before+text.slice(offset+before,cut).match(/^\s*/)[0].length:offset;
@@ -181,8 +174,8 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
      let low=0,high=Math.min(remaining,Math.ceil(contentHeight/parseFloat(measuredStyle.lineHeight))+1);
      while(low<high){const mid=Math.ceil((low+high)/2);if(fits(make(block,i,offset,planned[first+mid-1].to)))low=mid;else high=mid-1;}
      if(!low){if(parts.length){flush();continue;}throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');}
-     if(low===1&&remaining>1&&parts.length){flush();continue;}
-     if(remaining-low===1&&low>=3)low--;
+     // Fill every available reading line. Do not reserve blank rows solely
+     // to move a one-line paragraph fragment to another screen.
      const cut=planned[first+low-1].to;
      start??={block:i,offset};parts.push(make(block,i,offset,cut));end={block:i,offset:cut};offset=cut;
      if(cut===length)done=true;else flush();
@@ -201,19 +194,6 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
     if(low===offset){if(parts.length){flush();continue;}throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');}
     let cut=prepare(i).lines?.findLast(line=>line.to<=low&&line.to>offset)?.to??safeCut(i,cutAtWord(block.text,low,offset,i),offset);
     if(cut<=offset)cut=low;
-    if(block.type==='p'&&!['verse','preformatted'].includes(block.presentation?.role)&&!/<img|<table/.test(block.html)){
-     measure.innerHTML=parts.join('')+make(block,i,offset,cut);
-     const prefixLines=lineBoxes(measure.lastElementChild);
-     if(prefixLines.length===1&&parts.length){flush();continue;}
-     if(prefixLines.length>=3){
-      const earlier=safeCut(i,cutAtWord(block.text,offset+lineStart(measure.lastElementChild,prefixLines.at(-1).top),offset,i),offset);
-      measure.innerHTML=make(block,i,cut,length);
-      if(lineBoxes(measure.lastElementChild).length===1&&earlier>offset){
-       measure.innerHTML=make(block,i,offset,earlier);const first=lineBoxes(measure.lastElementChild).length;
-       measure.innerHTML=make(block,i,earlier,length);if(first>=2&&lineBoxes(measure.lastElementChild).length>=2)cut=earlier;
-      }
-     }
-    }
     const fragment=make(block,i,offset,cut);start??={block:i,offset};parts.push(fragment);end={block:i,offset:cut};offset=cut;flush();
     if(pages.length>2000)throw new Error('Слишком много страниц для черновой версии. Уменьшите шрифт. Текст не усечён.');
    }

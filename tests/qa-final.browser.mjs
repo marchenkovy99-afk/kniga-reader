@@ -28,7 +28,7 @@ try {
    const pages=await paginate(blocks,{width,height,settings});let restored='';
    for(const [i,p] of pages.entries()) {
     const el=document.createElement('div');el.className='book-text';el.style.cssText=`width:${width}px;height:${height}px`;applyTypography(el,settings,width);el.innerHTML=p.html;document.body.append(el);
-    if(el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1)failures.push({width,fontSize,font,page:i,reason:'overflow'});
+    if(el.scrollWidth>el.clientWidth+1||el.scrollHeight>el.clientHeight+1)failures.push({width,fontSize,font,page:i,reason:'overflow',dimensions:[el.clientWidth,el.scrollWidth,el.clientHeight,el.scrollHeight]});
     for(const part of el.querySelectorAll('.paragraph')) {
      const b=Number(part.dataset.block),from=Number(part.dataset.from),to=Number(part.dataset.to);
      if(part.textContent!==blocks[b].text.slice(from,to))failures.push({width,fontSize,font,page:i,reason:'source-coordinate mismatch'});
