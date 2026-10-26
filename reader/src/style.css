@@ -366,9 +366,3 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .list-view .book-meta{min-width:0;padding-right:28px}
 .list-view .book-meta h3,.list-view .book-meta p{white-space:normal;overflow-wrap:anywhere}
 .list-view .book-more{right:0;top:0}
-
-/* Open controls participate in layout. They must never cover unread book lines.
-   Hiding them restores the full reading area; ResizeObserver repaginates at the
-   same source anchor and the existing geometry cache retains both layouts. */
-.reader:not(.chrome-hidden) .reader-header,
-.reader:not(.chrome-hidden) .reader-footer{position:static;inset:auto;flex-shrink:0}
