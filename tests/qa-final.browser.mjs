@@ -1,3 +1,5 @@
+import {paginationModule} from './browser-modules.mjs';
+const bundledPagination=await paginationModule();
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -6,7 +8,7 @@ try {
  const page=await browser.newPage({viewport:{width:320,height:700}});
  await page.route('https://final.test/**',route=>{
   const path=new URL(route.request().url()).pathname;
-  return route.fulfill({contentType:path.endsWith('.js')?'text/javascript':'text/html',body:path.endsWith('.js')?readFileSync(new URL('../reader'+path,import.meta.url),'utf8'):'<html lang="ru"><body></body></html>'});
+  return route.fulfill({contentType:path.endsWith('.js')?'text/javascript':'text/html',body:path.endsWith('.js')?(path==='/src/pagination.js'?bundledPagination:readFileSync(new URL('../reader'+path,import.meta.url),'utf8')):'<html lang="ru"><body></body></html>'});
  });
  await page.goto('https://final.test/');
  await page.addStyleTag({content:readFileSync(new URL('../reader/src/style.css',import.meta.url),'utf8')});

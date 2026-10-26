@@ -1,4 +1,6 @@
 import {presentationClasses} from './book-presentation.js';
+import {russianHyphenOffsets} from './hyphenation.js';
+import {planJustifiedLines} from './justified-lines.js';
 
 /** Character-based DOM ranges retain inline markup while typography repaginates. */
 function sliceHTML(html,from,to){
@@ -22,11 +24,13 @@ function typesetHTML(block,settings,width,font){
  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];let node;
  while(node=walker.nextNode())if(!node.parentElement.closest('code,pre'))nodes.push(node);
  const canvas=document.createElement('canvas').getContext('2d');if(canvas)canvas.font=font;
- const budget=Math.max(0,width-settings.margin*2)*.65;
+ const budget=Math.max(0,width-settings.margin*2)*(settings.align==='justify'?.25:.65);
  const patterns=[/(?:^|[\s«(])((?:[ВвКкСсУуОоИиАа]|[Нн]а|[Нн]е|[Пп]о|[Оо]т|[Дд]о|[Ии]з|[Зз]а|[Нн]о) [\p{L}][\p{L}-]{0,9})(?![\p{L}-])/gu,/[А-ЯЁ]\. (?:[А-ЯЁ]\. )?[А-ЯЁ][а-яё]{1,12}/gu,/\d{1,4}(?:[.,]\d{1,2})? (?:кг|км|см|мм|мл|руб\.|г|м|л|%|₽)(?!\p{L})/gu];
  for(const textNode of nodes){
   const text=textNode.nodeValue,candidates=[];
-  for(const pattern of patterns)for(const match of text.matchAll(pattern)){
+  // Long preposition/word groups severely restrict justified line breaking.
+  // Only short initials and measurement units need non-breaking treatment here.
+  for(const pattern of (settings.align==='justify'?patterns.slice(1):patterns))for(const match of text.matchAll(pattern)){
    const value=match[1]||match[0],start=match.index+match[0].length-value.length;
    const measured=canvas?canvas.measureText(value).width:settings.fontSize*value.length;
    if(measured+Math.max(0,settings.letterSpacing)*(value.length-1)<=budget)candidates.push({start,end:start+value.length});
@@ -36,7 +40,44 @@ function typesetHTML(block,settings,width,font){
   if(at){fragment.append(document.createTextNode(text.slice(at)));textNode.replaceWith(fragment);}
  }
  const groups=[...root.querySelectorAll('.book-glue')].map(el=>{const r=document.createRange();r.selectNodeContents(root);r.setEndBefore(el);const start=r.toString().length;return {start,end:start+el.textContent.length};});
- return {html:root.innerHTML,groups};
+ if(settings.align==='justify'&&block.type==='p'&&block.text.length<=12000&&!Object.keys(block.presentation||{}).length&&!/<(?:br|img|table)\b/i.test(block.html)){
+  const text=root.textContent,breaks=[];
+  for(const m of text.matchAll(/[ \t\r\n]+/g))if(m.index>0)breaks.push({at:m.index+m[0].length,end:m.index,hyphen:false});
+  if(settings.hyphens)for(const m of text.matchAll(/[А-ЯЁа-яё]+/g))for(const p of russianHyphenOffsets(m[0]))breaks.push({at:m.index+p,end:m.index+p,hyphen:true});
+  const allowed=breaks.filter(b=>b.at<text.length&&!groups.some(g=>g.start<b.at&&b.at<g.end));
+  allowed.push({at:text.length,end:text.trimEnd().length,hyphen:false});allowed.sort((a,b)=>a.at-b.at);
+  const html=root.innerHTML,walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];let n,at=0;
+  while(n=walker.nextNode()){nodes.push({node:n,start:at,end:at+n.length});at+=n.length;}
+  root.className='book-text measure';applyTypography(root,settings,width);
+  Object.assign(root.style,{width:'100000px',height:'auto',padding:'0',whiteSpace:'nowrap',textAlign:'left',textIndent:'0',font,letterSpacing:settings.letterSpacing+'px'});document.body.append(root);
+  try{
+   const point=(offset,end)=>{const n=nodes.find(n=>end?n.end>=offset:n.end>offset)||nodes.at(-1);return [n.node,offset-n.start];};
+   const measure=(from,to)=>{if(to<=from)return 0;const r=document.createRange();r.setStart(...point(from,false));r.setEnd(...point(to,true));return r.getBoundingClientRect().width;};
+   const margin=Math.min(settings.margin,Math.max(8,(width-150)/2));
+   const lines=planJustifiedLines({text,breaks:allowed,width:width-margin*2,indent:settings.indent*settings.fontSize,spaceWidth:canvas?.measureText(' ').width||settings.fontSize*.25,hyphenWidth:canvas?.measureText('‐').width||settings.fontSize*.35,measure});
+   if(lines){for(const line of lines)line.html=sliceHTML(html,line.from,line.to);return {html,groups,hyphens:[],lines};}
+  }finally{root.remove();}
+ }
+ const hyphens=[];
+ if(settings.hyphens){
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),texts=[];let n,position=0;
+  while(n=walker.nextNode()){texts.push({node:n,start:position});position+=n.length;}
+  for(const {node,start} of texts){
+   if(node.parentElement.closest('code,pre,a,.book-glue'))continue;
+   const points=[];
+   for(const match of node.data.matchAll(/[А-ЯЁа-яё]+/g))for(const point of russianHyphenOffsets(match[0]))points.push(match.index+point);
+   if(!points.length)continue;
+   const fragment=document.createDocumentFragment();let at=0;
+   for(const point of points){
+    fragment.append(document.createTextNode(node.data.slice(at,point)));
+    // Generated discretionary hyphens do not add characters to DOM text,
+    // selections, annotations or the original book's character anchors.
+    const marker=document.createElement('span');marker.className='book-hyphen';marker.setAttribute('aria-hidden','true');fragment.append(marker);hyphens.push(start+point);at=point;
+   }
+   fragment.append(document.createTextNode(node.data.slice(at)));node.replaceWith(fragment);
+  }
+ }
+ return {html:root.innerHTML,groups,hyphens};
 }
 function lineBoxes(element){
  const range=document.createRange();range.selectNodeContents(element);const lines=[];
@@ -80,10 +121,19 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
  const font=`${measuredStyle.fontStyle} ${measuredStyle.fontWeight} ${measuredStyle.fontSize} ${measuredStyle.fontFamily}`;
  const prepare=i=>{if(!prepared.has(i))prepared.set(i,typesetHTML(blocks[i],settings,width,font));return prepared.get(i);};
  const flush=()=>{if(parts.length){pages.push({html:parts.join(''),start,end});parts=[];start=null;measure.innerHTML='';}};
- const make=(b,i,from,to,reserve=0)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${presentationClasses(b.presentation)} ${from?'continued':''} ${to<b.text.length?'page-continues':''}" data-block="${i}" data-from="${from}" data-to="${to}"${reserve?` style="height:${Math.max(1,contentHeight-reserve)}px"`:''}>${sliceHTML(prepare(i).html,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
+ const content=(i,from,to)=>{
+  const prepared=prepare(i);
+  if(prepared.lines)return prepared.lines.filter(l=>l.to>from&&l.from<to).map(line=>`<span class="book-line ${line.to===blocks[i].text.length?'book-line-end':''}" data-line-from="${line.from}"${line.tighten?` style="word-spacing:${line.tighten}px"`:''}>${from<=line.from&&to>=line.to?line.html:sliceHTML(line.html,Math.max(0,from-line.from),Math.min(to,line.to)-line.from)}${line.hyphen&&to>=line.to?'<span class="book-page-hyphen" aria-hidden="true"></span>':''}</span>`).join('');
+  return sliceHTML(prepared.html,from,to)+(to<blocks[i].text.length&&prepared.hyphens?.includes(to)?'<span class="book-page-hyphen" aria-hidden="true"></span>':'');
+ };
+ const make=(b,i,from,to,reserve=0)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${presentationClasses(b.presentation)} ${from?'continued':''} ${to<b.text.length?'page-continues':''}" data-block="${i}" data-from="${from}" data-to="${to}"${reserve?` style="height:${Math.max(1,contentHeight-reserve)}px"`:''}>${content(i,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
  const fits=html=>{measure.innerHTML=parts.join('')+html;return measure.scrollHeight<=measure.clientHeight+1;};
- const cutAtWord=(text,cut,offset)=>{
-  if(cut<text.length&&!/\s/.test(text[cut-1])&&!/\s/.test(text[cut])){const before=text.slice(offset,cut).search(/\s+\S*$/);if(before>0)cut=offset+before+text.slice(offset+before,cut).match(/^\s*/)[0].length;}
+ const cutAtWord=(text,cut,offset,i)=>{
+  if(cut<text.length&&!/\s/.test(text[cut-1])&&!/\s/.test(text[cut])){
+   const before=text.slice(offset,cut).search(/\s+\S*$/),wordStart=before>0?offset+before+text.slice(offset+before,cut).match(/^\s*/)[0].length:offset;
+   const point=prepare(i).hyphens?.findLast(p=>p<=cut&&p>wordStart);
+   if(point)cut=point;else if(before>0)cut=wordStart;
+  }
   if(cut>offset&&/[\uD800-\uDBFF]/.test(text[cut-1]))cut--;
   return cut;
  };
@@ -119,14 +169,14 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
     let low=offset,high=length;
     while(low<high){const mid=Math.ceil((low+high)/2);if(fits(make(block,i,offset,mid)))low=mid;else high=mid-1;}
     if(low===offset){if(parts.length){flush();continue;}throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');}
-    let cut=safeCut(i,cutAtWord(block.text,low,offset),offset);
+    let cut=prepare(i).lines?.findLast(line=>line.to<=low&&line.to>offset)?.to??safeCut(i,cutAtWord(block.text,low,offset,i),offset);
     if(cut<=offset)cut=low;
     if(block.type==='p'&&!['verse','preformatted'].includes(block.presentation?.role)&&!/<img|<table/.test(block.html)){
      measure.innerHTML=parts.join('')+make(block,i,offset,cut);
      const prefixLines=lineBoxes(measure.lastElementChild);
      if(prefixLines.length===1&&parts.length){flush();continue;}
      if(prefixLines.length>=3){
-      const earlier=safeCut(i,cutAtWord(block.text,offset+lineStart(measure.lastElementChild,prefixLines.at(-1).top),offset),offset);
+      const earlier=safeCut(i,cutAtWord(block.text,offset+lineStart(measure.lastElementChild,prefixLines.at(-1).top),offset,i),offset);
       measure.innerHTML=make(block,i,cut,length);
       if(lineBoxes(measure.lastElementChild).length===1&&earlier>offset){
        measure.innerHTML=make(block,i,offset,earlier);const first=lineBoxes(measure.lastElementChild).length;

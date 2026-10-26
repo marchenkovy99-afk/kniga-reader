@@ -44,7 +44,12 @@ function theme(){
  const actual=settings.theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'night':'white'):settings.theme;
  const isDark=actual==='night'||actual==='oled';
  document.documentElement.dataset.theme=actual;
- document.querySelector('meta[name=theme-color]')?.setAttribute('content',getComputedStyle(document.body).getPropertyValue('--paper').trim());
+ const paper=getComputedStyle(document.body).getPropertyValue('--paper').trim();
+ // The root canvas also paints iOS safe areas and browser overscroll. Library
+ // tokens can differ from reader tokens, so use the active body's paper color.
+ document.documentElement.style.setProperty('--viewport-paper',paper);
+ document.documentElement.style.colorScheme=isDark?'dark':'light';
+ document.querySelector('meta[name=theme-color]')?.setAttribute('content',paper);
  const toggle=document.querySelector('#library-theme');
  if(toggle){
   const label=isDark?'Включить светлую тему':'Включить тёмную тему';

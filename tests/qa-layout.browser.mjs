@@ -1,10 +1,12 @@
+import {paginationModule} from './browser-modules.mjs';
+const bundledPagination=await paginationModule();
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE});
 try {
  const page=await browser.newPage({viewport:{width:320,height:700}});
- await page.route('https://qa.test/**',r=>{const p=new URL(r.request().url()).pathname;return r.fulfill({contentType:p.endsWith('.js')?'text/javascript':'text/html',body:p.endsWith('.js')?readFileSync(new URL('../reader'+p,import.meta.url),'utf8'):'<html lang="ru" data-theme="night"><body></body></html>'});});
+ await page.route('https://qa.test/**',r=>{const p=new URL(r.request().url()).pathname;return r.fulfill({contentType:p.endsWith('.js')?'text/javascript':'text/html',body:p.endsWith('.js')?(p==='/src/pagination.js'?bundledPagination:readFileSync(new URL('../reader'+p,import.meta.url),'utf8')):'<html lang="ru" data-theme="night"><body></body></html>'});});
  await page.goto('https://qa.test/'); await page.addStyleTag({content:readFileSync(new URL('../reader/src/style.css',import.meta.url),'utf8')});
  const result=await page.evaluate(async()=>{
  const {paginate,applyTypography}=await import('/src/pagination.js');

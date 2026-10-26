@@ -100,6 +100,9 @@ try{
  await select();await page.mouse.click(390,700);assert.equal(await page.locator('#quote-actions').count(),0);assert.equal(await position(),selectedPage,'outside dismissal must not turn page');
  await select();const pendingHandle=await page.locator('[data-selection-handle="end"]').boundingBox();
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:pendingHandle.x+22,y:pendingHandle.y+22}]});
+ // Desktop Chromium cannot resize a fullscreen window. iPhone reading uses the
+ // normal viewport; leaving desktop fullscreen also exercises that reflow path.
+ await page.evaluate(async()=>{if(document.fullscreenElement)await document.exitFullscreen();});
  await page.setViewportSize({width:390,height:852});await page.waitForTimeout(500);
  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:200,y:300}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});

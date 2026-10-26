@@ -1,4 +1,4 @@
-:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#282d27;background:#f5f1e8;font-synthesis:none;--paper:#f5f1e8;--ink:#282d27;--muted:#687066;--line:#dcded3;--accent:#345946;--accent-text:#fff;--surface:#eeece3;--sheet:#fbf9f3;--soft:#e1e8de;--enter:cubic-bezier(.22,1,.36,1)}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#282d27;background:var(--viewport-paper,var(--paper));font-synthesis:none;--paper:#f5f1e8;--ink:#282d27;--muted:#687066;--line:#dcded3;--accent:#345946;--accent-text:#fff;--surface:#eeece3;--sheet:#fbf9f3;--soft:#e1e8de;--enter:cubic-bezier(.22,1,.36,1)}
 :root[data-theme=white]{--paper:#fff;--ink:#242824;--muted:#626960;--line:#e0e4dc;--surface:#f5f6f2;--sheet:#fff;--soft:#e7eee5}
 :root[data-theme=night]{--paper:#20251f;--ink:#e8e5dc;--muted:#b1b9ad;--line:#414a3d;--accent:#acc7a5;--accent-text:#182515;--surface:#292f27;--sheet:#292f27;--soft:#354331;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink)}button,input,select{font:inherit}button{color:inherit;cursor:pointer;touch-action:manipulation}a{color:var(--accent)}button:disabled{opacity:.3;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{border:0;background:none}button:active:not(:disabled){opacity:.7}input,select{font-size:16px;accent-color:var(--accent)}.icon{width:24px;height:24px;flex-shrink:0;vertical-align:middle}.icon-button{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0}.button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;padding:12px 20px;border-radius:8px;font-size:15px;font-weight:550;text-decoration:none}.primary{background:var(--accent);color:var(--accent-text)}.secondary{background:var(--surface);border:1px solid var(--line)}.text-button{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--accent);padding:8px 0;font-size:14px}.text-button .icon{width:18px;height:18px}.muted{color:var(--muted)}.danger{color:#a13a2a}.small-copy{font-size:13px;line-height:1.6}.eyebrow{font-size:10px;line-height:1.5;letter-spacing:1.8px;font-weight:600;color:var(--muted)}/* Library: compact, content-led layout. Reading-page tokens stay unchanged. */
@@ -329,6 +329,12 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .book-text .paragraph.book-align-left{text-align:left}.book-text .paragraph.book-align-right{text-align:right}
 .book-text .paragraph.book-align-center{text-align:center}.book-text .paragraph.book-align-justify{text-align:justify}
 .book-text .book-glue{white-space:nowrap}
+.book-text .book-hyphen::after{content:'\00ad'}
+.book-text .book-page-hyphen::after{content:'\2010'}
+.book-text{word-spacing:normal;text-justify:inter-word}
+.book-text .book-line{display:block;white-space:nowrap;text-indent:0;text-align:justify;text-align-last:justify}
+.book-text .book-line[data-line-from="0"]{margin-left:var(--indent,1.3em)}
+.book-text .book-line.book-line-end{text-align-last:left}
 /* Continued prose fills its last line; semantic inserts retain their own alignment. */
 .book-text div.paragraph.page-continues.book-verse,.book-text div.paragraph.page-continues.book-preformatted{text-align-last:auto}
 .book-text div.paragraph.page-continues.book-attribution{text-align-last:right}
