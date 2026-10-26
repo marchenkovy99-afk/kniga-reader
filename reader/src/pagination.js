@@ -1,6 +1,17 @@
 import {presentationClasses} from './book-presentation.js';
 import {russianHyphenOffsets} from './hyphenation.js';
 import {planJustifiedLines} from './justified-lines.js';
+import {createTextMeasure} from './text-metrics.js';
+
+const textWidths=new Map();
+function canvasWidth(canvas,text,font,spacing){
+ const key=font+'\n'+spacing+'\n'+text;
+ if(textWidths.has(key))return textWidths.get(key);
+ canvas.font=font;
+ const width=canvas.measureText(text).width+spacing*[...text].length;
+ if(textWidths.size>=20000)textWidths.delete(textWidths.keys().next().value);
+ textWidths.set(key,width);return width;
+}
 
 /** Character-based DOM ranges retain inline markup while typography repaginates. */
 function sliceHTML(html,from,to){
@@ -40,7 +51,7 @@ function typesetHTML(block,settings,width,font){
   if(at){fragment.append(document.createTextNode(text.slice(at)));textNode.replaceWith(fragment);}
  }
  const groups=[...root.querySelectorAll('.book-glue')].map(el=>{const r=document.createRange();r.selectNodeContents(root);r.setEndBefore(el);const start=r.toString().length;return {start,end:start+el.textContent.length};});
- if(settings.align==='justify'&&block.type==='p'&&block.text.length<=12000&&!Object.keys(block.presentation||{}).length&&!/<(?:br|img|table)\b/i.test(block.html)){
+ if(canvas&&settings.align==='justify'&&block.type==='p'&&block.text.length<=12000&&!Object.keys(block.presentation||{}).length&&!/<(?:br|img|table)\b/i.test(block.html)){
   const text=root.textContent,breaks=[];
   for(const m of text.matchAll(/[ \t\r\n]+/g))if(m.index>0)breaks.push({at:m.index+m[0].length,end:m.index,hyphen:false});
   if(settings.hyphens)for(const m of text.matchAll(/[А-ЯЁа-яё]+/g))for(const p of russianHyphenOffsets(m[0]))breaks.push({at:m.index+p,end:m.index+p,hyphen:true});
@@ -51,8 +62,13 @@ function typesetHTML(block,settings,width,font){
   root.className='book-text measure';applyTypography(root,settings,width);
   Object.assign(root.style,{width:'100000px',height:'auto',padding:'0',whiteSpace:'nowrap',textAlign:'left',textIndent:'0',font,letterSpacing:settings.letterSpacing+'px'});document.body.append(root);
   try{
-   const point=(offset,end)=>{const n=nodes.find(n=>end?n.end>=offset:n.end>offset)||nodes.at(-1);return [n.node,offset-n.start];};
-   const measure=(from,to)=>{if(to<=from)return 0;const r=document.createRange();r.setStart(...point(from,false));r.setEnd(...point(to,true));return r.getBoundingClientRect().width;};
+   const runs=[];
+   for(const {node,start} of nodes){
+    const style=getComputedStyle(node.parentElement),nodeFont=`${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,last=runs.at(-1);
+    if(last?.font===nodeFont)last.text+=node.data;else runs.push({text:node.data,start,font:nodeFont});
+   }
+   const measure=createTextMeasure(runs,(text,font)=>canvasWidth(canvas,text,font,settings.letterSpacing));
+   canvas.font=font;
    const margin=Math.min(settings.margin,Math.max(8,(width-150)/2));
    const lines=planJustifiedLines({text,breaks:allowed,width:width-margin*2,indent:settings.indent*settings.fontSize,spaceWidth:canvas?.measureText(' ').width||settings.fontSize*.25,hyphenWidth:canvas?.measureText('‐').width||settings.fontSize*.35,measure});
    if(lines){for(const line of lines)line.html=sliceHTML(html,line.from,line.to);return {html,groups,hyphens:[],lines};}
@@ -159,6 +175,20 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
     if(needed&&needed.bottom>measure.getBoundingClientRect().top+height-parseFloat(measuredStyle.paddingBottom)+1)flush();
    }
    while(!done){
+    const planned=prepare(i).lines;
+    if(planned?.length){
+     const first=planned.findIndex(line=>line.to>offset),remaining=planned.length-first;
+     let low=0,high=Math.min(remaining,Math.ceil(contentHeight/parseFloat(measuredStyle.lineHeight))+1);
+     while(low<high){const mid=Math.ceil((low+high)/2);if(fits(make(block,i,offset,planned[first+mid-1].to)))low=mid;else high=mid-1;}
+     if(!low){if(parts.length){flush();continue;}throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');}
+     if(low===1&&remaining>1&&parts.length){flush();continue;}
+     if(remaining-low===1&&low>=3)low--;
+     const cut=planned[first+low-1].to;
+     start??={block:i,offset};parts.push(make(block,i,offset,cut));end={block:i,offset:cut};offset=cut;
+     if(cut===length)done=true;else flush();
+     if(pages.length>2000)throw new Error('Слишком много страниц. Уменьшите шрифт. Текст не усечён.');
+     continue;
+    }
     const whole=make(block,i,offset,length);
     if(fits(whole)){start??={block:i,offset};parts.push(whole);end={block:i,offset:length};done=true;continue;}
     // Images and tables remain indivisible. Scale images in CSS; never truncate a table.

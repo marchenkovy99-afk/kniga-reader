@@ -4,6 +4,7 @@ import {mergeMarks,newestState,pendingForAccount,bookAppearanceKey,latestBookApp
 import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
+import {shelfState} from './shelf-state.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
 export class CloudSync{
  constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.paused=false;this.failures=0;this.fullSyncRequested=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;this.details={books:0,states:0,downloaded:0};this.lastSuccessfulAt=null;this.remoteBooksCount=0;}
@@ -78,6 +79,7 @@ export class CloudSync{
    // Preserve per-account unsent edits and adopt unauthenticated edits only
    // on the first login. Switching accounts must never clear the other queue.
    if(this.owner!==snapshot.userId){
+    if(!this.owner)await shelfState.adoptGuest(snapshot.userId);
     const targetKey=`cloud-pending:${snapshot.userId}:${this.deviceId}`;
     const accountPending=await storage.getPreference(targetKey)||{};
     this.pending=pendingForAccount(this.owner,snapshot.userId,this.pending,accountPending);
@@ -90,22 +92,23 @@ export class CloudSync{
    let added=false;
    for(const book of local){
     if(!this.canSync()&&!allowHidden)return;
-    if(book.id==='sample'||(book.cloudOwner&&book.cloudOwner!==this.owner))continue;
+    if(book.id==='sample'||(book.cloudOwner&&book.cloudOwner!==this.owner)||await shelfState.isHidden(book.id,this.owner))continue;
     if(remoteIds.has(book.id)){
-     if(book.cloudOwner!==this.owner){book.cloudOwner=this.owner;await storage.putBook(book);}
+     if(book.cloudOwner!==this.owner){book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);}
      continue;
     }
     await this.api('/api/cloud/book/'+book.id,{method:'PUT',headers:{'Content-Type':'application/octet-stream','x-cloud-owner':this.owner,'x-book-name':encodeURIComponent(book.fileName)},body:book.original});
-    book.cloudOwner=this.owner;await storage.putBook(book);
+    book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);
    }
-   const hidden=await storage.getPreference(`cloud-hidden:${this.owner}`)||[];
    for(const entry of snapshot.books){
     if(!this.canSync()&&!allowHidden)return;
-    if(local.some(b=>b.id===entry.id)||hidden.includes(entry.id))continue;
+    if(this.cb.books().some(b=>b.id===entry.id)||await shelfState.isHidden(entry.id,this.owner))continue;
     const response=await this.api('/api/cloud/book/'+entry.id);const original=await response.arrayBuffer();
+    if(await shelfState.isHidden(entry.id,this.owner))continue;
     const id=sha256(original);
     if(id!==entry.id)throw new Error('Контрольная сумма облачной книги не совпала. Загрузка отменена.');
-    const parsed=await importBook(original,entry.fileName);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,addedAt:Date.now(),marks:[]};await storage.putBook(book);this.cb.addBook(book);this.details.downloaded++;added=true;
+    const parsed=await importBook(original,entry.fileName);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,addedAt:Date.now(),marks:[]};
+    if(await shelfState.commit(book,this.owner,b=>this.cb.addBook(b))){this.details.downloaded++;added=true;}
    }
    await this.sendPending({allowHidden});
    const settings=latestReadingSettings(this.remote);if(settings)await this.cb.remoteSettings?.(settings);

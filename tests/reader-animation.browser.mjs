@@ -68,8 +68,10 @@ try{
  await swipe(box.x+box.width*.1,box.x+box.width*.85);assert.equal(await position(),initial);
  const textPoint=async offset=>page.evaluate(offset=>{
   const p=document.querySelector('.book-page[aria-hidden="false"] .paragraph');
-  const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let node=walker.nextNode();
-  const r=document.createRange();r.setStart(node,Math.min(offset,node.length-1));r.setEnd(node,Math.min(offset+1,node.length));
+  const walker=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);let node,last,remaining=offset;
+  while(node=walker.nextNode()){last=node;if(remaining<node.length)break;remaining-=node.length;}
+  node||=last;const at=Math.min(remaining,node.length-1);
+  const r=document.createRange();r.setStart(node,at);r.setEnd(node,at+1);
   const rect=r.getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
  },offset);
  const select=async()=>{const p=await textPoint(20);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await page.waitForTimeout(500);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.locator('#quote-actions').waitFor();};

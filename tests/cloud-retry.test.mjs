@@ -2,18 +2,21 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {sha256} from 'js-sha256';
+import {createShelfState} from '../reader/src/shelf-state.js';
 import {pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,resolveReadingAppearance} from '../reader/src/sync-model.js';
 
 const original=readFileSync(new URL('../reader/src/cloud.js',import.meta.url),'utf8');
 function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={}){
  const prefs=new Map(Object.entries(preferences)),tabs=new Map(Object.entries(session)),timers=new Map(),delays=[];
- let timerIndex=0,fetchCount=0,uploads=[];
+ let timerIndex=0,fetchCount=0,uploads=[],bookWrites=[];
  const storage={
    getPreference:async key=>prefs.get(key),
    setPreference:async(key,value)=>{prefs.set(key,structuredClone(value));},
    deletePreference:async key=>{prefs.delete(key);},
    listPreferenceKeys:async prefix=>[...prefs.keys()].filter(key=>key.startsWith(prefix)),
-   putBook:async()=>{}
+   putBook:async book=>bookWrites.push(structuredClone(book)),
+   deleteBook:async()=>{}
  };
  const transport={
   api:async (url,opts={})=>{
@@ -24,10 +27,10 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
   }
  };
  const context={pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,crypto:globalThis.crypto,Response,storage,sessionStorage:{getItem:k=>tabs.get(k)||null,setItem:(k,v)=>tabs.set(k,v)},
-   supabaseTransport:transport,
+   supabaseTransport:transport,shelfState:createShelfState(storage),
    mergeMarks:(...groups)=>groups.flat(),mergeAnnotations:(...groups)=>groups.flat(),
    newestState:(rows,key)=>rows.filter(x=>x.key===key).sort((a,b)=>b.clientUpdatedAt-a.clientUpdatedAt)[0],
-   sha256:()=>'',importBook:async()=>{},
+   sha256,importBook:async()=>({blocks:[],chars:0}),
    setTimeout:(fn,delay)=>{delays.push(delay);const id=++timerIndex;timers.set(id,fn);return id;},
    clearTimeout:id=>timers.delete(id)};
  let code=original.replace(/^import .*?;\s*$/gm,'')
@@ -36,8 +39,33 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
  code+='\nglobalThis.ReaderCloud=CloudSync;';
  vm.runInNewContext(code,context);
  const cloud=new context.ReaderCloud({books:()=>bookList,status:()=>{},...callbacks});
- return {cloud,prefs,tabs,timers,delays,uploads,get fetchCount(){return fetchCount;},async flush(){const all=[...timers.values()];timers.clear();for(const fn of all)await fn();await new Promise(setImmediate);}};
+ return {cloud,prefs,tabs,timers,delays,uploads,bookWrites,get fetchCount(){return fetchCount;},async flush(){const all=[...timers.values()];timers.clear();for(const fn of all)await fn();await new Promise(setImmediate);}};
 }
+
+test('a book removed before login is not downloaded by the first account sync',async()=>{
+ const original=new TextEncoder().encode('book'),id=sha256(original),calls=[];
+ const h=harness({preferences:{'cloud-hidden:guest':[id]},api:async url=>{
+  calls.push(url);if(url==='/api/cloud')return Response.json({userId:'owner-1',books:[{id,fileName:'book.txt'}],states:[]});
+  return new Response(original);
+ }});
+ await h.cloud.init();
+ assert.equal(calls.includes('/api/cloud/book/'+id),false);
+ assert.equal(h.bookWrites.length,0);
+ assert.equal(h.cloud.error,null);
+});
+
+test('deleting while a cloud file is in flight cannot put it back into storage or the shelf',async()=>{
+ const original=new TextEncoder().encode('book'),id=sha256(original),added=[];
+ const h=harness({api:async url=>{
+  if(url==='/api/cloud')return Response.json({userId:'owner-1',books:[{id,fileName:'book.txt'}],states:[]});
+  if(url==='/api/cloud/book/'+id){h.prefs.set('cloud-hidden:owner-1',[id]);return new Response(original);}
+  throw Error('Unexpected request '+url);
+ },callbacks:{addBook:book=>added.push(book)}});
+ await h.cloud.init();
+ assert.equal(h.bookWrites.length,0);
+ assert.equal(added.length,0);
+ assert.equal(h.cloud.error,null);
+});
 test('offline position survives reader restart and old session queue is recovered',async()=>{
  const key='position:'+'a'.repeat(64);
  const h=harness({preferences:{
