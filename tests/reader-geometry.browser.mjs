@@ -5,11 +5,13 @@ const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE});
 const shortFixedViewport=process.env.SHORT_FIXED_VIEWPORT==='1';
 const installed=process.env.INSTALLED_APP==='1';
+const staleInnerHeight=process.env.STALE_INNER_HEIGHT==='1';
 const brokenViewportUnits=process.env.BROKEN_DVH==='1';
 const root=fileURLToPath(new URL('../docs/',import.meta.url));
 try{
  const page=await browser.newPage({viewport:{width:393,height:852},hasTouch:true,serviceWorkers:'block'});
  await page.addInitScript(()=>Object.defineProperty(document,'fullscreenEnabled',{value:false}));
+ if(staleInnerHeight)await page.addInitScript(()=>{const viewportHeight=Object.getOwnPropertyDescriptor(window,'innerHeight').get.bind(window);Object.defineProperty(navigator,'userAgent',{value:'iPhone'});Object.defineProperty(window,'innerHeight',{get:()=>viewportHeight()-74});Object.defineProperty(screen,'width',{value:393});Object.defineProperty(screen,'height',{get:()=>viewportHeight()});});
  if(installed)await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
  await page.route('https://reader.test/**',route=>{
   const path=new URL(route.request().url()).pathname;
