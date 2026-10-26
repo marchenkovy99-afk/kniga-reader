@@ -16,6 +16,7 @@ import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
 import {createReadingFullscreen} from './reading-fullscreen.js';
 import {trackReaderWindow} from './reader-window.js';
 import './style.css';
+import {renderCover,prepareCoverImage} from './covers.js';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
 import {createPaginationCache} from './pagination-cache.js';
@@ -71,7 +72,7 @@ function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;a
 async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await storage.setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
 function progressFor(b){const a=b.progress?.anchor;if(!a)return 0;const before=b.blocks.slice(0,a.block).reduce((sum,x)=>sum+x.text.length,0)+a.offset;return Math.max(0,Math.min(100,Math.round(before/Math.max(1,b.chars)*100)));}
-function cover(b,small=false){return `<div class="cover ${small?'small':''}" data-color="${b.id==='sample'?'green':'brown'}">${b.cover?`<img src="${b.cover}" alt="Обложка книги ${esc(b.title)}">`:`<div class="cover-author">${esc(b.author)}</div><div class="cover-title">${esc(b.title)}</div><div class="cover-rule"></div><span class="cover-format">${esc(b.format)}</span>`}</div>`;}
+const cover=renderCover;
 async function library(){
  await readingFullscreen.leave();
  const previousPagination=current&&pages.length?{id:current.id,pages:[...pages]}:null;
@@ -122,8 +123,17 @@ async function handleFiles(files){
 }
 function downloadBook(b){const url=URL.createObjectURL(new Blob([b.original]));const a=document.createElement('a');a.href=url;a.download=b.fileName||'book.fb2';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function bookInfo(b){
- openSheet('О книге',`<div class="prose"><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><dl><dt>Формат</dt><dd>${b.format}</dd><dt>Объём текста</dt><dd>${b.chars.toLocaleString('ru-RU')} знаков</dd><dt>Разделов в оглавлении</dt><dd>${b.chapters.length}</dd></dl>${b.warnings.length?'<h3>Замечания при импорте</h3>'+b.warnings.map(w=>`<p>${esc(w)}</p>`).join(''):''}<label class="select-setting"><span>Статус</span><select id="book-status"><option value="reading">Читаю</option><option value="planned">В планах</option><option value="finished">Прочитано</option></select></label><label class="select-setting"><span>Коллекция</span><input id="book-collection" maxlength="48" placeholder="Например, История" value="${esc(b.progress?.collection||'')}"></label><p class="muted">Настройки оформления не изменяют исходный файл.</p><button id="download-original" class="button secondary">${icon('download')} Скачать исходный файл</button><button id="remove-book" class="text-button danger">Убрать с полки</button></div>`);
+ openSheet('О книге',`<div class="prose"><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><dl><dt>Формат</dt><dd>${b.format}</dd><dt>Объём текста</dt><dd>${b.chars.toLocaleString('ru-RU')} знаков</dd><dt>Разделов в оглавлении</dt><dd>${b.chapters.length}</dd></dl>${b.warnings.length?'<h3>Замечания при импорте</h3>'+b.warnings.map(w=>`<p>${esc(w)}</p>`).join(''):''}<label class="select-setting"><span>Статус</span><select id="book-status"><option value="reading">Читаю</option><option value="planned">В планах</option><option value="finished">Прочитано</option></select></label><label class="select-setting"><span>Коллекция</span><input id="book-collection" maxlength="48" placeholder="Например, История" value="${esc(b.progress?.collection||'')}"></label><div class="book-cover-preview">${cover(b)}</div><label class="button secondary cover-upload">Выбрать обложку<input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>${b.progress?.coverImage?'<button id="reset-cover" class="text-button">Вернуть исходную обложку</button>':''}<p class="muted">Настройки оформления не изменяют исходный файл.</p><button id="download-original" class="button secondary">${icon('download')} Скачать исходный файл</button><button id="remove-book" class="text-button danger">Убрать с полки</button></div>`);
  document.querySelector('#download-original').onclick=()=>downloadBook(b);const state=document.querySelector('#book-status');state.value=b.progress?.status||'reading';state.onchange=async()=>{b.progress={...(b.progress||{}),status:state.value};await saveBookMeta(b);};document.querySelector('#book-collection').onchange=async e=>{b.progress={...(b.progress||{}),collection:e.target.value.trim().slice(0,48)};await saveBookMeta(b);};
+ document.querySelector('#cover-file').onchange=async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  const input=event.target;input.disabled=true;const previous=b.progress;
+  try{const coverImage=await prepareCoverImage(file);b.progress={anchor:{block:0,offset:0},...(b.progress||{}),coverImage};await saveBookMeta(b);await library();bookInfo(b);message('Обложка сохранена.');}
+  catch(error){b.progress=previous;message('Не удалось сохранить обложку: '+error.message,true);}
+  finally{input.disabled=false;input.value='';}
+ };
+ const resetCover=document.querySelector('#reset-cover');
+ if(resetCover)resetCover.onclick=async()=>{const previous=b.progress;resetCover.disabled=true;try{b.progress={anchor:{block:0,offset:0},...(b.progress||{}),coverImage:null};await saveBookMeta(b);await library();bookInfo(b);}catch(error){b.progress=previous;resetCover.disabled=false;message(error.message,true);}};
  document.querySelector('#remove-book').onclick=async()=>{
   closeSheet();openSheet('Убрать книгу с полки?',`<div class="prose"><p>«${esc(b.title)}» исчезнет с этого устройства. Облачная копия останется, но синхронизация не вернёт книгу на это устройство. Чтобы вернуть её, добавьте файл снова.</p><div class="action-row"><button class="button secondary" id="keep-book">Оставить</button><button class="button primary" id="confirm-remove">Убрать с полки</button></div></div>`);
   document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{const owner=b.cloudOwner||cloud?.owner||await storage.getPreference('cloud-owner');await shelfState.hide(b.id,owner,()=>{books=books.filter(x=>x.id!==b.id);});await paginationCache.remove(b.id);closeSheet();await library();}catch(e){message(e.message,true);}};

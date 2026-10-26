@@ -352,3 +352,17 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .book-text div.paragraph.page-continues.book-align-right{text-align-last:right}
 .book-text div.paragraph.page-continues.book-align-center{text-align-last:center}
 .book-text div.paragraph.page-continues.book-align-justify{text-align-last:justify}
+
+/* Editorial covers scale as one composition, including type and line art. */
+.library .cover,.book-cover-preview .cover{padding:0;border:0;box-shadow:none;border-radius:3px;display:block;background:transparent;aspect-ratio:2/3}
+.cover-generated svg{display:block;width:100%;height:100%}
+.cover-original img{object-fit:contain;background:var(--soft)}
+.library .cover-original img{object-fit:contain}
+.book-cover-preview{width:120px;margin:20px auto 12px}
+.cover-upload{cursor:pointer;text-align:center;position:relative}
+.cover-upload:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.cover-upload input[hidden]{display:block;opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.book-meta>div{min-width:0;max-width:100%}
+.list-view .book-meta{min-width:0;padding-right:28px}
+.list-view .book-meta h3,.list-view .book-meta p{white-space:normal;overflow-wrap:anywhere}
+.list-view .book-more{right:0;top:0}

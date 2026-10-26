@@ -1,0 +1,2 @@
+# Editorial covers
+Approved direction: publisher-style covers with stable individual colors and restrained line art. Preserve embedded covers. Remove format labels, fake page edges and clipped words. Fit title and author within a scalable SVG, preserve complete words, reduce type for long titles. Fix list metadata overflow. Allow a user-selected raster cover and reset through book information; keep it in existing progress metadata for backup/sync without schema changes. No changes to reader pagination or authentication.
