@@ -12,7 +12,13 @@ export function trackReaderWindow(win,doc){
    const screenWidth=sides[landscape?1:0],screenHeight=sides[landscape?0:1];
    if(Math.abs(screenWidth-win.innerWidth)<=1&&screenHeight>=height&&screenHeight-height<=120)height=screenHeight;
   }
-  if(height>0)doc.documentElement.style.setProperty('--reader-window-height',`${Math.round(height)}px`);
+  if(height>0){
+   doc.documentElement.style.setProperty('--reader-window-height',`${Math.round(height)}px`);
+   // Text may extend to the screen edge, but controls must stay inside the
+   // interactive viewport. iOS clips taps/painting below that boundary.
+   const visibleBottom=Math.min(win.innerHeight,(win.visualViewport?.height||win.innerHeight)+(win.visualViewport?.offsetTop||0));
+   doc.documentElement.style.setProperty('--reader-controls-inset',`${Math.max(0,Math.ceil(height-visibleBottom))}px`);
+  }
  };
  update();
  win.addEventListener('resize',update);

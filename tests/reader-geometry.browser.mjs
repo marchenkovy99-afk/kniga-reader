@@ -49,6 +49,10 @@ try{
  const footer=await page.locator('.reader-footer').boundingBox();
  assert.ok(Math.abs(footer.y+footer.height-852)<1,'the control panel must dock to the real bottom edge without a strip of book text underneath');
  assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
+ const controlsBottom=staleInnerHeight?778:852;
+ for(const button of await page.locator('.reader-tools button').all()){const bounds=await button.boundingBox();assert.ok(bounds.y+bounds.height<=controlsBottom, 'every control must fit inside the interactive viewport');}
+ await page.locator('#appearance').click();await page.locator('dialog[open]').waitFor();await page.locator('#close-sheet').click();
+ assert.equal(await page.locator('#reader-page-position').textContent(),before,'opening appearance must not turn the page');
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
  const session=await page.context().newCDPSession(page);
  await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
