@@ -2,6 +2,7 @@ import {presentationClasses} from './book-presentation.js';
 import {russianHyphenOffsets} from './hyphenation.js';
 import {planJustifiedLines} from './justified-lines.js';
 import {createTextMeasure} from './text-metrics.js';
+import {assertPageIntegrity} from './page-integrity.js';
 
 const textWidths=new Map();
 function canvasWidth(canvas,text,font,spacing){
@@ -199,6 +200,6 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
    }
    if(i%12===0){onProgress?.(Math.round(i/blocks.length*100));await new Promise(r=>setTimeout(r,0));}
   }
-  flush();return pages;
+  flush();assertPageIntegrity(blocks,pages);return pages;
  }finally{measure.remove();}
 }

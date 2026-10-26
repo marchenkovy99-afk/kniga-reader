@@ -1,7 +1,7 @@
 import {sha256} from 'js-sha256';
 
 // Bump when pagination markup or the book-text layout CSS changes.
-const VERSION=6;
+const VERSION=7;
 const typography=['font','fontSize','lineHeight','margin','paragraphGap','indent','letterSpacing','align','hyphens'];
 const sourceHashes=new WeakMap();
 function signature({bookId,blocks,width,height,settings,environment=''}){
@@ -27,7 +27,7 @@ function validPages(pages,blocks){
 }
 
 /** Page HTML and source anchors stay on this device; they are never synced. */
-export function createPaginationCache({storage,paginate,onStorageError=()=>{}}){
+export function createPaginationCache({storage,paginate,onStorageError=()=>{},validatePages=()=>{}}){
  const memory=new Map();let writes=Promise.resolve(),reported=false;
  const report=error=>{if(!reported){reported=true;onStorageError(error);}};
  const remember=(key,bookId,pages)=>{memory.delete(key);memory.set(key,{bookId,pages});if(memory.size>3)memory.delete(memory.keys().next().value);};
@@ -38,7 +38,9 @@ export function createPaginationCache({storage,paginate,onStorageError=()=>{}}){
   if(hit){remember(key,bookId,hit.pages);return hit.pages;}
   const saved=await read(bookId);checkAbort(signal);
   const entry=saved?.version===VERSION&&Array.isArray(saved.entries)?saved.entries.find(e=>e?.signature===key):null;
-  if(entry&&validPages(entry.pages,blocks)){remember(key,bookId,entry.pages);return entry.pages;}
+  let intact=false;
+  if(entry&&validPages(entry.pages,blocks)){try{validatePages(blocks,entry.pages);intact=true;}catch{/* Regenerate damaged cached markup from the source. */}}
+  if(intact){remember(key,bookId,entry.pages);return entry.pages;}
   onMiss?.();
   const pages=await paginate(blocks,input);checkAbort(signal);
   // Serialize read/merge/write so rapid typography changes keep both layouts.

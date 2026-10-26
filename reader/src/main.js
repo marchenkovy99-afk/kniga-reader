@@ -17,6 +17,7 @@ import {createReadingFullscreen} from './reading-fullscreen.js';
 import {trackReaderWindow} from './reader-window.js';
 import './style.css';
 import {renderCover,prepareCoverImage} from './covers.js';
+import {assertPageIntegrity} from './page-integrity.js';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
 import {createPaginationCache} from './pagination-cache.js';
@@ -30,7 +31,7 @@ let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},p
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
 const readingFullscreen=createReadingFullscreen(document);
 const updateReaderWindow=trackReaderWindow(window,document);
-const paginationCache=createPaginationCache({storage,paginate,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
+const paginationCache=createPaginationCache({storage,paginate,validatePages:assertPageIntegrity,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
 const statuses={reading:'Читаю',planned:'Хочу прочитать',finished:'Прочитано'};
