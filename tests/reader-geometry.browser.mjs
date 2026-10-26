@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE});
+const brokenViewportUnits=process.env.BROKEN_DVH==='1';
 const root=fileURLToPath(new URL('../docs/',import.meta.url));
 try{
  const page=await browser.newPage({viewport:{width:393,height:852},hasTouch:true,serviceWorkers:'block'});
@@ -10,6 +11,7 @@ try{
   const path=new URL(route.request().url()).pathname;
   if(path==='/empty')return route.fulfill({contentType:'text/html',body:'<html></html>'});
   const rel=path.replace(/^\/kniga-reader\//,'')||'index.html';let body=readFileSync(root+rel,'utf8');
+  if(rel.endsWith('.css')&&brokenViewportUnits)body=body.replaceAll('100dvh','803px').replaceAll('100svh','803px');
   if(rel.endsWith('.css'))body=body.replace(/env\(safe-area-inset-(top|bottom)(?:,\s*0px)?\)/g,(_,edge)=>`var(--test-${edge},0px)`);
   if(rel==='index.html')body=body.replace('<head>','<head><style>:root{--test-top:59px;--test-bottom:34px}</style>');
   return route.fulfill({body,contentType:rel.endsWith('.js')?'text/javascript':rel.endsWith('.css')?'text/css':'text/html'});
@@ -29,12 +31,19 @@ try{
    const page=document.querySelector('.book-page[aria-hidden="false"]'),text=page.querySelector('.book-text'),reader=document.querySelector('.reader'),stage=document.querySelector('#book-stage');
    const range=document.createRange();range.selectNodeContents(text);const rects=[...range.getClientRects()].filter(r=>r.height>2&&r.width>1),bounds=stage.getBoundingClientRect();
    const first=Math.min(...rects.map(r=>r.top)),last=Math.max(...rects.map(r=>r.bottom));
-   return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding};
+   return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding,transform:getComputedStyle(page).transform,clip:getComputedStyle(page).clipPath,pageY:page.getBoundingClientRect().y};
   }));
   if(!i)await page.screenshot({path:'/tmp/kniga-viewport-review.png'});
   const before=await page.locator('#reader-page-position').textContent();await page.keyboard.press('ArrowRight');await page.waitForFunction(before=>document.querySelector('#reader-page-position').textContent!==before,before);
  }
  console.log(JSON.stringify(pages,null,2));
+ assert.ok(pages.every(p=>p.readerHeight===852),'installed reader must fill its actual window even when dynamic viewport units are too short');
+ const before=await page.locator('#reader-page-position').textContent();
+ await page.locator('#book-stage').tap({position:{x:190,y:300}});
+ const footer=await page.locator('.reader-footer').boundingBox();
+ assert.ok(Math.abs(footer.y+footer.height-852)<1,'the control panel must dock to the real bottom edge without a strip of book text underneath');
+ assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
+ await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
  assert.ok(pages.every(p=>p.first>=59+14),'first text line must clear the system edge effect');
  assert.ok(pages.every(p=>p.unused<=p.lineHeight+4),'ordinary continued text must fill the last available line');
 }finally{await browser.close();}
