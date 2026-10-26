@@ -14,6 +14,7 @@ import {supabase} from './supabase-client.js';
 import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance,legacyAppearanceTimestamp} from './sync-model.js';
 import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
 import {createReadingFullscreen} from './reading-fullscreen.js';
+import {trackReaderWindow} from './reader-window.js';
 import './style.css';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
@@ -27,6 +28,7 @@ let libraryView='grid',readingTouched=false,selectionUI=null;
 let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
 const readingFullscreen=createReadingFullscreen(document);
+const updateReaderWindow=trackReaderWindow(window,document);
 const paginationCache=createPaginationCache({storage,paginate,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
@@ -142,7 +144,7 @@ async function openBook(id){
  }catch(e){message('Настройки текста не загрузились: '+e.message,true);}
  const effectiveAppearance=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:b.appearanceSettings||b.progress?.bookSettings,updatedAt:b.appearanceUpdatedAt||b.progress?.appearanceUpdatedAt||0});
  settings=restoreSettings(effectiveAppearance.settings);theme();
- document.body.classList.add('reading');theme();scheduleCloudPoll();
+ updateReaderWindow();document.body.classList.add('reading');theme();scheduleCloudPoll();
  app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header">${button('back','В библиотеку','to-library')}<div class="reader-heading"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}<div class="nav-arrows">${button('back','Предыдущая страница','prev-page')}${button('next','Следующая страница','next-page')}</div></nav></footer></div>`;
  // One gesture owner: the reader recognizes swipes; the engine renders the curl.
  selectionUI=createBookSelection(document.querySelector('#book-stage'),{onSelect:offerQuoteActions,onDismiss:()=>document.querySelector('#quote-actions')?.remove()});

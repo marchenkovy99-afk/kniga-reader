@@ -223,7 +223,7 @@ body:not(.reading) .sync-state{display:block;padding:12px 14px;border-radius:15p
 }
 
 /* Keep reading content clear of the system edge; the book stage owns navigation. */
-body.reading{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none}
+body.reading{position:fixed;inset:0;height:var(--reader-window-height,100%);overflow:hidden;overscroll-behavior:none}
 /* Installed iOS apps can report browser-sized dvh/svh values. Size the reader
    against the fixed app window instead, including its real bottom edge. */
 body.reading #app{position:absolute;inset:0}

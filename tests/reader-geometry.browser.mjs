@@ -3,10 +3,14 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE});
+const shortFixedViewport=process.env.SHORT_FIXED_VIEWPORT==='1';
+const installed=process.env.INSTALLED_APP==='1';
 const brokenViewportUnits=process.env.BROKEN_DVH==='1';
 const root=fileURLToPath(new URL('../docs/',import.meta.url));
 try{
  const page=await browser.newPage({viewport:{width:393,height:852},hasTouch:true,serviceWorkers:'block'});
+ await page.addInitScript(()=>Object.defineProperty(document,'fullscreenEnabled',{value:false}));
+ if(installed)await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
  await page.route('https://reader.test/**',route=>{
   const path=new URL(route.request().url()).pathname;
   if(path==='/empty')return route.fulfill({contentType:'text/html',body:'<html></html>'});
@@ -24,7 +28,7 @@ try{
   const blocks=[{type:'p',text:caption,html:'<em>'+caption+'</em>'},...Array.from({length:20},()=>({type:'p',text,html:text}))];
   await new Promise((resolve,reject)=>{const r=indexedDB.open('kniga-reader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('books',{keyPath:'id'});r.result.createObjectStore('preferences');};r.onsuccess=()=>{const db=r.result,tx=db.transaction(['books','preferences'],'readwrite');tx.objectStore('books').put({id:'test',title:'Геометрия страницы',author:'Тест',blocks,presentationVersion:1,chars:blocks.reduce((n,b)=>n+b.text.length,0),chapters:[],fileName:'test.fb2',addedAt:1,marks:[]});tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};});
  });
- await page.goto('https://reader.test/kniga-reader/');await page.locator('[data-book]').first().click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
+ await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book]').first().click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
  const pages=[];
  for(let i=0;i<6;i++){
   pages.push(await page.evaluate(()=>{
@@ -44,6 +48,12 @@ try{
  assert.ok(Math.abs(footer.y+footer.height-852)<1,'the control panel must dock to the real bottom edge without a strip of book text underneath');
  assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
+ const session=await page.context().newCDPSession(page);
+ await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
+ await page.waitForFunction(()=>document.querySelector('.reader').clientHeight===900);
+ await page.waitForFunction(()=>document.querySelector('.book-page[aria-hidden="false"]').clientHeight===document.querySelector('#book-stage').clientHeight);
+ const resizedFooter=await page.locator('.reader-footer').boundingBox();
+ assert.ok(Math.abs(resizedFooter.y+resizedFooter.height-900)<1,'controls follow window size changes');
  assert.ok(pages.every(p=>p.first>=59+14),'first text line must clear the system edge effect');
  assert.ok(pages.every(p=>p.unused<=p.lineHeight+4),'ordinary continued text must fill the last available line');
 }finally{await browser.close();}
