@@ -2,13 +2,16 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {createAccountState} from '../reader/src/account-state.js';
 
 const reader=readFileSync(new URL('../reader/src/main.js',import.meta.url),'utf8');
 function harness({progress={anchor:{block:0,offset:0},updatedAt:100},touched=false}={}){
  const saved=[],queued=[],timers=[];
  const book={id:'test',blocks:Array.from({length:3},()=>({text:'example text'})),progress,marks:[]};
- const context={current:book,anchor:{...progress.anchor},readingTouched:touched,
-  storage:{setPreference:async(k,v)=>saved.push([k,structuredClone(v)])},cloud:{queue:(...args)=>queued.push(args)},
+ const store={getPreference:async()=>undefined,setPreference:async(k,v)=>saved.push([k,structuredClone(v)])};
+ const accounts=createAccountState(store);
+ const context={localOwner:'account-a',localState:owner=>accounts.forOwner(owner||'account-a'),current:book,anchor:{...progress.anchor},readingTouched:touched,
+  storage:store,cloud:{queue:(...args)=>queued.push(args)},
   setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout:()=>{},
   updateProgress:()=>{},layout:async()=>{context.layouts++;},layouts:0,message:()=>{},saveTimer:null};
  vm.createContext(context);
@@ -21,6 +24,8 @@ test('opening, backgrounding and repagination cannot stamp an old position as a 
  const h=harness();await h.context.persistPosition();
  assert.equal(h.book.progress.updatedAt,100);
  assert.equal(h.queued[0][2],100);
+ assert.equal(h.queued[0][3],'account-a');
+ assert.equal(h.saved[0][0],'account-state:account-a:position:test');
 });
 test('an untouched newly opened book accepts the newer cloud position',async()=>{
  const h=harness();const next={anchor:{block:2,offset:4},updatedAt:200};

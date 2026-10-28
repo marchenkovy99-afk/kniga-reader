@@ -10,6 +10,7 @@ import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
 import * as storage from './storage.js';
 import {shelfState} from './shelf-state.js';
 import {CloudSync} from './cloud.js';
+import {createAccountState,bookBelongsToAccount} from './account-state.js';
 import {supabase} from './supabase-client.js';
 import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance,legacyAppearanceTimestamp} from './sync-model.js';
 import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
@@ -28,7 +29,13 @@ const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" a
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
 let libraryView='grid',readingTouched=false,selectionUI=null;
 let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
-const writeAppearance=createAppearanceWriter(storage,(...args)=>cloud?.queue(...args));
+const accountState=createAccountState(storage),appearanceWriters=new Map();
+let localOwner=null,allBooks=[],appearanceTail=Promise.resolve();
+const localState=(owner=localOwner)=>accountState.forOwner(owner);
+function writeAppearance(value,owner=localOwner){
+ if(!appearanceWriters.has(owner))appearanceWriters.set(owner,createAppearanceWriter(localState(owner),(key,payload,at)=>cloud?.queue(key,payload,at,owner)));
+ appearanceTail=appearanceWriters.get(owner)(value);return appearanceTail;
+}
 const readingFullscreen=createReadingFullscreen(document);
 const updateReaderWindow=trackReaderWindow(window,document);
 const paginationCache=createPaginationCache({storage,paginate,validatePages:assertPageIntegrity,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
@@ -36,12 +43,42 @@ const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
 const statuses={reading:'Читаю',planned:'Хочу прочитать',finished:'Прочитано'};
 const activeNotes=()=> (current?.progress?.annotations||[]).filter(x=>!x.deleted);let noteSelectTimer;
-async function saveBookMeta(book){book.progress={...(book.progress||{}),updatedAt:Date.now()};await storage.setPreference('position:'+book.id,book.progress);cloud?.queue('position:'+book.id,book.progress,book.progress.updatedAt);}
+async function saveBookMeta(book){const owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);book.progress={...(book.progress||{}),updatedAt:Date.now()};const data=book.progress;await localState(owner).setPreference('position:'+book.id,data);cloud?.queue('position:'+book.id,data,data.updatedAt,owner);}
 function downloadText(name,body,mime='text/plain'){const url=URL.createObjectURL(new Blob([body],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 function fileToBase64(buffer){const bytes=new Uint8Array(buffer);let str='';for(let n=0;n<bytes.length;n+=8192)str+=String.fromCharCode(...bytes.subarray(n,n+8192));return btoa(str);}
 function base64ToFile(text){const binary=atob(text),bytes=new Uint8Array(binary.length);for(let n=0;n<binary.length;n++)bytes[n]=binary.charCodeAt(n);return bytes;}
 function exportBackup(){try{const data={format:'kniga-backup',version:2,settings:globalSettings,books:books.filter(b=>b.id!=='sample').map(b=>({name:b.fileName,file:fileToBase64(b.original),addedAt:b.addedAt,progress:b.progress||null}))};downloadText('kniga-backup.json',JSON.stringify(data),'application/json');message('Резервная копия создана.');}catch(e){message('Не удалось создать архив: '+e.message,true);}}
-async function restoreBackup(file){if(!file)return;try{if(file.size>130*1024*1024)throw Error('Архив слишком большой.');const data=JSON.parse(await file.text());if(data.format!=='kniga-backup'||data.version!==2||!Array.isArray(data.books)||data.books.length>200)throw Error('Неверный формат архива.');let count=0;for(const item of data.books){if(typeof item.name!=='string'||!/[.](fb2|zip|fbz|epub|txt)$/i.test(item.name)||typeof item.file!=='string')throw Error('Недопустимый файл книги.');const bytes=base64ToFile(item.file);if(!bytes.length||bytes.length>20*1024*1024)throw Error('Недопустимый размер книги.');const id=sha256(bytes);if(books.some(b=>b.id===id))continue;const parsed=await importBook(bytes,item.name),progress=item.progress&&typeof item.progress==='object'?item.progress:null;const b={...parsed,id,original:bytes.buffer,fileName:item.name,addedAt:Number(item.addedAt)||Date.now(),marks:progress?.marks||[],progress};await shelfState.restore(b,cloud?.owner||await storage.getPreference('cloud-owner'));if(progress)await storage.setPreference('position:'+id,progress);books.push(b);count++;}if(data.settings){globalSettings=restoreSettings(data.settings);settings={...globalSettings};await storage.setPreference('settings',globalSettings);}await library();cloud?.sync();message('Книг восстановлено: '+count);}catch(e){message('Ошибка восстановления: '+e.message,true);}finally{const f=document.querySelector('#backup-file');if(f)f.value='';}}
+async function restoreBackup(file){
+ if(!file)return;
+ const owner=localOwner,state=localState(owner);
+ const checkOwner=()=>{if(owner!==localOwner)throw Error('Учётная запись изменилась. Повторите восстановление.');};
+ try{
+  if(file.size>130*1024*1024)throw Error('Архив слишком большой.');
+  const data=JSON.parse(await file.text());checkOwner();
+  if(data.format!=='kniga-backup'||data.version!==2||!Array.isArray(data.books)||data.books.length>200)throw Error('Неверный формат архива.');
+  let count=0;
+  for(const item of data.books){
+   checkOwner();
+   if(typeof item.name!=='string'||!/[.](fb2|zip|fbz|epub|txt)$/i.test(item.name)||typeof item.file!=='string')throw Error('Недопустимый файл книги.');
+   const bytes=base64ToFile(item.file);
+   if(!bytes.length||bytes.length>20*1024*1024)throw Error('Недопустимый размер книги.');
+   const id=sha256(bytes);if(books.some(b=>b.id===id))continue;
+   const parsed=await importBook(bytes,item.name);checkOwner();
+   const progress=item.progress&&typeof item.progress==='object'?item.progress:null;
+   const b={...parsed,id,cloudOwner:owner,localStateOwner:owner,original:bytes.buffer,fileName:item.name,addedAt:Number(item.addedAt)||Date.now(),marks:progress?.marks||[],progress};
+   rememberBookOwner(b);await shelfState.restore(b,owner);checkOwner();
+   if(progress){await state.setPreference('position:'+id,progress);checkOwner();}
+   books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);count++;
+  }
+  if(data.settings){
+   const saved=restoreSettings(data.settings),updatedAt=Date.now();
+   await writeAppearance({settings:saved,updatedAt},owner);checkOwner();
+   globalSettings=saved;settings={...saved};settingsUpdatedAt=updatedAt;
+  }
+  checkOwner();await library();checkOwner();cloud?.sync();message('Книг восстановлено: '+count);
+ }catch(e){if(owner===localOwner)message('Ошибка восстановления: '+e.message,true);}
+ finally{if(owner===localOwner){const f=document.querySelector('#backup-file');if(f)f.value='';}}
+}
 
 const reduced=()=>!pageTurnMotion(settings,matchMedia('(prefers-reduced-motion: reduce)').matches).animate;
 function message(text,error=false){let box=document.querySelector('#notification');if(!box){box=document.createElement('div');box.id='notification';box.setAttribute('role','status');document.body.append(box);}box.className=error?'notice error':'notice';box.textContent=text;box.hidden=false;clearTimeout(box.timer);box.timer=setTimeout(()=>box.hidden=true,error?10000:5000);}
@@ -70,7 +107,7 @@ function openSheet(title,html,wide=false){ensureSheet();const d=document.querySe
 function closeSheet(){document.querySelector('#sheet')?.close();}
 function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
-async function persistPosition(){if(!current)return;const id=current.id;const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await storage.setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt);}catch(e){message(e.message,true);}}
+async function persistPosition(){if(!current)return;const book=current,id=book.id,owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await localState(owner).setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt,owner);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
 function progressFor(b){const a=b.progress?.anchor;if(!a)return 0;const before=b.blocks.slice(0,a.block).reduce((sum,x)=>sum+x.text.length,0)+a.offset;return Math.max(0,Math.min(100,Math.round(before/Math.max(1,b.chars)*100)));}
 const cover=renderCover;
@@ -109,18 +146,21 @@ function showLibraryBookmarks(){
  document.querySelectorAll('[data-library-mark]').forEach(el=>el.onclick=async()=>{const {book,mark}=entries[Number(el.dataset.libraryMark)];closeSheet();await openBook(book.id);jump(mark.anchor);});
 }
 async function handleFiles(files){
- if(busy)return;busy=true;
+ if(busy)return;busy=true;const owner=localOwner;
  const input=document.querySelector('#file-input');
  for(const file of Array.from(files||[])){
   try{message(`Открываем «${file.name}»…`);const original=await file.arrayBuffer();const parsed=await importBook(original,file.name);
+   if(owner!==localOwner)throw Error('Учётная запись изменилась. Добавьте книгу ещё раз.');
    const id=sha256(original);
    if(books.some(b=>b.id===id)){message('Эта книга уже есть в библиотеке.');continue;}
-   const book={...parsed,id,original,fileName:file.name,addedAt:Date.now(),marks:[]};await shelfState.restore(book,cloud?.owner||await storage.getPreference('cloud-owner'),b=>books.push(b));cloud?.sync();
+   const book={...parsed,id,cloudOwner:localOwner,localStateOwner:localOwner,original,fileName:file.name,addedAt:Date.now(),marks:[]};rememberBookOwner(book);await shelfState.restore(book,owner,b=>{if(localOwner===owner)books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);});if(owner!==localOwner)break;cloud?.sync();
    if(current)await library();else {await library();}
+   if(owner!==localOwner)break;
    message(book.warnings.length?'Книга добавлена. Проверьте замечания в меню «О книге».':'Книга добавлена в библиотеку.');
-  }catch(e){message(e.message||'Не удалось открыть книгу. Проверьте формат файла.',true);}
+  }catch(e){if(owner===localOwner)message(e.message||'Не удалось открыть книгу. Проверьте формат файла.',true);}
+  if(owner!==localOwner)break;
  }
- if(input)input.value='';busy=false;
+ if(input&&owner===localOwner)input.value='';busy=false;
 }
 function downloadBook(b){const url=URL.createObjectURL(new Blob([b.original]));const a=document.createElement('a');a.href=url;a.download=b.fileName||'book.fb2';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function bookInfo(b){
@@ -137,22 +177,26 @@ function bookInfo(b){
  if(resetCover)resetCover.onclick=async()=>{const previous=b.progress;resetCover.disabled=true;try{b.progress={anchor:{block:0,offset:0},...(b.progress||{}),coverImage:null};await saveBookMeta(b);await library();bookInfo(b);}catch(error){b.progress=previous;resetCover.disabled=false;message(error.message,true);}};
  document.querySelector('#remove-book').onclick=async()=>{
   closeSheet();openSheet('Убрать книгу с полки?',`<div class="prose"><p>«${esc(b.title)}» исчезнет с этого устройства. Облачная копия останется, но синхронизация не вернёт книгу на это устройство. Чтобы вернуть её, добавьте файл снова.</p><div class="action-row"><button class="button secondary" id="keep-book">Оставить</button><button class="button primary" id="confirm-remove">Убрать с полки</button></div></div>`);
-  document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{const owner=b.cloudOwner||cloud?.owner||await storage.getPreference('cloud-owner');await shelfState.hide(b.id,owner,()=>{books=books.filter(x=>x.id!==b.id);});await paginationCache.remove(b.id);closeSheet();await library();}catch(e){message(e.message,true);}};
+  document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{const owner=localOwner;await shelfState.hide(b.id,owner,()=>{books=books.filter(x=>x.id!==b.id);});await paginationCache.remove(b.id);closeSheet();await library();}catch(e){message(e.message,true);}};
  };
 }
 async function openBook(id){
- const b=books.find(x=>x.id===id);if(!b)return;
+ const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
- if(current)await persistPosition();dispose();current=b;readingTouched=false;
+ if(owner!==localOwner)return;
+ if(current)await persistPosition();if(owner!==localOwner)return;dispose();current=b;readingTouched=false;
  await upgradeBookPresentation(b,{saveBook:storage.putBook});
- try{const stored=await storage.getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
+ if(owner!==localOwner||current!==b)return;
+ try{const stored=await localState((b.localStateOwner===undefined?localOwner:b.localStateOwner)).getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
+ if(owner!==localOwner||current!==b)return;
  anchor=b.progress?.anchor||{block:0,offset:0};pageIndex=0;
  try{
-  const appearance=await storage.getPreference(bookAppearanceKey(id));
+  const appearance=await localState((b.localStateOwner===undefined?localOwner:b.localStateOwner)).getPreference(bookAppearanceKey(id));
   if(appearance?.settings&&Number(appearance.updatedAt)>Number(b.appearanceUpdatedAt||0)){
    b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=appearance.updatedAt;
   }
  }catch(e){message('Настройки текста не загрузились: '+e.message,true);}
+ if(owner!==localOwner||current!==b)return;
  const effectiveAppearance=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:b.appearanceSettings||b.progress?.bookSettings,updatedAt:b.appearanceUpdatedAt||b.progress?.appearanceUpdatedAt||0});
  settings=restoreSettings(effectiveAppearance.settings);theme();
  updateReaderWindow();document.body.classList.add('reading');theme();scheduleCloudPoll();
@@ -283,7 +327,7 @@ function showSettings(){
  for(const [id,key] of [['font-select','font'],['align-select','align']]){const e=document.getElementById(id);if(e){e.value=settings[key];e.onchange=()=>change(key,e.value);}}
  for(const [id,key] of [['hyphens-check','hyphens']]){const e=document.getElementById(id);if(e)e.onchange=()=>change(key,e.checked);}
  document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();saveSettings();showSettings();});
- document.querySelector('#reset-settings').onclick=()=>{settings={...(current?globalSettings:defaults)};theme();saveSettings();showSettings();layout();};
+ document.querySelector('#reset-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();layout();};
 }
 
 /** Inject highlights into original text nodes without changing text length or character anchors. */
@@ -411,42 +455,55 @@ function showCloud(){
  document.querySelector('#sync-now').onclick=async()=>{const b=document.querySelector('#sync-now');b.disabled=true;await cloud?.sync();showCloud();};
  document.querySelectorAll('[data-remote]').forEach(el=>el.onclick=async()=>{const record=remotePositions[Number(el.dataset.remote)],book=books.find(b=>'position:'+b.id===record.key);if(!book)return;closeSheet();if(current?.id!==book.id)await openBook(book.id);jump(record.payload.anchor);});
 }
+function rememberBookOwner(book){const previous=allBooks.find(b=>b.id===book.id);book.cloudOwners=[...new Set([...(previous?.cloudOwners||[]),previous?.cloudOwner,localOwner].filter(Boolean))];}
+async function loadAccountState(owner){
+ localOwner=owner||null;
+ settings=restoreSettings(await localState().getPreference('settings'));
+ settingsUpdatedAt=await localState().getPreference('settings-updatedAt')||0;globalSettings={...settings};
+ allBooks=await storage.listBooks();books=allBooks.filter(b=>bookBelongsToAccount(b,localOwner));
+ for(const b of books){
+  b.localStateOwner=localOwner;b.progress=await localState().getPreference('position:'+b.id);b.marks=b.progress?.marks||[];
+  delete b.appearanceSettings;delete b.appearanceUpdatedAt;
+  const appearance=await localState().getPreference(bookAppearanceKey(b.id));
+  if(appearance?.settings){b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=Number(appearance.updatedAt)||0;}
+  else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=legacyAppearanceTimestamp(b.progress);}
+ }
+}
+function queueLocalState(){
+ if(!cloud||localOwner!==cloud.owner)return;
+ if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',globalSettings,settingsUpdatedAt,localOwner);
+ for(const b of books)if(b.progress?.updatedAt&&!cloud.remote.some(r=>r.key==='position:'+b.id&&r.clientUpdatedAt>=b.progress.updatedAt))cloud.queue('position:'+b.id,b.progress,b.progress.updatedAt,(b.localStateOwner===undefined?localOwner:b.localStateOwner));
+}
 async function init(){
  app.innerHTML='<div class="boot"><div class="brand">'+icon('book')+'<span>Книга.</span></div><p>Открываем библиотеку…</p></div>';
  try{
-  settings=restoreSettings(await storage.getPreference('settings'));settingsUpdatedAt=await storage.getPreference('settings-updatedAt')||0;const storedSettings=await storage.getPreference('settings');globalSettings={...settings};if(storedSettings&&storedSettings.paragraphSpacingVersion!==1){
-    // Normalizing old paragraph spacing is not a user edit. Giving it a fresh
-    // timestamp overwrote newer typography from other devices on startup.
-    await storage.setPreference('settings',settings);
-   }books=await storage.listBooks();
-  if(!books.length){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);books=[book];}
-  for(const b of books){
-    b.progress=await storage.getPreference(`position:${b.id}`);b.marks=b.progress?.marks||[];
-    const appearance=await storage.getPreference(bookAppearanceKey(b.id));
-    if(appearance?.settings){b.appearanceSettings=restoreSettings(appearance.settings);b.appearanceUpdatedAt=Number(appearance.updatedAt)||0;}
-    else if(b.progress?.bookSettings){b.appearanceSettings=restoreSettings(b.progress.bookSettings);b.appearanceUpdatedAt=legacyAppearanceTimestamp(b.progress);}
-   }
+  localOwner=await storage.getPreference('cloud-owner')||null;
+  await accountState.migrateLegacy(localOwner);
+  allBooks=await storage.listBooks();
+  // Previously unmarked local files belong to the account active before migration.
+  if(localOwner)for(const b of allBooks)if(b.id!=='sample'&&!b.cloudOwner){b.cloudOwner=localOwner;await storage.putBook(b);}
+  if(!allBooks.some(b=>b.id==='sample')){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);allBooks.push(book);}
+  await loadAccountState(localOwner);
   await library();
-  cloud=new CloudSync({onSettled:()=>{if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>books.push(b),status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
+  cloud=new CloudSync({onSettled:()=>{queueLocalState();if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},accountChanged:async(next,previous)=>{clearTimeout(saveTimer);await appearanceTail.catch(()=>{});await persistPosition();dispose();current=null;closeSheet();if(!previous)await accountState.adoptGuest(next);await loadAccountState(next);await library();},allBooks:()=>allBooks,canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>{b.localStateOwner=localOwner;books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);},status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
    localAppearance:b=>b.appearanceSettings?{settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt||0}:null,
    remoteAppearance:async(b,record,hasPending)=>{
     if(!preferRemoteAppearance(b.appearanceUpdatedAt,record.clientUpdatedAt,hasPending))return;
     const next=restoreSettings(record.payload),updatedAt=Number(record.clientUpdatedAt);
-    await storage.setPreference(bookAppearanceKey(b.id),{settings:next,updatedAt});
+    await localState().setPreference(bookAppearanceKey(b.id),{settings:next,updatedAt});
     b.appearanceSettings=next;b.appearanceUpdatedAt=updatedAt;
     if(current?.id===b.id){const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:next,updatedAt});applyLiveAppearance(effective.settings);}
    },
    remoteSettings:async record=>{
     if(!preferRemoteAppearance(settingsUpdatedAt,record.clientUpdatedAt,Boolean(cloud?.pending.settings)))return;
     globalSettings=restoreSettings(record.payload);settingsUpdatedAt=Number(record.clientUpdatedAt);
-    await storage.setPreference('settings',globalSettings);await storage.setPreference('settings-updatedAt',settingsUpdatedAt);
+    await localState().setPreference('settings',globalSettings);await localState().setPreference('settings-updatedAt',settingsUpdatedAt);
     const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},current?{settings:current.appearanceSettings,updatedAt:current.appearanceUpdatedAt||0}:null);
     applyLiveAppearance(effective.settings);
-   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;if(previous!==JSON.stringify(stored)){await storage.setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}}});
+   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;if(previous!==JSON.stringify(stored)){await localState((book.localStateOwner===undefined?localOwner:book.localStateOwner)).setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}}});
   await cloud.init();
   if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(async()=>{cloud?.resume();await cloud?.sync();scheduleCloudPoll();},0);});
-  if(settingsUpdatedAt&&!cloud.remote.some(r=>r.key==='settings'&&r.clientUpdatedAt>=settingsUpdatedAt))cloud.queue('settings',globalSettings,settingsUpdatedAt);
-  for(const b of books)if(b.progress?.updatedAt&&!cloud.remote.some(r=>r.key==='position:'+b.id&&r.clientUpdatedAt>=b.progress.updatedAt))cloud.queue('position:'+b.id,b.progress,b.progress.updatedAt);
+  queueLocalState();
   scheduleCloudPoll();
   window.addEventListener('online',async()=>{cloud.resume();await cloud.sync();scheduleCloudPoll();});
   window.addEventListener('offline',()=>{cloud.pause();clearTimeout(cloudPoll);cloudPoll=null;});

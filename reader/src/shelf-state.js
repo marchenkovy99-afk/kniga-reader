@@ -16,7 +16,11 @@ export function createShelfState(store){
  });
  const hide=(id,owner,onRemove=()=>{})=>serial(async()=>{
   await store.setPreference(key(owner),[...new Set([...(await read(owner)),id])]);
-  await store.deleteBook(id);onRemove();
+  const book=(await store.listBooks?.()||[]).find(b=>b.id===id);
+  const remaining=[...new Set([...(book?.cloudOwners||[]),book?.cloudOwner].filter(value=>value&&value!==owner))];
+  if(book&&remaining.length)await store.putBook({...book,cloudOwner:remaining[0],cloudOwners:remaining});
+  else await store.deleteBook(id);
+  onRemove();
  });
  const commit=(book,owner,onCommit=()=>{})=>serial(async()=>{
   if((await read(owner)).includes(book.id))return false;

@@ -98,3 +98,13 @@ test('conventional XHTML EPUB declarations and common HTML entities open without
  }
  await assert.rejects(importBook(wrap('<!DOCTYPE html [<!ENTITY secret SYSTEM "file:///secret">]><html><body><p>&secret;</p></body></html>'),'unsafe.epub'),/DTD|DOCTYPE/);
 });
+
+test('TXT single newlines retain source character offsets in rendered HTML',async()=>{
+ const b=await parse('Первая строка.\r\nВторая <строка>.\n\nПоследняя\rстрока.', 'lines.txt');
+ assert.deepEqual(b.blocks.map(x=>x.text),['Первая строка.\nВторая <строка>.','Последняя\nстрока.']);
+ for(const block of b.blocks){
+  const dom=new DOMParser().parseFromString(`<root>${block.html}</root>`,'text/xml');
+  assert.equal(dom.documentElement.textContent,block.text,'newlines are source characters, not only visual BR elements');
+  assert.equal(dom.getElementsByTagName('br').length,1);
+ }
+});

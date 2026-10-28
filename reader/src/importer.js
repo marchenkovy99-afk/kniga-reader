@@ -170,7 +170,7 @@ export async function importBook(input,name){
  }
  if(/\.epub$/i.test(name))return epub(unzip(bytes),name);
  if(/\.txt$/i.test(name)){
-  const blocks=decode(bytes).replace(/\r\n?/g,'\n').split(/\n[ \t]*\n/).filter(x=>x.trim()).map((text,i)=>({id:`b${i}`,type:'p',text,html:escapeHTML(text).replace(/\n/g,'<br/>'),sourceId:null}));
+  const blocks=decode(bytes).replace(/\r\n?/g,'\n').split(/\n[ \t]*\n/).filter(x=>x.trim()).map((text,i)=>({id:`b${i}`,type:'p',text,html:escapeHTML(text).replace(/\n/g,'\n<br/>'),sourceId:null}));
   return finish({title:name.replace(/\.txt$/i,''),author:'Текстовый файл',blocks,format:'TXT',warnings:[],cover:null});
  }
  throw new Error('Этот формат пока не поддерживается. Выберите FB2, FB2.zip, EPUB или TXT.');

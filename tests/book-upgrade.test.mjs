@@ -30,3 +30,18 @@ test('failed upgrade storage or corrupt original does not damage the usable book
  assert.equal(await upgradeBookPresentation(book,{saveBook:async()=>{throw Error('should not write');}}),false);
  assert.deepEqual(book.blocks,before.blocks);
 });
+
+test('stored TXT at current presentation version repairs source newlines without changing anchors',async()=>{
+ const text='Первая строка.\nВторая <строка>.';
+ const book={...savedBook(),fileName:'lines.txt',original:strToU8(text).buffer,presentationVersion:1,
+  blocks:[{id:'existing-txt-id',type:'p',text,html:'Первая строка.<br/>Вторая &lt;строка&gt;.',sourceId:null}],
+  progress:{anchor:{block:0,offset:18},updatedAt:456}};
+ const before=structuredClone(book);let writes=0;
+ assert.equal(await upgradeBookPresentation(book,{saveBook:async()=>writes++}),true);
+ const dom=new DOMParser().parseFromString(`<r>${book.blocks[0].html}</r>`,'text/xml');
+ assert.equal(dom.documentElement.textContent,text);
+ assert.equal(book.blocks[0].id,'existing-txt-id');
+ for(const key of ['id','original','progress','marks','appearanceSettings','appearanceUpdatedAt','presentationVersion'])assert.deepEqual(book[key],before[key],key);
+ assert.equal(await upgradeBookPresentation(book,{saveBook:async()=>writes++}),false);
+ assert.equal(writes,1,'repaired TXT does not reimport or write again');
+});

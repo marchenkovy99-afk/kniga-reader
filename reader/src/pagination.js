@@ -3,6 +3,7 @@ import {russianHyphenOffsets} from './hyphenation.js';
 import {planJustifiedLines} from './justified-lines.js';
 import {createTextMeasure} from './text-metrics.js';
 import {assertPageIntegrity} from './page-integrity.js';
+import {visibleContentFits} from './pagination-geometry.js';
 
 const textWidths=new Map();
 function canvasWidth(canvas,text,font,spacing){
@@ -137,7 +138,7 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
   return sliceHTML(prepared.html,from,to)+(to<blocks[i].text.length&&prepared.hyphens?.includes(to)?'<span class="book-page-hyphen" aria-hidden="true"></span>':'');
  };
  const make=(b,i,from,to,reserve=0)=>`<${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'} class="paragraph ${b.type==='verse'?'verse':''} ${presentationClasses(b.presentation)} ${from?'continued':''} ${to<b.text.length?'page-continues':''}" data-block="${i}" data-from="${from}" data-to="${to}"${reserve?` style="height:${Math.max(1,contentHeight-reserve)}px"`:''}>${content(i,from,to)}</${b.type==='h2'?'h2':b.type==='h3'?'h3':'div'}>`;
- const fits=html=>{measure.innerHTML=parts.join('')+html;return measure.scrollHeight<=measure.clientHeight;};
+ const fits=html=>{measure.innerHTML=parts.join('')+html;return visibleContentFits(measure);};
  const cutAtWord=(text,cut,offset,i)=>{
   if(cut<text.length&&!/\s/.test(text[cut-1])&&!/\s/.test(text[cut])){
    const before=text.slice(offset,cut).search(/\s+\S*$/),wordStart=before>0?offset+before+text.slice(offset+before,cut).match(/^\s*/)[0].length:offset;
@@ -192,10 +193,24 @@ export async function paginate(blocks,{width,height,settings,signal,onProgress})
     }
     let low=offset,high=length;
     while(low<high){const mid=Math.ceil((low+high)/2);if(fits(make(block,i,offset,mid)))low=mid;else high=mid-1;}
+    if(low>offset&&/[\uD800-\uDBFF]/.test(block.text[low-1]))low--;
     if(low===offset){if(parts.length){flush();continue;}throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');}
     let cut=prepare(i).lines?.findLast(line=>line.to<=low&&line.to>offset)?.to??safeCut(i,cutAtWord(block.text,low,offset,i),offset);
     if(cut<=offset)cut=low;
-    const fragment=make(block,i,offset,cut);start??={block:i,offset};parts.push(fragment);end={block:i,offset:cut};offset=cut;flush();
+    // A word-boundary cut changes last-line justification and can add a
+    // discretionary hyphen. Verify that final markup as well as the probe.
+    let fragment=make(block,i,offset,cut);
+    if(cut<low){
+     const fitted=make(block,i,offset,low),fittedFits=fits(fitted);
+     const fittedBottom=lineBoxes(measure.lastElementChild).at(-1)?.bottom;
+     const preferredFits=fits(fragment),preferredBottom=lineBoxes(measure.lastElementChild).at(-1)?.bottom;
+     // An overlong word can occupy several rows. Moving its beginning to the
+     // next page must not discard rows that already contain visible text.
+     if(fittedFits&&(!preferredFits||fittedBottom-preferredBottom>parseFloat(measuredStyle.lineHeight)*.8)){cut=low;fragment=fitted;}
+    }
+    if(!fits(fragment)){cut=low;fragment=make(block,i,offset,cut);}
+    if(!fits(fragment))throw new Error('Текст не помещается. Уменьшите размер шрифта или поля.');
+    start??={block:i,offset};parts.push(fragment);end={block:i,offset:cut};offset=cut;flush();
     if(pages.length>2000)throw new Error('Слишком много страниц для черновой версии. Уменьшите шрифт. Текст не усечён.');
    }
    if(i%12===0){onProgress?.(Math.round(i/blocks.length*100));await new Promise(r=>setTimeout(r,0));}

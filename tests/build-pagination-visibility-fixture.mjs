@@ -1,0 +1,10 @@
+import {build} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+const entry=fileURLToPath(new URL('./pagination-visibility.fixture.mjs',import.meta.url));
+const result=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry,formats:['es']}}});
+const code=(Array.isArray(result)?result[0]:result).output.find(file=>file.type==='chunk'&&file.isEntry).code;
+const css=await readFile(new URL('../reader/src/style.css',import.meta.url),'utf8');
+const path=process.argv[2]||'/tmp/kniga-pagination-qa.html';
+await writeFile(path,`<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pagination visibility — running</title><style>${css}\nbody{overflow:auto!important;padding:20px;background:#eee}.qa-page{position:relative;margin-bottom:24px;background:white;color:black;box-shadow:0 0 0 1px #777}#results{white-space:pre-wrap;font:14px/1.5 monospace;color:black}#preview h2{font:20px/1.4 sans-serif;color:black}</style><h1>Pagination visibility regression</h1><pre id="results">Running…</pre><div id="preview"></div><script type="module">${code.replace(/<\/script/gi,'<\\/script')}</script></html>`);
+console.log(path);

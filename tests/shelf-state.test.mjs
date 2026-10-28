@@ -4,7 +4,7 @@ import {createShelfState} from '../reader/src/shelf-state.js';
 
 function disk(){
  const preferences=new Map(),books=new Map();
- return {preferences,books,getPreference:async key=>structuredClone(preferences.get(key)),setPreference:async(key,value)=>preferences.set(key,structuredClone(value)),deletePreference:async key=>preferences.delete(key),putBook:async book=>books.set(book.id,structuredClone(book)),deleteBook:async id=>books.delete(id)};
+ return {preferences,books,listBooks:async()=>[...books.values()].map(b=>structuredClone(b)),getPreference:async key=>structuredClone(preferences.get(key)),setPreference:async(key,value)=>preferences.set(key,structuredClone(value)),deletePreference:async key=>preferences.delete(key),putBook:async book=>books.set(book.id,structuredClone(book)),deleteBook:async id=>books.delete(id)};
 }
 test('a removal survives restart and account sync while another account keeps its own shelf',async()=>{
  const store=disk(),shelf=createShelfState(store),book={id:'book'};await store.putBook(book);
@@ -32,4 +32,14 @@ test('parallel removals retain both markers and an explicit reimport restores on
 test('failed persistence reports the error and does not poison later shelf operations',async()=>{
  const store=disk(),shelf=createShelfState(store),set=store.setPreference;store.setPreference=async()=>{throw Error('disk full');};
  await assert.rejects(shelf.hide('one','a'),/disk full/);store.setPreference=set;await shelf.hide('two','a');assert.equal(await shelf.isHidden('two','a'),true);
+});
+
+
+test('removing a shared content file keeps the other account offline copy',async()=>{
+ const store=disk(),shelf=createShelfState(store);await store.putBook({id:'shared',cloudOwner:'b',cloudOwners:['a','b'],original:new Uint8Array([1,2,3])});
+ await shelf.hide('shared','a');
+ assert.equal(await shelf.isHidden('shared','a'),true);
+ assert.equal(await shelf.isHidden('shared','b'),false);
+ const retained=store.books.get('shared');assert.ok(retained);assert.equal(retained.cloudOwner,'b');assert.deepEqual(retained.cloudOwners,['b']);assert.deepEqual([...retained.original],[1,2,3]);
+ await shelf.hide('shared','b');assert.equal(store.books.has('shared'),false);
 });

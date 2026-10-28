@@ -5,6 +5,7 @@ import {mergeAnnotations} from './reading-features.js';
 import {sha256} from 'js-sha256';
 import {supabaseTransport} from './supabase-client.js';
 import {shelfState} from './shelf-state.js';
+import {bookBelongsToAccount} from './account-state.js';
 const uuid=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);};
 export class CloudSync{
  constructor(callbacks){this.cb=callbacks;this.user=null;this.remote=[];this.running=false;this.paused=false;this.failures=0;this.fullSyncRequested=false;this.timer=null;this.retryTimer=null;this.resyncRequested=false;this.status='Проверяем облако…';this.owner=null;this.pending={};this.deviceId=null;this.details={books:0,states:0,downloaded:0};this.lastSuccessfulAt=null;this.remoteBooksCount=0;}
@@ -38,12 +39,21 @@ export class CloudSync{
  pause(){this.paused=true;clearTimeout(this.timer);clearTimeout(this.retryTimer);this.timer=null;this.retryTimer=null;}
  resume(){this.paused=false;}
  canSync(){return !this.paused&&(this.cb.canSync?.()??true);}
- async queue(key,payload,updatedAt=Date.now()){
+ canQueue(key,sourceOwner=this.owner){
+  if(sourceOwner!==this.owner)return false;
+  const match=/^(?:position|appearance):(.+)$/.exec(key);
+  const book=match&&this.cb.books().find(b=>b.id===match[1]);
+  return !book||bookBelongsToAccount(book,this.owner);
+ }
+ async queue(key,payload,updatedAt=Date.now(),sourceOwner=this.owner){
+  if(!this.canQueue(key,sourceOwner))return;
+  const owner=this.owner,pending=this.pending;
   const queued=this.pending[key],sent=this.remote.find(r=>r.deviceId===this.deviceId&&r.key===key);
   if(queued&&Number(queued.clientUpdatedAt)>Number(updatedAt))return;
   if(!queued&&sent&&sent.clientUpdatedAt===updatedAt&&JSON.stringify(sent.payload)===JSON.stringify(payload))return;
-  this.pending[key]={key,payload,clientUpdatedAt:updatedAt};
-  try{await storage.setPreference(`cloud-pending:${this.owner||'guest'}:${this.deviceId}`,this.pending);}catch(e){this.setStatus(e.message);}
+  pending[key]={key,payload,clientUpdatedAt:updatedAt};
+  try{await storage.setPreference(`cloud-pending:${owner||'guest'}:${this.deviceId}`,pending);}catch(e){this.setStatus(e.message);}
+  if(owner!==this.owner)return;
   this.setStatus('Изменения ожидают отправки…');
   if(this.running)this.resyncRequested=true;
   clearTimeout(this.timer);if(this.canSync())this.timer=setTimeout(()=>this.sync({uploadOnly:true}),key.startsWith('position:')?5000:1200);
@@ -52,6 +62,7 @@ export class CloudSync{
   const hadPending=Object.keys(this.pending).length>0;
    for(const [key,record] of Object.entries({...this.pending})){
     if(!this.canSync()&&!allowHidden)break;
+    if(!this.canQueue(key))continue;
     let existing=this.remote.find(x=>x.deviceId===this.deviceId&&x.key===key);
     if(key.startsWith('position:'))record.payload={...record.payload,marks:mergeMarks(record.payload.marks||[],...this.remote.filter(x=>x.key===key).map(x=>x.payload?.marks||[])),annotations:mergeAnnotations(record.payload.annotations||[],...this.remote.filter(x=>x.key===key).map(x=>x.payload?.annotations||[]))};
     const headers={'Content-Type':'application/json','x-cloud-owner':this.owner,...(existing?.etag?{'If-Match':existing.etag}:{})};
@@ -78,7 +89,10 @@ export class CloudSync{
    const response=await this.api('/api/cloud');const snapshot=await response.json();
    // Preserve per-account unsent edits and adopt unauthenticated edits only
    // on the first login. Switching accounts must never clear the other queue.
-   if(this.owner!==snapshot.userId){
+   const previousOwner=this.owner;
+   if(previousOwner!==snapshot.userId){
+    await this.cb.accountChanged?.(snapshot.userId,previousOwner);
+    await storage.setPreference(`cloud-pending:${previousOwner||'guest'}:${this.deviceId}`,this.pending);
     if(!this.owner)await shelfState.adoptGuest(snapshot.userId);
     const targetKey=`cloud-pending:${snapshot.userId}:${this.deviceId}`;
     const accountPending=await storage.getPreference(targetKey)||{};
@@ -92,7 +106,7 @@ export class CloudSync{
    let added=false;
    for(const book of local){
     if(!this.canSync()&&!allowHidden)return;
-    if(book.id==='sample'||(book.cloudOwner&&book.cloudOwner!==this.owner)||await shelfState.isHidden(book.id,this.owner))continue;
+    if(book.id==='sample'||!bookBelongsToAccount(book,this.owner)||await shelfState.isHidden(book.id,this.owner))continue;
     if(remoteIds.has(book.id)){
      if(book.cloudOwner!==this.owner){book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);}
      continue;
@@ -107,12 +121,13 @@ export class CloudSync{
     if(await shelfState.isHidden(entry.id,this.owner))continue;
     const id=sha256(original);
     if(id!==entry.id)throw new Error('Контрольная сумма облачной книги не совпала. Загрузка отменена.');
-    const parsed=await importBook(original,entry.fileName);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,addedAt:Date.now(),marks:[]};
+    const parsed=await importBook(original,entry.fileName),previous=this.cb.allBooks?.().find(b=>b.id===id);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,cloudOwners:[...new Set([...(previous?.cloudOwners||[]),previous?.cloudOwner,this.owner].filter(Boolean))],addedAt:Date.now(),marks:[]};
     if(await shelfState.commit(book,this.owner,b=>this.cb.addBook(b))){this.details.downloaded++;added=true;}
    }
    await this.sendPending({allowHidden});
    const settings=latestReadingSettings(this.remote);if(settings)await this.cb.remoteSettings?.(settings);
    for(const b of this.cb.books()){
+    if(!bookBelongsToAccount(b,this.owner))continue;
     const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);
     if(states.length){
      const latest=newestState(states,key),marks=mergeMarks(b.marks||[],...states.map(x=>x.payload?.marks||[]));

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {sha256} from 'js-sha256';
+import {bookBelongsToAccount} from '../reader/src/account-state.js';
 import {createShelfState} from '../reader/src/shelf-state.js';
 import {pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,resolveReadingAppearance} from '../reader/src/sync-model.js';
 
@@ -26,7 +27,7 @@ function harness({preferences={},session={},api=null,bookList=[],callbacks={}}={
    uploads.push(JSON.parse(opts.body));return Response.json({saved:true});
   }
  };
- const context={pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,crypto:globalThis.crypto,Response,storage,sessionStorage:{getItem:k=>tabs.get(k)||null,setItem:(k,v)=>tabs.set(k,v)},
+ const context={bookBelongsToAccount,pendingForAccount,bookAppearanceKey,latestBookAppearance,latestReadingSettings,crypto:globalThis.crypto,Response,storage,sessionStorage:{getItem:k=>tabs.get(k)||null,setItem:(k,v)=>tabs.set(k,v)},
    supabaseTransport:transport,shelfState:createShelfState(storage),
    mergeMarks:(...groups)=>groups.flat(),mergeAnnotations:(...groups)=>groups.flat(),
    newestState:(rows,key)=>rows.filter(x=>x.key===key).sort((a,b)=>b.clientUpdatedAt-a.clientUpdatedAt)[0],
@@ -184,4 +185,42 @@ test('connection failures back off and paused requests never start a retry timer
 test('recovered startup retry restarts the automatic polling lifecycle',async()=>{
  let calls=0,schedules=0;const h=harness({api:async()=>{if(++calls===1)throw Error('temporary network failure');return Response.json({userId:'owner-1',books:[],states:[]});},callbacks:{onSettled:()=>{if(h.cloud.user&&!h.cloud.error)schedules++;}}});
  await h.cloud.init();assert.equal(schedules,0);await h.flush();assert.equal(schedules,1);
+});
+
+test('restarting into account B never queues or applies account A book state',async()=>{
+ const id='b'.repeat(64),key='position:'+id,writes=[],applied=[];
+ const privateProgress={anchor:{block:0,offset:0},updatedAt:500,annotations:[{id:'private-a',note:'A private note'}]};
+ const book={id,cloudOwner:'account-a',progress:privateProgress,marks:[{label:'A bookmark'}],appearanceSettings:{fontSize:37},appearanceUpdatedAt:500};
+ const h=harness({preferences:{'cloud-owner':'account-a','kniga-installation-id':'device'},bookList:[book],api:async(url,opts={})=>{
+  if(url==='/api/cloud')return Response.json({userId:'account-b',books:[],states:[{key,clientUpdatedAt:900,payload:{anchor:{block:0,offset:0},annotations:[{id:'b-note'}]}}]});
+  if(url==='/api/cloud/identity')return Response.json({userId:'account-b'});
+  writes.push({url,body:opts.body});return Response.json({saved:true});
+ },callbacks:{localAppearance:b=>({settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt}),remotePosition:()=>applied.push('position'),remoteAppearance:()=>applied.push('appearance')}});
+ await h.cloud.init();
+ // The real startup path used to replay every cached book after init switched accounts.
+ await h.cloud.queue(key,book.progress,book.progress.updatedAt);
+ await h.cloud.sync({uploadOnly:true});
+ assert.deepEqual(writes,[]);
+ assert.deepEqual(applied,[]);
+ assert.deepEqual(book.progress,privateProgress);
+});
+
+test('a delayed save keeps its originating account across an account switch',async()=>{
+ const h=harness();await h.cloud.init();
+ await h.cloud.queue('settings',{fontSize:39},700,'other-account');
+ await h.cloud.queue('position:sample',{annotations:[{note:'private'}]},700,'other-account');
+ assert.deepEqual(Object.keys(h.cloud.pending),[]);
+});
+
+test('switching accounts restores their own queues and preserves unsent edits',async()=>{
+ let account='account-a';const writes=[];
+ const h=harness({api:async(url,opts={})=>{
+  if(url==='/api/cloud')return Response.json({userId:account,books:[],states:[]});
+  if(url==='/api/cloud/identity')return Response.json({userId:account});
+  writes.push({account:opts.headers['x-cloud-owner'],record:JSON.parse(opts.body)});return Response.json({saved:true});
+ }});
+ await h.cloud.init();h.cloud.pause();await h.cloud.queue('settings',{fontSize:37},500);
+ account='account-b';h.cloud.resume();await h.cloud.sync();
+ assert.equal(writes.length,0);assert.equal(h.prefs.get('cloud-pending:account-a:'+h.cloud.deviceId).settings.payload.fontSize,37);
+ account='account-a';await h.cloud.sync();assert.equal(writes[0].account,'account-a');assert.equal(writes[0].record.payload.fontSize,37);
 });

@@ -366,3 +366,31 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .list-view .book-meta{min-width:0;padding-right:28px}
 .list-view .book-meta h3,.list-view .book-meta p{white-space:normal;overflow-wrap:anywhere}
 .list-view .book-more{right:0;top:0}
+
+/* Compact reader controls from the user's sketch. Visible controls reserve
+   their own rows, so even the last line stays readable. Hidden controls return
+   that space to the book; both geometries use the same source anchor/cache. */
+.reader{--reader-top-inset:env(safe-area-inset-top,0px);--reader-bottom-inset:env(safe-area-inset-bottom,0px)}
+.reader-header{min-height:48px;padding:2px 8px;gap:8px;background:transparent}
+.reader-heading{visibility:hidden}
+.reader-header .icon-button{border-radius:50%;background:var(--paper)}
+.reader:not(.chrome-hidden) .reader-header{position:relative;top:auto;left:auto;right:auto;flex-shrink:0}
+.reader-footer{width:min(340px,calc(100% - 24px));border:1px solid var(--line);border-radius:30px;background:var(--sheet);box-shadow:0 5px 24px #00000012;padding:9px 16px 6px}
+.reader:not(.chrome-hidden) .reader-footer{position:relative;bottom:auto;left:auto;right:auto;flex-shrink:0;margin:5px auto 6px}
+.reader-footer .reader-tools{display:flex;justify-content:space-between;gap:8px;padding:0;height:44px}
+.reader-footer .reader-tools>.icon-button{width:48px;height:44px;border-radius:50%}
+.reader-footer .nav-arrows{display:none}
+.reader-footer .page-status{gap:6px;font-size:10px;line-height:1.4;margin:0}
+.reader-footer .reader-page-position{font-size:12px}
+.reader-footer .reading-progress{height:22px;margin:0;width:100%;display:block}
+.book-text{padding-top:3px;padding-bottom:3px}
+.sheet.appearance-sheet{width:min(480px,calc(100% - 24px));margin:auto auto max(12px,env(safe-area-inset-bottom));border-radius:28px;max-height:min(72dvh,650px);box-shadow:0 12px 48px #0003}
+.appearance-sheet .sheet-content{padding:4px 18px 18px}
+.appearance-sheet .setting-control{grid-template-columns:minmax(76px,1fr) 44px minmax(24px,1fr) 42px 44px;gap:6px}
+.appearance-sheet .step-button{width:44px;height:44px;border-radius:14px}
+.appearance-sheet .step-button:before{display:none}
+.appearance-sheet .segmented{border-bottom:0;gap:4px;background:var(--soft);border-radius:18px;padding:4px}
+.appearance-sheet .segmented button{border-radius:14px;min-height:44px}
+.appearance-sheet .segmented [aria-selected=true]{background:var(--paper)}
+.appearance-sheet .segmented [aria-selected=true]:after{display:none}
+@media(max-width:359px){.appearance-sheet .setting-control{grid-template-columns:minmax(65px,1fr) 44px minmax(20px,.7fr) 34px 44px;gap:2px}.appearance-sheet .sheet-content{padding-left:12px;padding-right:12px}}

@@ -3,7 +3,10 @@ import {PRESENTATION_VERSION} from './book-presentation.js';
 
 /** Local presentation only: synchronized source coordinates never change. */
 export async function upgradeBookPresentation(book,{saveBook}){
- if(book.presentationVersion===PRESENTATION_VERSION||!book.original||!book.fileName)return false;
+ // Older TXT imports kept LF in the source anchors but replaced it with BR
+ // in HTML. Repair that specific model even when presentation is current.
+ const needsTextRepair=/\.txt$/i.test(book.fileName||'')&&book.blocks.some(block=>block.text.includes('\n')&&!block.html.includes('\n'));
+ if((book.presentationVersion===PRESENTATION_VERSION&&!needsTextRepair)||!book.original||!book.fileName)return false;
  try{
   const parsed=await importBook(book.original,book.fileName);
   const compatible=parsed.blocks.length===book.blocks.length&&parsed.blocks.every((fresh,i)=>{
