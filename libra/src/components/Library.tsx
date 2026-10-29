@@ -1,0 +1,49 @@
+import { useRef, useState } from 'react';
+import type { ReaderSettings, StoredBook } from '../domain';
+import { BookCover } from './BookCover';
+import { Icon } from './Icons';
+type Props={books:StoredBook[]; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
+  onOpen:(book:StoredBook)=>void;onImport:(files:FileList)=>void;onDelete:(book:StoredBook)=>void;loading:boolean};
+export function Library({books,settings,onSettings,onOpen,onImport,onDelete,loading}:Props){
+ const input=useRef<HTMLInputElement>(null);
+ const [tab,setTab]=useState<'library'|'bookmarks'|'settings'>('library');
+ const [query,setQuery]=useState('');
+ const sorted=[...books].sort((a,b)=>(b.lastOpenedAt||b.importedAt)-(a.lastOpenedAt||a.importedAt));
+ const continueBook=sorted.find(b=>b.position)||sorted[0];
+ const shown=sorted.filter(b=>(b.title+' '+b.author).toLowerCase().includes(query.toLowerCase()));
+ return <div className="library-shell">
+  <header className="library-header"><div><span className="brand-eyebrow">ЛИЧНАЯ БИБЛИОТЕКА</span><h1>LIBRA<span className="brand-dot">.</span></h1></div>
+  <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></header>
+  <input ref={input} type="file" accept=".fb2,.epub,.pdf,application/pdf" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
+  {tab==='library'&&<main className="library-main">
+    <div className="library-greeting">Ваша история начинается здесь.</div>
+    {continueBook&&<section className="continue-section">
+      <div className="section-heading"><h2>Продолжить чтение</h2><span>СЕЙЧАС</span></div>
+      <button className="continue-card" onClick={()=>onOpen(continueBook)}>
+        <BookCover book={continueBook} large/>
+        <span className="continue-info"><span className="continue-tag">ПОСЛЕДНЯЯ КНИГА</span><strong>{continueBook.title}</strong><span className="continue-author">{continueBook.author}</span>
+        <span className="continue-line"><span style={{width:Math.round(((continueBook.position?.chapter||0)+1)*100/10)+'%'}}/></span>
+        <span className="continue-footer">Открыть книгу <span>↗</span></span></span>
+      </button>
+    </section>}
+    <section className="all-books">
+      <div className="section-heading"><h2>Все книги <em>{books.length}</em></h2><span>КОЛЛЕКЦИЯ</span></div>
+      <div className="search-wrap"><Icon name="search" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название или автор" aria-label="Поиск книг"/></div>
+      {shown.length?<div className="book-grid">{shown.map(book=>
+        <div key={book.id} className="book-tile"><button className="book-tile-open" onClick={()=>onOpen(book)}><BookCover book={book}/><strong>{book.title}</strong><small>{book.author}</small></button>
+        <button title="Удалить книгу" className="book-remove" onClick={()=>onDelete(book)}><Icon name="trash" size={15}/></button></div>)}</div>:
+        <div className="empty-library"><Icon name="book" size={38}/><strong>{books.length?'Книги не найдены':'Пока здесь тихо'}</strong><p>{books.length?'Попробуйте другой запрос.':'Добавьте первую книгу в формате FB2, EPUB или PDF.'}</p><button onClick={()=>input.current?.click()}>Добавить книгу</button></div>}
+    </section>
+    </main>}
+  {tab==='bookmarks'&&<main className="library-main"><div className="section-heading"><h2>Закладки</h2></div>
+    {sorted.some(b=>b.bookmarks.length)?sorted.filter(b=>b.bookmarks.length>0).map(b=><button className="bookmark-item" key={b.id} onClick={()=>onOpen(b)}><BookCover book={b}/><span><strong>{b.title}</strong><small>{b.bookmarks.length} закладок</small></span></button>):
+      <div className="empty-library"><Icon name="bookmark" size={40}/><strong>Пока нет закладок</strong><p>Отмечайте важные места во время чтения.</p></div>}</main>}
+  {tab==='settings'&&<main className="library-main"><div className="section-heading"><h2>Оформление</h2></div>
+    <p className="setting-hint">Тема меняет фон всего приложения, включая область системной строки iPhone, насколько это допускает iOS.</p>
+    <div className="theme-options settings-themes">{(['paper','white','night','oled'] as const).map(t=><button key={t} className={'theme-swatch '+(settings.theme===t?'chosen':'')} data-option={t} onClick={()=>onSettings({...settings,theme:t})}><span>{t==='paper'?'Бумага':t==='white'?'Белая':t==='night'?'Ночь':'OLED'}</span></button>)}</div>
+    <div className="settings-info"><Icon name="cloud" size={19}/><span>Облачная синхронизация будет подключена после проверки движка. Сейчас книги сохраняются локально на устройстве.</span></div>
+  </main>}
+  {loading&&<div role="status" className="import-status">Импорт книги…</div>}
+  <nav className="app-tabbar"><button className={tab==='library'?'active':''} onClick={()=>setTab('library')}><Icon name="book"/>Библиотека</button><button className={tab==='bookmarks'?'active':''} onClick={()=>setTab('bookmarks')}><Icon name="bookmark"/>Закладки</button><button className={tab==='settings'?'active':''} onClick={()=>setTab('settings')}><Icon name="settings"/>Настройки</button></nav>
+ </div>;
+}
