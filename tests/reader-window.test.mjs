@@ -53,3 +53,26 @@ test('the paint guard follows CSS viewport sizes even when iOS JS and CSS height
  assert.equal(readerWindow.viewportPaintQuery(fake(393,852,852)),'(min-width:393px) and (min-height:852px)');
  assert.equal(readerWindow.viewportPaintQuery(fake(393,852,803)),'(min-width:393px) and (min-height:803px)');
 });
+
+test('standalone PWA trusts CSS media viewport when innerHeight and document clientHeight are both stale',()=>{
+ let actual;
+ const win={navigator:{standalone:true},innerWidth:393,innerHeight:778,visualViewport:{height:778,scale:1,addEventListener(){}},addEventListener(){},matchMedia:query=>{
+  const match=query.match(/^\\((min-)?(height|width):(\\d+)px\\)$/);
+  const target=match[2]==='height'?852:393;
+  return {matches:match[1]?target>=Number(match[3]):target===Number(match[3])};
+ }};
+ const doc={documentElement:{clientHeight:778,style:{setProperty:(k,v)=>{if(k==='--reader-window-height')actual=v;}}},addEventListener(){}};
+ trackReaderWindow(win,doc);
+ assert.equal(actual,'852px','the app must not leave two or more reading lines unused due to stale iOS height values');
+});
+test('CSS media viewport prevents overshooting a genuinely smaller standalone screen',()=>{
+ let actual;
+ const win={navigator:{standalone:true},innerWidth:393,innerHeight:852,visualViewport:{height:852,scale:1,addEventListener(){}},addEventListener(){},matchMedia:query=>{
+  const match=query.match(/^\\((min-)?(height|width):(\\d+)px\\)$/);
+  const target=match[2]==='height'?803:393;
+  return {matches:match[1]?target>=Number(match[3]):target===Number(match[3])};
+ }};
+ const doc={documentElement:{clientHeight:852,style:{setProperty:(k,v)=>{if(k==='--reader-window-height')actual=v;}}},addEventListener(){}};
+ trackReaderWindow(win,doc);
+ assert.equal(actual,'803px','real CSS viewport shrink must cap the readable page');
+});
