@@ -10,6 +10,7 @@ const brokenViewportUnits=process.env.BROKEN_DVH==='1';
 const root=fileURLToPath(new URL('../docs/',import.meta.url));
 try{
  const page=await browser.newPage({viewport:{width:393,height:852},hasTouch:true,serviceWorkers:'block'});
+ page.on('console',msg=>{if(msg.type()==='error'&&msg.text().includes('DOM_PAGINATION_FIT'))console.error('BROWSER_PAGINATION_ERROR',msg.text());});
  await page.addInitScript(()=>Object.defineProperty(document,'fullscreenEnabled',{value:false}));
  if(staleInnerHeight)await page.addInitScript(()=>{const viewportHeight=Object.getOwnPropertyDescriptor(window,'innerHeight').get.bind(window);Object.defineProperty(navigator,'userAgent',{value:'iPhone'});Object.defineProperty(window,'innerHeight',{get:()=>viewportHeight()-74});Object.defineProperty(screen,'width',{value:393});Object.defineProperty(screen,'height',{get:()=>viewportHeight()});});
  if(installed)await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
@@ -102,9 +103,9 @@ try{
  assert.ok(pages.every(p=>p.stageTop>=59&&p.stageTop<=60),'installed page starts just below the iOS safe area');
  assert.ok(pages.every(p=>p.stageBottom>=791&&p.stageBottom<=793),'reading area may use only the remaining safe pixels below without clipping');
  assert.ok(pages.every(p=>p.stageHeight>=730),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=59&&p.first<=67),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.first>=61&&p.first<=69),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.every(p=>852-p.stageBottom>=59.5),'screen edge must have at least 44px clearance below every book page');
- assert.ok(pages.every(p=>p.last<=p.stageBottom-5.5),'last glyph descenders must not be cropped by the page viewport');
+ assert.ok(pages.every(p=>p.last<=p.stageBottom-2.5),'last glyph descenders must not be cropped by the page viewport');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+15),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}

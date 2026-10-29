@@ -5,7 +5,7 @@ import {assertPageIntegrity} from './page-integrity.js';
 import {russianHyphenOffsets} from './hyphenation.js';
 
 export const DOM_ENGINE_VERSION=1;
-const fail=()=>{throw Error('Этот блок не помещается на странице. Уменьшите размер шрифта или поля. Исходная книга сохранена.');};
+const fail=(details)=>{console.error('DOM_PAGINATION_FIT',details);throw Error('Этот блок не помещается на странице. Уменьшите размер шрифта или поля. Исходная книга сохранена.');};
 async function legalBreaks(block,hyphens,yieldWork){
  const breaks=new Map([[block.text.length,false]]),boundaries=new Set(blockBoundaries(block));
  let work=0;
@@ -38,7 +38,7 @@ export async function paginateDOM(blocks,{width,height,settings,signal,onProgres
  }
  async function flush(breakReason='capacity',probe=null){
   if(!parts.length)return;
-  if(!layout.fits(parts))fail();
+  if(!layout.fits(parts))fail({at:'flush',page:pages.length,parts:parts.map(({block,from,to})=>({block,from,to})),width,height,geometry:layout.geometry()});
   const start={block:parts[0].block,offset:parts[0].from},last=parts.at(-1),end={block:last.block,offset:last.to};
   const page={fragments:parts.map(p=>Object.freeze({...p})),start,end,breakReason,geometry:layout.geometry(),nextProbe:probe,engineVersion:DOM_ENGINE_VERSION};
   const prior=pages.at(-1)?.end;
@@ -95,7 +95,7 @@ export async function paginateDOM(blocks,{width,height,settings,signal,onProgres
     }
     const whole=part(i,0,length);layout.place([...parts,whole]);await layout.ready(signal);
     if(!layout.fits([...parts,whole])&&parts.length)await flush('indivisible-block');
-    if(!layout.fits([...parts,whole]))fail();
+    if(!layout.fits([...parts,whole]))fail({at:'indivisible',block:i,width,height,geometry:layout.geometry()});
     parts.push(whole);if(isImage)await flush('illustration');await yieldWork();continue;
    }
    const next=model.blocks[i+1];
@@ -107,7 +107,7 @@ export async function paginateDOM(blocks,{width,height,settings,signal,onProgres
    while(from<length){
     checkCancelled(signal);
     const fragment=await maximal(i,from);
-    if(!fragment){if(parts.length){await flush('capacity',part(i,from,blockBoundaries(block)[rightmost(blockBoundaries(block),from)]));continue;}fail();}
+    if(!fragment){if(parts.length){await flush('capacity',part(i,from,blockBoundaries(block)[rightmost(blockBoundaries(block),from)]));continue;}fail({at:'maximal',block:i,from,width,height,geometry:layout.geometry()});}
     let chosen=fragment;
     const opportunities=await prepared(i);
     for(let n=rightmost(opportunities.positions,chosen.to);n<opportunities.entries.length;n++){
