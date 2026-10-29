@@ -1,7 +1,7 @@
 import {sha256} from 'js-sha256';
 
 // Bump when pagination markup or the book-text layout CSS changes.
-const VERSION=11;
+const VERSION=12;
 const typography=['font','fontSize','lineHeight','margin','paragraphGap','indent','letterSpacing','align','hyphens'];
 const sourceHashes=new WeakMap();
 function signature({bookId,blocks,width,height,settings,environment=''}){
