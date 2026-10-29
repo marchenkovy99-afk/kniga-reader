@@ -71,6 +71,8 @@ try{
  assert.ok(await page.locator('.reader-footer').isVisible(),'floating toolbar opens on top of the existing page');
  assert.ok(await page.locator('.reader-header').isVisible(),'floating header opens without shifting book text');
  const footer=await page.locator('.reader-footer').boundingBox();
+ assert.ok(footer.width>=368&&footer.height>=111,'floating controls should be visibly larger without exceeding iPhone width');
+ assert.ok(footer.x>=7&&footer.x+footer.width<=393-7,'larger toolbar retains horizontal tap margins');
  assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
  await assertAnchorPresent();
  const controlsBottom=staleInnerHeight?778:852;
@@ -91,7 +93,8 @@ try{
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
  assert.ok(pages.every(p=>p.stageTop>=80&&p.stageTop<=82),'installed page starts below the top-edge status bar blur');
- assert.ok(pages.every(p=>p.stageBottom>=845&&p.stageBottom<=846),'installed page must reclaim bottom whitespace but retain a system gesture margin');
+ assert.ok(pages.every(p=>p.stageBottom>=849&&p.stageBottom<=850),'reading area may use only the remaining safe pixels below without clipping');
+ assert.ok(pages.every(p=>p.stageHeight>=769),'pagination must receive the reclaimed bottom pixels');
  assert.ok(pages.every(p=>p.first>=84),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
