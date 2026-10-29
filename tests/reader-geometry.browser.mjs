@@ -41,7 +41,10 @@ try{
    return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,allVisible:rects.every(r=>r.left>=bounds.left-.05&&r.right<=bounds.right+.05&&r.top>=bounds.top-.05&&r.bottom<=bounds.bottom+.05&&r.bottom<=window.innerHeight+.05),stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding,transform:getComputedStyle(page).transform,clip:getComputedStyle(page).clipPath,pageY:page.getBoundingClientRect().y};
   }));
   if(!i)await page.screenshot({path:'/tmp/kniga-viewport-review.png'});
-  const before=await page.locator('#reader-page-position').textContent();await page.keyboard.press('ArrowRight');await page.waitForFunction(before=>document.querySelector('#reader-page-position').textContent!==before,before);
+  const before=await page.locator('#reader-page-position').textContent();
+  await page.locator('#book-stage').tap({position:{x:360,y:220}});
+  try{await page.waitForFunction(before=>document.querySelector('#reader-page-position').textContent!==before,before,{timeout:10000});}
+  catch(error){console.error('Page-turn diagnostics',await page.evaluate(()=>({stage:document.querySelector('#book-stage')?.dataset.layoutState,loading:document.querySelector('#page-loading')?.textContent,loadingHidden:document.querySelector('#page-loading')?.hidden,position:document.querySelector('#reader-page-position')?.textContent,activeElement:document.activeElement?.tagName,readerClass:document.querySelector('.reader')?.className})));throw error;}
  }
  console.log(JSON.stringify(pages,null,2));
  assert.ok(pages.every(p=>p.readerHeight===852),'installed reader must fill its actual window even when dynamic viewport units are too short');
