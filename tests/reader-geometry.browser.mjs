@@ -30,7 +30,7 @@ try{
   const blocks=[{type:'p',text:caption,html:'<em>'+caption+'</em>'},...Array.from({length:20},()=>({type:'p',text,html:text}))];
   await new Promise((resolve,reject)=>{const r=indexedDB.open('kniga-reader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('books',{keyPath:'id'});r.result.createObjectStore('preferences');};r.onsuccess=()=>{const db=r.result,tx=db.transaction(['books','preferences'],'readwrite');tx.objectStore('books').put({id:'test',title:'Геометрия страницы',author:'Тест',blocks,presentationVersion:1,chars:blocks.reduce((n,b)=>n+b.text.length,0),chapters:[],fileName:'test.fb2',addedAt:1,marks:[]});tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};});
  });
- await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
+ await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();try{await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor({timeout:20000});}catch(error){console.error('Reader startup diagnostics',await page.evaluate(()=>({stage:document.querySelector('#book-stage')?.dataset.layoutState,loading:document.querySelector('#page-loading')?.textContent,loadingError:document.querySelector('#page-loading')?.classList.contains('layout-error'),reader:document.querySelector('.reader')?.className,stageBox:document.querySelector('#book-stage')?.getBoundingClientRect().toJSON(),visiblePages:document.querySelectorAll('.book-page[aria-hidden="false"]').length})));throw error;}
  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
  const pages=[];
  const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
@@ -105,6 +105,6 @@ try{
  assert.ok(pages.every(p=>p.first>=59&&p.first<=67),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.every(p=>852-p.stageBottom>=59.5),'screen edge must have at least 44px clearance below every book page');
- assert.ok(pages.every(p=>p.last<=p.stageBottom-9.5),'last glyph descenders must not be cropped by the page viewport');
+ assert.ok(pages.every(p=>p.last<=p.stageBottom-5.5),'last glyph descenders must not be cropped by the page viewport');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+15),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}

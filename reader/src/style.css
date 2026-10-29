@@ -392,7 +392,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-footer .reading-progress{height:25px;margin:0;width:100%;display:block}
 .reader-footer .icon{width:23px;height:23px}
 .reader-footer .type-button{font-size:22px}
-.book-text{padding-top:0;padding-bottom:12px}
+.book-text{padding-top:0;padding-bottom:8px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .book-text[data-engine=dom]{overflow:visible}
@@ -475,7 +475,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
    viewport height, so checking the stage boundary alone is not sufficient.
    These measured stage insets are shared by rendering and pagination. */
 /* The glyph origin moves 6px up, but never over the opaque iOS status area.
-   Bottom inset and 12px inside each page protect glyph descenders on iPhone
+   Bottom inset and 8px inside each page protect glyph descenders on iPhone
    Safari even when the OS paints fewer pixels than the CSS viewport reports.
    Both measured and displayed pages share these exact bounds. */
 .reader{--reader-top-inset:env(safe-area-inset-top,0px);--reader-bottom-inset:max(60px,calc(env(safe-area-inset-bottom,0px) + 26px))}

@@ -28,7 +28,7 @@ for(const screen of [{width:393,height:852,top:59,bottom:34},{width:430,height:9
    const lastGlyph=Math.max(...rects.map(r=>r.bottom));
    check(screen.height-lastGlyph>=59.5,`Last glyph must clear screen bottom: ${screen.height-lastGlyph}px on page ${index}`);
    const unused=bounds.bottom-lastGlyph;
-   check(unused>=9.5,`Last glyph descenders too close to page clip: ${unused}px on page ${index}`);
+   check(unused>=5.5,`Last glyph descenders too close to page clip: ${unused}px on page ${index}`);
    if(index<pages.length-1){check(unused<settings.fontSize*settings.lineHeight+16,`Unused complete row: ${unused}`);maxUnused=Math.max(maxUnused,unused);}
    restored+=el.textContent;
   }
