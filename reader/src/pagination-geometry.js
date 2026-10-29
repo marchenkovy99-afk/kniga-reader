@@ -1,3 +1,4 @@
+import {readerPaintHeight} from './reader-window.js';
 // scrollHeight/scrollWidth are integers and can miss a clipped fraction of a
 // text row. Range rectangles also catch superscripts and nowrap inline runs.
 export function visibleContentFits(element,clip=element){
@@ -24,10 +25,13 @@ export function visibleContentFits(element,clip=element){
   }
  }
  if(clip!==element&&view){
-  const visual=view.visualViewport;
-  left=Math.max(left,visual?.offsetLeft||0);top=Math.max(top,visual?.offsetTop||0);
+  const visual=view.visualViewport,paintHeight=readerPaintHeight(view,doc);
+  // Only a genuinely restricted visual viewport clips a standalone page.
+  // A transient iOS visualViewport under-report must not hide valid bottom rows.
+  const visualClips=!(visual?.height>0&&paintHeight>visual.height+1);
+  left=Math.max(left,visual?.offsetLeft||0);top=Math.max(top,visualClips?(visual?.offsetTop||0):0);
   right=Math.min(right,view.innerWidth,visual?.width>0?(visual.offsetLeft||0)+visual.width:view.innerWidth);
-  bottom=Math.min(bottom,view.innerHeight,visual?.height>0?(visual.offsetTop||0)+visual.height:view.innerHeight);
+  bottom=Math.min(bottom,paintHeight,visualClips&&visual?.height>0?(visual.offsetTop||0)+visual.height:paintHeight);
  }
  const epsilon=1/64;
  const fits=rect=>rect.width<=0||rect.height<=0||
