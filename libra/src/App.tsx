@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DEFAULT_SETTINGS, type ReaderSettings, type StoredBook, type Format } from './domain';
+import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
 import { listBooks, deleteBook, loadSettings, saveBook, saveSettings } from './storage';
 import { parseFB2 } from './fb2';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
@@ -68,7 +68,7 @@ export default function App(){
   {opened?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    opened.format==='epub'?<EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    <PdfReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
-   <Library books={books} settings={settings} onSettings={update} onOpen={setOpened} onImport={files=>void importFiles(files)}
+   <Library books={books} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>setOpened(position?{...book,position}:book)} onImport={files=>void importFiles(files)}
      onDelete={book=>void remove(book)} loading={loading}/>}
   {error&&<div className="app-error" role="alert">{error}<button onClick={()=>setError('')}>Закрыть</button></div>}
  </>;

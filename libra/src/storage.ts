@@ -1,4 +1,5 @@
 import type { ReaderSettings, ReaderPosition, StoredBook } from './domain';
+import {sameBookmark} from './bookmarks';
 
 /**
  * V2 keeps imported bytes in 'books' and high-frequency reader state in
@@ -97,16 +98,18 @@ export function deleteBook(id:string):Promise<void>{
 }
 export const loadSettings=()=>transaction<ReaderSettings|undefined>('preferences','readonly',s=>s.get('reader'));
 export const saveSettings=(settings:ReaderSettings)=>transaction<IDBValidKey>('preferences','readwrite',s=>s.put(settings,'reader'));
-function updateReading(id:string,transform:(state:ReadingState)=>ReadingState):Promise<void>{
+function updateReading(id:string,transform:(state:ReadingState)=>ReadingState):Promise<ReadingState>{
  return db().then(database=>new Promise((resolve,reject)=>{
   const tx=database.transaction('reading','readwrite'),store=tx.objectStore('reading');
   const req=store.get(id);
+  let changed:ReadingState;
   req.onsuccess=()=>{
    const old:ReadingState=req.result??{id,bookmarks:[]};
-   store.put(transform(old));
+   changed=transform(old);
+   store.put(changed);
   };
   req.onerror=()=>reject(req.error);
-  tx.oncomplete=()=>resolve();
+  tx.oncomplete=()=>resolve(changed);
   tx.onerror=()=>reject(tx.error);
   tx.onabort=()=>reject(tx.error??new Error('Reading state write aborted'));
  }));
@@ -114,11 +117,13 @@ function updateReading(id:string,transform:(state:ReadingState)=>ReadingState):P
 export function savePosition(id:string,position:ReaderPosition){
  return updateReading(id,old=>({...old,position,lastOpenedAt:Date.now()}));
 }
-export function toggleBookmark(id:string,position:ReaderPosition){
- return updateReading(id,old=>{
-  const key=(p:ReaderPosition)=>p.cfi??[p.chapter,p.anchor?.block,p.anchor?.textNode,p.anchor?.offset,p.page].join(':');
+export async function toggleBookmark(id:string,position:ReaderPosition):Promise<ReaderPosition[]>{
+ const updated=await updateReading(id,old=>{
   const bookmarks=old.bookmarks||[];
-  const exists=bookmarks.some(p=>key(p)===key(position));
-  return {...old,bookmarks:exists?bookmarks.filter(p=>key(p)!==key(position)):[...bookmarks,position]};
+  const exists=bookmarks.some(saved=>sameBookmark(saved,position));
+  return {...old,bookmarks:exists?
+   bookmarks.filter(saved=>!sameBookmark(saved,position)):
+   [...bookmarks,position]};
  });
+ return updated.bookmarks;
 }

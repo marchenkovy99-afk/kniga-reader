@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react';
-import type { ReaderSettings, StoredBook } from '../domain';
+import type { ReaderPosition, ReaderSettings, StoredBook } from '../domain';
+import { bookmarkLocationLabel } from '../bookmarks';
 import { BookCover } from './BookCover';
 import { Icon } from './Icons';
 type Props={books:StoredBook[]; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
-  onOpen:(book:StoredBook)=>void;onImport:(files:FileList)=>void;onDelete:(book:StoredBook)=>void;loading:boolean};
+  onOpen:(book:StoredBook,position?:ReaderPosition)=>void;onImport:(files:FileList)=>void;onDelete:(book:StoredBook)=>void;loading:boolean};
 export function Library({books,settings,onSettings,onOpen,onImport,onDelete,loading}:Props){
  const input=useRef<HTMLInputElement>(null);
  const [tab,setTab]=useState<'library'|'bookmarks'|'settings'>('library');
  const [query,setQuery]=useState('');
  const sorted=[...books].sort((a,b)=>(b.lastOpenedAt||b.importedAt)-(a.lastOpenedAt||a.importedAt));
  const continueBook=sorted.find(b=>b.position)||sorted[0];
+ const savedPlaces=sorted.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
  const shown=sorted.filter(b=>(b.title+' '+b.author).toLowerCase().includes(query.toLowerCase()));
  return <div className="library-shell">
   <header className="library-header"><div><span className="brand-eyebrow">ЛИЧНАЯ БИБЛИОТЕКА</span><h1>LIBRA<span className="brand-dot">.</span></h1></div>
@@ -36,7 +38,7 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,load
     </section>
     </main>}
   {tab==='bookmarks'&&<main className="library-main"><div className="section-heading"><h2>Закладки</h2></div>
-    {sorted.some(b=>b.bookmarks.length)?sorted.filter(b=>b.bookmarks.length>0).map(b=><button className="bookmark-item" key={b.id} onClick={()=>onOpen(b)}><BookCover book={b}/><span><strong>{b.title}</strong><small>{b.bookmarks.length} закладок</small></span></button>):
+    {savedPlaces.length?savedPlaces.map(({book,position,index})=><button className="bookmark-item" key={book.id+':'+index} onClick={()=>onOpen(book,position)}><BookCover book={book}/><span><strong>{book.title}</strong><small>{bookmarkLocationLabel(position,book.format)}</small></span></button>):
       <div className="empty-library"><Icon name="bookmark" size={40}/><strong>Пока нет закладок</strong><p>Отмечайте важные места во время чтения.</p></div>}</main>}
   {tab==='settings'&&<main className="library-main"><div className="section-heading"><h2>Оформление</h2></div>
     <p className="setting-hint">Тема меняет фон всего приложения, включая область системной строки iPhone, насколько это допускает iOS.</p>

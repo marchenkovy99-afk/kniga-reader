@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icons';
 import type { ReaderSettings, ReaderPosition, StoredBook } from '../domain';
 import { toggleBookmark } from '../storage';
+import { sameBookmark } from '../bookmarks';
 
 type Props={
   book:StoredBook; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
@@ -13,7 +14,10 @@ type Props={
 export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|null>(null);
- const [marked,setMarked]=useState(false);
+ const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
+ const [markBusy,setMarkBusy]=useState(false);
+ const [markError,setMarkError]=useState('');
+ const marked=bookmarks.some(saved=>sameBookmark(saved,position));
  const touch=useRef<{x:number;y:number}|null>(null);
  const ignoreClick=useRef(false);
  const update=<K extends keyof ReaderSettings>(key:K,value:ReaderSettings[K])=>onSettings({...settings,[key]:value});
@@ -23,7 +27,14 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    if(ratio<.28)onPrevious();else if(ratio>.72)onNext();else setPanels(v=>!v);
  }
  async function mark(){
-   await toggleBookmark(book.id,position);setMarked(v=>!v);
+   if(markBusy)return;
+   setMarkBusy(true);setMarkError('');
+   try{
+    const updated=await toggleBookmark(book.id,position);
+    setBookmarks(updated);
+   }catch{
+    setMarkError('Не удалось сохранить закладку');
+   }finally{setMarkBusy(false)}
  }
  return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")}>
    <div className="reading-content">{children}</div>
@@ -44,8 +55,9 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    <header className={'reading-top '+(panels?'visible':'')}>
      <button aria-label="В библиотеку" onClick={onBack}><Icon name="back"/></button>
      <span className="reading-title">{book.title}</span>
-     <button aria-label="Закладка" onClick={()=>void mark()}><Icon name="bookmark" fill={marked?'currentColor':'none'}/></button>
+     <button aria-label="Закладка" aria-pressed={marked} disabled={markBusy} onClick={()=>void mark()}><Icon name="bookmark" fill={marked?'currentColor':'none'}/></button>
    </header>
+   {markError&&<div className="bookmark-error" role="alert">{markError}</div>}
    <div className={'reading-bottom '+(panels?'visible':'')}>
      <div className="reading-progress"><span>{caption}</span><strong>{progress}%</strong></div>
      <div className="reading-progress-track"><span style={{width:progress+'%'}} /></div>
