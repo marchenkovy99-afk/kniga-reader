@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type StoredBook, type Format } from './domain';
 import { listBooks, deleteBook, loadSettings, saveBook, saveSettings } from './storage';
 import { parseFB2 } from './fb2';
+import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
 import { setTheme } from './theme';
 import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
@@ -35,8 +36,10 @@ export default function App(){
        if(!format)throw new Error('Поддерживаются FB2, EPUB и PDF');
        const blob=new Blob([await file.arrayBuffer()],{type:file.type||'application/octet-stream'});
        let title=file.name.replace(/\.[^.]+$/,'').replace(/_/g,' '),author='Автор не указан',cover: string|undefined;
+       const id=crypto.randomUUID();
        if(format==='fb2'){
          const parsed=parseFB2(await file.text());title=parsed.title;author=parsed.author;cover=parsed.cover;
+         seedParsedFB2(id,parsed);
        }
        if(format==='epub'){
          try{
@@ -48,7 +51,7 @@ export default function App(){
            epub.destroy();
          }catch{/* The file is validated again at opening; metadata is optional. */}
        }
-       const book:StoredBook={id:crypto.randomUUID(),filename:file.name,title,author,format,file:blob,cover,
+       const book:StoredBook={id,filename:file.name,title,author,format,file:blob,cover,
          importedAt:Date.now(),bookmarks:[]};
        await saveBook(book);
      }catch(e){setError('Не удалось импортировать '+file.name+': '+(e instanceof Error?e.message:String(e)))}
@@ -57,7 +60,7 @@ export default function App(){
  }
  async function remove(book:StoredBook){
   if(!window.confirm('Удалить «'+book.title+'» из библиотеки?'))return;
-  try{await deleteBook(book.id);await refresh()}catch(e){setError(String(e))}
+  try{await deleteBook(book.id);forgetParsedFB2(book.id);await refresh()}catch(e){setError(String(e))}
  }
  function back(){setOpened(null);void refresh()}
  function update(s:ReaderSettings){setSettings(s)}

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from '../domain';
 import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
-import { parseFB2 } from '../fb2';
+import { loadParsedFB2 } from './parsedFB2Cache';
 import { clampPage, measureColumns, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
@@ -38,7 +38,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  useEffect(()=>{
   let cancelled=false;
-  book.file.text().then(s=>parseFB2(s)).then(result=>{if(!cancelled)setChapters(result.chapters)})
+  loadParsedFB2(book).then(result=>{if(!cancelled)setChapters(result.chapters)})
    .catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
   return ()=>{cancelled=true};
  },[book.id,book.file]);
