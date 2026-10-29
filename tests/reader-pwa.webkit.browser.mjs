@@ -14,7 +14,7 @@ const longText='Мы измеряем точную высоту строки, с
 const blockText=longText.repeat(19);
 const blocks=Array.from({length:16},(_,i)=>({type:'p',text:blockText,html:blockText}));
 
-async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
+async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShrink=0}) {
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:3,isMobile:true,hasTouch:true,serviceWorkers:'block'});
  const page=await context.newPage();
  const errors=[];
@@ -22,6 +22,11 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
  await page.addInitScript(()=>{
   Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true});
  });
+ if(visualShrink)await page.addInitScript(delta=>{
+  const viewport=window.visualViewport;
+  const height=viewport.height;
+  Object.defineProperty(viewport,'height',{configurable:true,get:()=>height-delta});
+ },visualShrink);
  await page.route('https://reader.test/**',route=>{
   const pathname=new URL(route.request().url()).pathname;
   if(pathname==='/empty')return route.fulfill({contentType:'text/html',body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body></body></html>'});
@@ -72,6 +77,10 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
   assert.ok(metadata.manifest,'PWA manifest must be linked');
   assert.equal(metadata.standalone,true,'test must be running with simulated standalone mode');
   await page.locator('[data-book="pwa-fixture"]').click();
+  if(visualShrink){
+   const measurements=await page.evaluate(()=>({inner:innerHeight,visual:visualViewport.height,layout:document.documentElement.clientHeight}));
+   assert.ok(measurements.inner-measurements.visual>=visualShrink-2,'test must reproduce a stale, shorter visualViewport');
+  }
   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
   const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
   assert.ok(pageCount>=4,'fixture must have several pages');
@@ -140,7 +149,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
   assert.ok((await page.locator('.book-page[aria-hidden="false"] .book-text').textContent()).length>0,'book must reopen after a standalone reload');
   assert.equal(errors.length,0,'no uncaught JavaScript errors during installed reader session: '+errors.join('; '));
-  console.log('WebKit PWA',width+'x'+height,JSON.stringify({pages:pageCount,first:samples[0].first,last:samples[0].last,stage:samples[0].stage,toolbar:{width:footer.width,height:footer.height},reopened:true}));
+  console.log('WebKit PWA',width+'x'+height+(visualShrink?'-visual-minus-'+visualShrink:''),JSON.stringify({pages:pageCount,first:samples[0].first,last:samples[0].last,stage:samples[0].stage,toolbar:{width:footer.width,height:footer.height},reopened:true}));
  }finally{
   await context.close();
  }
@@ -150,7 +159,7 @@ try{
  assert.equal(manifest.display,'standalone','PWA must use the same standalone launch mode as iOS Home Screen');
  assert.ok(!manifest.display_override?.includes('fullscreen'),'PWA display override must not change its fullscreen/status-bar geometry');
  assert.match(manifest.start_url,/^\.\//,'start URL should stay in the PWA scope');
- for(const screen of [{width:393,height:852},{width:375,height:812},{width:430,height:932}]){
+ for(const screen of [{width:393,height:852},{width:375,height:812},{width:430,height:932},{width:393,height:852,visualShrink:74}]){
   await exerciseInstalledReader(screen);
  }
  console.log('WebKit standalone PWA regression passed: reading integrity, safe areas, controls, reload.');
