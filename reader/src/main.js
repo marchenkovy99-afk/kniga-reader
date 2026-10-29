@@ -20,6 +20,7 @@ import './style.css';
 import {renderCover,prepareCoverImage} from './covers.js';
 import {assertPageIntegrity} from './page-integrity.js';
 import {visibleContentFits} from './pagination-geometry.js';
+import {describeReadingGeometry,diagnosticSummary} from './reader-diagnostics.js';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
 import {createPaginationCache} from './pagination-cache.js';
@@ -181,6 +182,47 @@ function bookInfo(b){
   document.querySelector('#keep-book').onclick=closeSheet;document.querySelector('#confirm-remove').onclick=async()=>{try{const owner=localOwner;await shelfState.hide(b.id,owner,()=>{books=books.filter(x=>x.id!==b.id);});await paginationCache.remove(b.id);closeSheet();await library();}catch(e){message(e.message,true);}};
  };
 }
+/** On-device report: no book text, title, author or account data leaves the app.
+ * Five taps on the page number reveal the measured geometry on a real iPhone.
+ */
+function showReaderGeometryReport(){
+ document.querySelector('.reader-geometry-overlay')?.remove();
+ const page=pages[pageIndex],next=pages[pageIndex+1],end=page?.end;
+ const report=diagnosticSummary(describeReadingGeometry({
+  doc:document,win:window,pageEnd:end,nextStart:next?.start,
+  blockType:next?.start?current?.blocks?.[next.start.block]?.type:undefined,
+  atParagraphEnd:Boolean(end&&current?.blocks?.[end.block]?.text?.length===end.offset)
+ }));
+ const overlay=document.createElement('div');overlay.className='reader-geometry-overlay';
+ overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Диагностика страницы');
+ const sheet=document.createElement('section');sheet.className='reader-geometry-sheet';
+ const heading=document.createElement('h2');heading.textContent='Проверка размещения текста';
+ const intro=document.createElement('p');intro.textContent='Здесь только размеры экрана и координаты строк. Содержимое книги не передаётся.';
+ const details=document.createElement('textarea');details.readOnly=true;details.value=report;details.rows=12;details.setAttribute('aria-label','Результаты измерений');
+ const actions=document.createElement('div');actions.className='reader-geometry-actions';
+ const copy=document.createElement('button');copy.type='button';copy.textContent='Скопировать';
+ const close=document.createElement('button');close.type='button';close.textContent='Закрыть';
+ copy.onclick=async()=>{
+  try{await navigator.clipboard.writeText(report);copy.textContent='Скопировано';}
+  catch{details.focus();details.select();copy.textContent='Выделено для копирования';}
+ };
+ const finish=()=>{overlay.remove();document.removeEventListener('keydown',onKey);};
+ const onKey=e=>{if(e.key==='Escape')finish();};
+ close.onclick=finish;overlay.onclick=e=>{if(e.target===overlay)finish();};
+ document.addEventListener('keydown',onKey);
+ actions.append(copy,close);sheet.append(heading,intro,details,actions);overlay.append(sheet);document.body.append(overlay);
+ close.focus();
+}
+function enableReaderGeometryReport(){
+ const counter=document.querySelector('#reader-page-position');if(!counter)return;
+ let taps=0,previous=0;
+ counter.addEventListener('click',()=>{
+  const now=Date.now();taps=now-previous<3200?taps+1:1;previous=now;
+  if(taps>=5){taps=0;showReaderGeometryReport();}
+ });
+ counter.title='Номер страницы';
+}
+
 async function openBook(id){
  const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
@@ -210,6 +252,7 @@ async function openBook(id){
  document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
  document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night','oled','auto'][(['paper','white','night','oled','auto'].indexOf(settings.theme)+1)%5];theme();saveSettings();};
  document.querySelector('#prev-page').onclick=()=>turn(-1);document.querySelector('#next-page').onclick=()=>turn(1);
+ enableReaderGeometryReport();
  document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
  document.querySelector('#reading-progress').onchange=e=>goPage(Number(e.target.value));
  await layout();
