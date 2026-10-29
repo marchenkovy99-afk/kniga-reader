@@ -59,6 +59,8 @@ try{
  });
  const beforeChrome=await readingSnapshot();
  assert.equal(await page.locator('.reader-header').isVisible(),false,'top navigation must be hidden during immersive reading');
+ assert.equal(await page.locator('#reader-bottom-page-number').isVisible(),false,'immersive reading shows no page numbers');
+ assert.equal(await page.locator('#reader-page-position').isVisible(),false,'reader page counter is never painted');
  const assertUnchangedChrome=async()=>assert.deepEqual(await readingSnapshot(),beforeChrome,
   'opening and hiding the floating chrome must never repaginate, change source text or show a loading state');
  const originalAnchor=await page.evaluate(()=>{const fragment=document.querySelector('.book-page[aria-hidden="false"] [data-block]');return {block:Number(fragment.dataset.block),offset:Number(fragment.dataset.from)};});
@@ -97,10 +99,10 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.stageTop>=75&&p.stageTop<=76),'installed page starts just below the iOS safe area');
+ assert.ok(pages.every(p=>p.stageTop>=69&&p.stageTop<=70),'installed page starts just below the iOS safe area');
  assert.ok(pages.every(p=>p.stageBottom>=841&&p.stageBottom<=843),'reading area may use only the remaining safe pixels below without clipping');
- assert.ok(pages.every(p=>p.stageHeight>=760),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=75&&p.first<=83),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.stageHeight>=766),'pagination must receive the reclaimed bottom pixels');
+ assert.ok(pages.every(p=>p.first>=69&&p.first<=77),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}

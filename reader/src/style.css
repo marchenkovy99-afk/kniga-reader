@@ -468,7 +468,12 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 /* Immersive reading does not reserve the 56px black toolbar.
    Both the page and its DOM pagination geometry start below the real iOS
    safe area. Opaque status bar remains; navigation shows on a central tap. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 16px)}
+/* Fine-tuned iPhone reading offset: 6px higher, always inside the safe area.
+   Pagination reads this same stage inset and never shifts an already laid-out page. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 10px)}
 .reader::before{display:none}
 .reader.chrome-hidden .reader-header{display:none}
 .reader-header{box-shadow:0 4px 0 #08090a}
+
+/* Pagination remains available to the engine and screen-reader slider, but is never painted. */
+.reader .reader-bottom-page-number,.reader .reader-page-position{display:none!important}

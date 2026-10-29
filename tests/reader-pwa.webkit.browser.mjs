@@ -120,7 +120,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading,'rendered page must exist');
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
-   assert.ok(reading.first>=top+16&&reading.first<=top+24,'first line must stay close to, and below, the iOS safe area');
+   assert.ok(reading.first>=top+10&&reading.first<=top+18,'first line must stay close to, and below, the iOS safe area');
    assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(10,bottom-24)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
    assert.ok(reading.last<=reading.stage.bottom,'last glyph must not be cropped');
@@ -149,11 +149,9 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const metaStyle=await page.locator('meta[name="apple-mobile-web-app-status-bar-style"]').getAttribute('content');
   assert.equal(metaStyle,'black','opaque status bar disables the translucent iOS system blur');
   const immersiveNumber=page.locator('#reader-bottom-page-number');
-  assert.equal(await immersiveNumber.isVisible(),true,'page number stays visible with reading controls hidden');
+  assert.equal(await immersiveNumber.isVisible(),false,'no visible number in immersive reading');
+  assert.equal(await page.locator('#reader-page-position').isVisible(),false,'no visible page counter even when controls open');
   assert.equal(await bar.isVisible(),false,'top navigation is hidden while reading');
-  assert.equal(await immersiveNumber.textContent(),await page.locator('#reader-page-position').textContent(),'immersive page number tracks current page');
-  const numberPosition=await immersiveNumber.boundingBox();
-  assert.ok(numberPosition&&numberPosition.y>=samples[0].stage.bottom&&numberPosition.y<height,'immersive number must be below text and remain on-screen');
   const snapshot=()=>page.evaluate(()=>{
    const stage=document.querySelector('#book-stage'),active=document.querySelector('.book-page[aria-hidden="false"] .book-text');
    return {height:stage.clientHeight,width:stage.clientWidth,ready:stage.dataset.layoutState,html:active.innerHTML,source:active.textContent,count:document.querySelectorAll('.book-page').length,number:document.querySelector('#reader-page-position').textContent};
@@ -163,7 +161,8 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   assert.equal(await page.locator('.reader-footer').isVisible(),true,'floating controls open over text');
   assert.equal(await bar.isVisible(),true,'top arrows and bookmark appear only when controls are opened');
   for(const id of ['prev-page','next-page','toggle-bookmark'])assert.equal(await page.locator('#'+id).isVisible(),true,'top navigation control '+id);
-  assert.equal(await immersiveNumber.isVisible(),false,'immersive counter must not duplicate the toolbar counter');
+  assert.equal(await immersiveNumber.isVisible(),false,'no page numbering when toolbar is visible');
+  assert.equal(await page.locator('#reader-page-position').isVisible(),false,'toolbar must not show page numbering');
   assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
   const footer=await page.locator('.reader-footer').boundingBox();
   assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
