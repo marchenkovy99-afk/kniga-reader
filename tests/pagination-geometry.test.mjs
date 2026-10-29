@@ -35,3 +35,12 @@ test('rendered text must fit the browser viewport while CSS stage sizing catches
  el.ownerDocument.defaultView={innerWidth:240,innerHeight:60};
  assert.equal(visibleContentFits(el,stage),false);
 });
+
+test('a visually clipped flipbook page is rejected even if the stage and text box are tall enough',()=>{
+ const el=page({textRects:[rect(8,4,188,85)]});
+ const stage={clientWidth:200,clientHeight:100,clientLeft:0,clientTop:0,getBoundingClientRect:()=>rect(10,20,210,120)};
+ const clippedPage={clientWidth:200,clientHeight:50,clientLeft:0,clientTop:0,scrollWidth:200,scrollHeight:100,getBoundingClientRect:()=>rect(10,20,210,70),parentElement:stage};
+ el.parentElement=clippedPage;
+ el.ownerDocument.defaultView={innerWidth:240,innerHeight:200,getComputedStyle:()=>({overflowX:'hidden',overflowY:'hidden',clipPath:'none'})};
+ assert.equal(visibleContentFits(el,stage),false,'a clipped page must never appear readable merely because the outer stage fits');
+});
