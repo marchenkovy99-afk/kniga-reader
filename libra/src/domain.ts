@@ -20,6 +20,7 @@ export type ReaderPosition = {
   page: number;
   fraction: number;
   cfi?: string;
+  anchor?: import('./anchors').FB2Anchor;
   updatedAt: number;
 };
 export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };

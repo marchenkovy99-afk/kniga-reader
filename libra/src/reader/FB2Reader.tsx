@@ -1,16 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from '../domain';
+import type { FB2Anchor } from '../anchors';
+import { getAnchorPage, getPageAnchor } from '../anchors';
 import { parseFB2 } from '../fb2';
 import { clampPage, measureColumns, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
+
 const GAP=24;
-function BookBlock({block}:{block:Block}){
-  if(block.kind==='image')return <figure className="book-figure"><img src={block.src} alt={block.alt}/></figure>;
-  if(block.kind==='table')return <table className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
-  if(block.kind==='heading')return <h2 className="book-heading">{block.text}</h2>;
-  if(block.kind==='verse')return <div className="book-verse">{block.text}</div>;
-  return <p className="book-paragraph">{block.text}</p>;
+function BookBlock({block,index}:{block:Block;index:number}){
+ if(block.kind==='image')return <figure data-block-index={index} className="book-figure"><img src={block.src} alt={block.alt}/></figure>;
+ if(block.kind==='table')return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
+ if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{block.text}</h2>;
+ if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
+ return <p data-block-index={index} className="book-paragraph">{block.text}</p>;
 }
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function FB2Reader({book,settings,onSettings,onBack}:Props){
@@ -20,68 +23,110 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [page,setPage]=useState(book.position?.page||0);
  const [pages,setPages]=useState(1);
  const [geometry,setGeometry]=useState({width:0,height:0});
+ const [measuredKey,setMeasuredKey]=useState('');
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
- const restored=useRef(false);
+ const initial=useRef(true);
+ const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
+ const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  useEffect(()=>{
-   let cancelled=false;
-   book.file.text().then(s=>parseFB2(s)).then(result=>{if(!cancelled)setChapters(result.chapters)})
-     .catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
-   return ()=>{cancelled=true};
+  let cancelled=false;
+  book.file.text().then(s=>parseFB2(s)).then(result=>{if(!cancelled)setChapters(result.chapters)})
+   .catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
+  return ()=>{cancelled=true};
  },[book.id,book.file]);
  useLayoutEffect(()=>{
-   const el=viewport.current;if(!el)return;
-   const recalc=()=>setGeometry({width:el.clientWidth,height:el.clientHeight});
-   const observer=new ResizeObserver(recalc);observer.observe(el);recalc();
-   return ()=>observer.disconnect();
+  const el=viewport.current;if(!el)return;
+  const recalc=()=>{
+   const width=el.clientWidth,height=el.clientHeight;
+   setGeometry(old=>old.width===width&&old.height===height?old:{width,height});
+  };
+  const observer=new ResizeObserver(recalc);
+  observer.observe(el);recalc();
+  return ()=>observer.disconnect();
  },[chapters.length]);
+ const layoutKey=useMemo(()=>[
+  chapter,geometry.width,geometry.height,settings.fontSize,
+  settings.lineHeight,settings.margin,settings.fontFamily,
+  settings.align,settings.paragraphIndent
+ ].join(':'),[chapter,geometry.width,geometry.height,settings.fontSize,settings.lineHeight,
+  settings.margin,settings.fontFamily,settings.align,settings.paragraphIndent]);
  useLayoutEffect(()=>{
-   if(!flow.current||!geometry.width||!geometry.height)return;
-   const el=flow.current;
-   const compute=()=>{
-     const count=measureColumns(el.scrollWidth,geometry.width,GAP);
-     setPages(count);
-     if(previous.current){previous.current=false;setPage(count-1)}
-     else if(!restored.current&&book.position?.chapter===chapter){
-       restored.current=true;setPage(clampPage(book.position.page,count));
-     }else setPage(current=>clampPage(current,count));
-   };
-   const frame=requestAnimationFrame(compute);
-   void document.fonts.ready.then(()=>requestAnimationFrame(compute));
-   return ()=>cancelAnimationFrame(frame);
- },[chapters,chapter,geometry.width,geometry.height,settings.fontSize,settings.lineHeight,settings.margin,settings.fontFamily,settings.align,settings.paragraphIndent,book.position]);
+  if(!flow.current||!geometry.width||!geometry.height)return;
+  let active=true;
+  const compute=()=>{
+   if(!active||!flow.current)return;
+   const current=flow.current;
+   const geo={width:geometry.width,gap:GAP};
+   const count=measureColumns(current.scrollWidth,geometry.width,GAP);
+   const anchored=anchorRef.current?getAnchorPage(current,anchorRef.current,geo):null;
+   const selected=previous.current?count-1:anchored??(initial.current&&lastPosition.current?.chapter===chapter?
+    clampPage(lastPosition.current.page,count):0);
+   previous.current=false;initial.current=false;
+   setPages(count);setPage(clampPage(selected,count));setMeasuredKey(layoutKey);
+  };
+  const frame=requestAnimationFrame(compute);
+  void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
+  return ()=>{active=false;cancelAnimationFrame(frame)};
+ },[chapters,chapter,geometry.width,geometry.height,layoutKey]);
+ const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
-   if(!chapters.length)return;
-   const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,updatedAt:Date.now()};
-   const timer=window.setTimeout(()=>{void savePosition(book.id,position)},250);
-   return ()=>clearTimeout(timer);
- },[book.id,chapter,page,pages,chapters.length]);
- function next(){if(page<pages-1)setPage(p=>p+1);else if(chapter<chapters.length-1){setChapter(c=>c+1);setPage(0)}}
- function prev(){if(page>0)setPage(p=>p-1);else if(chapter>0){previous.current=true;setChapter(c=>c-1)}}
- function goTo(index:number){previous.current=false;setChapter(index);setPage(0)}
+  if(!ready||!flow.current)return;
+  const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP});
+  if(anchor)anchorRef.current=anchor;
+  const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
+   anchor:anchorRef.current,updatedAt:Date.now()};
+  lastPosition.current=position;
+  const timer=window.setTimeout(()=>{void savePosition(book.id,position).catch(console.error)},300);
+  return ()=>clearTimeout(timer);
+ },[ready,book.id,chapter,page,pages,geometry.width,layoutKey]);
+ const setReaderPage=(target:number)=>{
+  if(!ready||!flow.current)return;
+  const safe=clampPage(target,pages);
+  const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP});
+  if(anchor)anchorRef.current=anchor;
+  setPage(safe);
+ };
+ const switchChapter=(nextChapter:number,toLast=false)=>{
+  if(!chapters[nextChapter])return;
+  previous.current=toLast;
+  anchorRef.current=undefined;
+  setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
+ };
+ function next(){
+  if(!ready)return;
+  if(page<pages-1)setReaderPage(page+1);
+  else if(chapter<chapters.length-1)switchChapter(chapter+1);
+ }
+ function prev(){
+  if(!ready)return;
+  if(page>0)setReaderPage(page-1);
+  else if(chapter>0)switchChapter(chapter-1,true);
+ }
  const style={
   '--font-size':settings.fontSize+'px',
   '--line-height':String(settings.lineHeight),
-  '--reading-font':settings.fontFamily==='serif'?'\"Iowan Old Style\", \"Palatino Linotype\", Georgia, serif':'-apple-system, BlinkMacSystemFont, sans-serif',
+  '--reading-font':settings.fontFamily==='serif'?'"Iowan Old Style", "Palatino Linotype", Georgia, serif':'-apple-system, BlinkMacSystemFont, sans-serif',
   '--indent':settings.paragraphIndent+'em',
   '--page-height':geometry.height+'px',
   '--align':settings.align
  } as React.CSSProperties;
  const actualChapter=chapters[chapter];
- const position={chapter,page,fraction:pages>1?page/(pages-1):0,updatedAt:Date.now()};
+ const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
+  anchor:anchorRef.current,updatedAt:Date.now()};
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
-   position={position} progress={progressOf(chapter,page,pages,chapters.length)}
-   caption={chapters.length?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
-   chapters={chapters} currentChapter={chapter} onChapter={goTo}>
-   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
-    <div className="page-viewport" ref={viewport} style={style}>
-      {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
-        lang="ru" style={{width:geometry.width, height:geometry.height, columnWidth:geometry.width,columnGap:GAP,
-          transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
-          {actualChapter.blocks.map((block,i)=><BookBlock key={i} block={block}/>)}
-        </div>:<div className="book-loading">Открываем книгу…</div>}
-    </div>
-   </div>}
+  position={position} progress={progressOf(chapter,page,pages,chapters.length)}
+  caption={ready?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
+  chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)}>
+  {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
+   <div className="page-viewport" ref={viewport} style={style}>
+    {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
+     lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
+      transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index}/>)}
+    </div>:<div className="book-loading">Открываем книгу…</div>}
+   </div>
+  </div>}
  </ReadingControls>;
 }
