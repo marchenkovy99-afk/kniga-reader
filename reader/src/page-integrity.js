@@ -1,12 +1,14 @@
+import {createDocumentModel,assertSourceRanges} from './document-model.js';
 function readDOM(html){
  const root=document.createElement('div');root.innerHTML=html;
  return [...root.querySelectorAll('[data-block]')].map(n=>({block:Number(n.dataset.block),from:Number(n.dataset.from),to:Number(n.dataset.to),text:n.textContent}));
 }
 /** Verify rendered page text, not just page boundary metadata. */
-export function assertPageIntegrity(blocks,pages,readFragments=readDOM){
+export function assertPageIntegrity(blocks,pages,readFragments=readDOM,{complete=true,start={block:0,offset:0},model}={}){
  const fail=()=>{throw Error('Нарушена целостность страниц. Текст не будет показан с пропусками. Исходный файл сохранён.');};
  if(!blocks.length||!Array.isArray(pages)||!pages.length)fail();
- let block=0,offset=0;
+ let block=start.block,offset=start.offset;
+ if(pages.some(page=>page.fragments))assertSourceRanges(model||createDocumentModel(blocks),pages,{complete,start});
  for(const page of pages){
   const fragments=readFragments(page.html);if(!fragments.length)fail();
   const first=fragments[0],last=fragments.at(-1);
@@ -19,5 +21,5 @@ export function assertPageIntegrity(blocks,pages,readFragments=readDOM){
    if(offset===blocks[block].text.length){block++;offset=0;}
   }
  }
- if(block!==blocks.length||offset!==0)fail();
+ if(complete&&(block!==blocks.length||offset!==0))fail();
 }

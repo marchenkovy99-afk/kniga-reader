@@ -1,13 +1,13 @@
 import {sha256} from 'js-sha256';
 
 // Bump when pagination markup or the book-text layout CSS changes.
-const VERSION=14;
+const VERSION=15;
 const typography=['font','fontSize','lineHeight','margin','paragraphGap','indent','letterSpacing','align','hyphens'];
 const sourceHashes=new WeakMap();
-function signature({bookId,blocks,width,height,settings,environment=''}){
+function signature({bookId,blocks,width,height,settings,environment='',engine='dom'}){
  let source=sourceHashes.get(blocks);
  if(!source){const hash=sha256.create();for(const block of blocks)hash.update(JSON.stringify([block.type,block.text,block.html,block.presentation]));source=hash.hex();sourceHashes.set(blocks,source);}
- return sha256(JSON.stringify([VERSION,bookId,source,width,height,environment,typography.map(key=>settings[key])]));
+ return sha256(JSON.stringify([VERSION,engine,bookId,source,width,height,environment,typography.map(key=>settings[key])]));
 }
 const storageKey=id=>'pagination-cache:'+id;
 function checkAbort(signal){if(signal?.aborted)throw new DOMException('Cancelled','AbortError');}
