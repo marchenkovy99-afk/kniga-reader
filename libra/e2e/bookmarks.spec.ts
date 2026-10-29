@@ -18,7 +18,7 @@ test('saved bookmark has the correct state and reopens its own page',async({page
    node=>node.scrollWidth/(node.clientWidth||1))).toBeGreaterThan(6);
  // Advance several pages before saving a bookmark.
  for(let i=0;i<4;i++)await page.locator('.reading-zones').click({position:{x:340,y:220}});
- const original=await page.locator('.book-flow').evaluate(el=>getComputedStyle(el).transform);
+ const original=await page.locator('.book-flow').evaluate(el=>(el as HTMLElement).style.transform);
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  const bookmark=page.getByRole('button',{name:'Закладка'});
  await expect(bookmark).toBeVisible();
@@ -35,7 +35,7 @@ test('saved bookmark has the correct state and reopens its own page',async({page
  await expect(saved).toContainText('Глава 1');
  await saved.click();
  await expect(page.locator('.book-flow')).toBeVisible();
- await expect.poll(()=>page.locator('.book-flow').evaluate(el=>getComputedStyle(el).transform)).toBe(original);
+ await expect.poll(()=>page.locator('.book-flow').evaluate(el=>(el as HTMLElement).style.transform)).toBe(original);
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  await expect(page.getByRole('button',{name:'Закладка'})).toHaveAttribute('aria-pressed','true');
  // Toggling again deletes the same location.
@@ -57,7 +57,7 @@ test('bookmarks survive a full reload and reopen at the saved page',async({page}
  const flow=page.locator('.book-flow');
  await expect(flow).toBeVisible();
  for(let i=0;i<3;i++)await page.locator('.reading-zones').click({position:{x:340,y:220}});
- const savedTransform=await flow.evaluate(el=>getComputedStyle(el).transform);
+ const savedTransform=await flow.evaluate(el=>(el as HTMLElement).style.transform);
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  const mark=page.getByRole('button',{name:'Закладка'});
  await mark.click();
@@ -67,7 +67,7 @@ test('bookmarks survive a full reload and reopen at the saved page',async({page}
  await expect(page.locator('.bookmark-item')).toHaveCount(1);
  await page.locator('.bookmark-item').click();
  await expect(page.locator('.book-flow')).toBeVisible();
- await expect.poll(()=>page.locator('.book-flow').evaluate(el=>getComputedStyle(el).transform)).toBe(savedTransform);
+ await expect.poll(()=>page.locator('.book-flow').evaluate(el=>(el as HTMLElement).style.transform)).toBe(savedTransform);
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  await expect(page.getByRole('button',{name:'Закладка'})).toHaveAttribute('aria-pressed','true');
 });
