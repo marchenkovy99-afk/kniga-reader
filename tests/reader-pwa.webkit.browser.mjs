@@ -12,7 +12,8 @@ mkdirSync(output,{recursive:true});
 const browser=await webkit.launch({headless:true});
 const longText='Мы измеряем точную высоту строки, сохраняем каждое слово и проверяем перенос текста на следующую страницу. ';
 const blockText=longText.repeat(19);
-const blocks=Array.from({length:16},(_,i)=>({type:'p',text:blockText,html:blockText}));
+const lengths=[1874,1233,689,442,1641,213,1343,823,1532,481,1698,932,359,1782,574,1150];
+const blocks=lengths.map((n,i)=>{const text=blockText.slice(0,n);return {type:'p',text,html:text};});
 
 async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShrink=0,innerShrink=0}) {
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:3,isMobile:true,hasTouch:true,serviceWorkers:'block'});
@@ -126,6 +127,13 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
     await page.locator('#book-stage').tap({position:{x:width-30,y:Math.min(270,height/3)}});
     await page.waitForFunction(previous=>document.querySelector('#reader-page-position')?.textContent!==previous,before,{timeout:12000});
    }
+  }
+  const density=await page.evaluate(()=>{const text=document.querySelector('.book-page[aria-hidden="false"] .book-text');return parseFloat(getComputedStyle(text).lineHeight);});
+  for(const sample of samples){
+   const unused=sample.stage.bottom-sample.last;
+   const isFinal=sample.position.endsWith('из '+pageCount);
+   assert.ok(isFinal||unused<=density+7,
+    'ordinary prose must not leave two or more usable lines unfilled: '+JSON.stringify({position:sample.position,unused,density,start:sample.markers[0],end:sample.markers.at(-1)}));
   }
   console.log('PWA_PAGE_DENSITY',width+'x'+height,JSON.stringify(samples.map(s=>({position:s.position,unused:Math.round((s.stage.bottom-s.last)*10)/10,end:s.markers.at(-1),start:s.markers[0]}))));
   const snapshot=()=>page.evaluate(()=>{
