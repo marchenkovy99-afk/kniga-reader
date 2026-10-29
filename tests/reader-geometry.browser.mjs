@@ -37,7 +37,7 @@ try{
    const page=document.querySelector('.book-page[aria-hidden="false"]'),text=page.querySelector('.book-text'),reader=document.querySelector('.reader'),stage=document.querySelector('#book-stage');
    const range=document.createRange();range.selectNodeContents(text);const rects=[...range.getClientRects()].filter(r=>r.height>2&&r.width>1),bounds=stage.getBoundingClientRect();
    const first=Math.min(...rects.map(r=>r.top)),last=Math.max(...rects.map(r=>r.bottom));
-   return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding,transform:getComputedStyle(page).transform,clip:getComputedStyle(page).clipPath,pageY:page.getBoundingClientRect().y};
+   return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,allVisible:rects.every(r=>r.left>=bounds.left-.05&&r.right<=bounds.right+.05&&r.top>=bounds.top-.05&&r.bottom<=bounds.bottom+.05&&r.bottom<=window.innerHeight+.05),stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding,transform:getComputedStyle(page).transform,clip:getComputedStyle(page).clipPath,pageY:page.getBoundingClientRect().y};
   }));
   if(!i)await page.screenshot({path:'/tmp/kniga-viewport-review.png'});
   const before=await page.locator('#reader-page-position').textContent();await page.keyboard.press('ArrowRight');await page.waitForFunction(before=>document.querySelector('#reader-page-position').textContent!==before,before);
@@ -47,7 +47,7 @@ try{
  const before=await page.locator('#reader-page-position').textContent();
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
  const footer=await page.locator('.reader-footer').boundingBox();
- assert.ok(Math.abs(footer.y+footer.height-852)<1,'the control panel must dock to the real bottom edge without a strip of book text underneath');
+ assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
  assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
  const controlsBottom=staleInnerHeight?778:852;
  for(const button of await page.locator('.reader-tools button').all()){const bounds=await button.boundingBox();assert.ok(bounds.y+bounds.height<=controlsBottom, 'every control must fit inside the interactive viewport');}
@@ -59,7 +59,8 @@ try{
  await page.waitForFunction(()=>document.querySelector('.reader').clientHeight===900);
  await page.waitForFunction(()=>document.querySelector('.book-page[aria-hidden="false"]').clientHeight===document.querySelector('#book-stage').clientHeight);
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
- assert.ok(Math.abs(resizedFooter.y+resizedFooter.height-900)<1,'controls follow window size changes');
- assert.ok(pages.every(p=>p.first>=59+14),'first text line must clear the system edge effect');
+ assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
+ assert.ok(pages.every(p=>p.first>=59+22+5),'first text line must clear the blurred system edge in installed mode');
+ assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.every(p=>p.unused<=p.lineHeight+4),'ordinary continued text must fill the last available line');
 }finally{await browser.close();}
