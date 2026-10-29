@@ -17,7 +17,7 @@ test('reading diagnostics report measured on-screen space and page boundaries wi
  assert.equal(result.emptyLines,1);
  assert.equal(result.sourceContinuous,true);
  const summary=diagnosticSummary(result);
- assert.match(summary,/нижняя граница страницы: 850/);
+ assert.match(summary,/Границы страницы: 81–850/);
  assert.doesNotMatch(summary,/книга|содержание книги|преступление/i);
 });
 test('diagnostics identify unused space after a paragraph even when controls overlap text',()=>{
