@@ -35,7 +35,7 @@ let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,
 const readerEngine=new URLSearchParams(location.search).get('engine')==='legacy'?'legacy':'dom';
 let readerPageRenderer=null,paginationComplete=true,geometryRecovery=0,readerLayoutWidth=0;
 let libraryView='grid',readingTouched=false,selectionUI=null,pendingJump=null;
-let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
+let cloud=null,cloudPoll=null,authListenerRegistered=false,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const accountState=createAccountState(storage),appearanceWriters=new Map();
 let localOwner=null,allBooks=[],appearanceTail=Promise.resolve();
 const localState=(owner=localOwner)=>accountState.forOwner(owner);
@@ -597,6 +597,17 @@ async function init(){
   if(!allBooks.some(b=>b.id==='sample')){const response=await fetch(import.meta.env.BASE_URL+'sample.fb2');if(!response.ok)throw new Error('Не удалось загрузить демонстрационный фрагмент.');const original=await response.arrayBuffer();const demo=await importBook(original,'sample.fb2');const book={...demo,id:'sample',original,fileName:'sample.fb2',addedAt:Date.now(),marks:[]};await storage.putBook(book);allBooks.push(book);}
   await loadAccountState(localOwner);
   await library();
+  if(import.meta.env.MODE==='pages'&&!authListenerRegistered){
+   authListenerRegistered=true;
+   // Subscribe before the first cloud request. A restored iOS PWA session may
+   // become available after the initial check; INITIAL_SESSION recovers it.
+   supabase.auth.onAuthStateChange((event,session)=>{
+    if(event==='INITIAL_SESSION'&&!session)return;
+    if(['INITIAL_SESSION','SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(async()=>{
+     cloud?.resume();await cloud?.sync();scheduleCloudPoll();
+    },0);
+   });
+  }
   cloud=new CloudSync({onSettled:()=>{queueLocalState();if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},accountChanged:async(next,previous)=>{clearTimeout(saveTimer);await appearanceTail.catch(()=>{});await persistPosition();dispose();current=null;closeSheet();if(!previous)await accountState.adoptGuest(next);await loadAccountState(next);await library();},allBooks:()=>allBooks,canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>{b.localStateOwner=localOwner;books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);},status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
    localAppearance:b=>b.appearanceSettings?{settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt||0}:null,
    remoteAppearance:async(b,record,hasPending)=>{
@@ -612,9 +623,8 @@ async function init(){
     await localState().setPreference('settings',globalSettings);await localState().setPreference('settings-updatedAt',settingsUpdatedAt);
     const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},current?{settings:current.appearanceSettings,updatedAt:current.appearanceUpdatedAt||0}:null);
     applyLiveAppearance(effective.settings);
-   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;if(previous!==JSON.stringify(stored)){await localState((book.localStateOwner===undefined?localOwner:book.localStateOwner)).setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}}});
+   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;const changed=previous!==JSON.stringify(stored);if(changed){await localState((book.localStateOwner===undefined?localOwner:book.localStateOwner)).setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}return changed;}});
   await cloud.init();
-  if(import.meta.env.MODE==='pages')supabase.auth.onAuthStateChange(event=>{if(['SIGNED_IN','SIGNED_OUT','TOKEN_REFRESHED'].includes(event))setTimeout(async()=>{cloud?.resume();await cloud?.sync();scheduleCloudPoll();},0);});
   queueLocalState();
   scheduleCloudPoll();
   window.addEventListener('online',async()=>{cloud.resume();await cloud.sync();scheduleCloudPoll();});

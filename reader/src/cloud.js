@@ -103,7 +103,8 @@ export class CloudSync{
    this.remote=snapshot.states;
    this.details={books:snapshot.books.length,states:snapshot.states.length,downloaded:0};
    const local=this.cb.books();const remoteIds=new Set(snapshot.books.map(b=>b.id));
-   let added=false;
+   let added=false,remoteChanged=false;
+   const bookErrors=[];
    for(const book of local){
     if(!this.canSync()&&!allowHidden)return;
     if(book.id==='sample'||!bookBelongsToAccount(book,this.owner)||await shelfState.isHidden(book.id,this.owner))continue;
@@ -111,18 +112,22 @@ export class CloudSync{
      if(book.cloudOwner!==this.owner){book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);}
      continue;
     }
-    await this.api('/api/cloud/book/'+book.id,{method:'PUT',headers:{'Content-Type':'application/octet-stream','x-cloud-owner':this.owner,'x-book-name':encodeURIComponent(book.fileName)},body:book.original});
-    book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);
+    try{
+     await this.api('/api/cloud/book/'+book.id,{method:'PUT',headers:{'Content-Type':'application/octet-stream','x-cloud-owner':this.owner,'x-book-name':encodeURIComponent(book.fileName)},body:book.original});
+     book.cloudOwner=this.owner;await shelfState.commit(book,this.owner);
+    }catch(error){if(error.status===401||error.status===409)throw error;bookErrors.push(error);}
    }
    for(const entry of snapshot.books){
     if(!this.canSync()&&!allowHidden)return;
     if(this.cb.books().some(b=>b.id===entry.id)||await shelfState.isHidden(entry.id,this.owner))continue;
-    const response=await this.api('/api/cloud/book/'+entry.id);const original=await response.arrayBuffer();
-    if(await shelfState.isHidden(entry.id,this.owner))continue;
-    const id=sha256(original);
-    if(id!==entry.id)throw new Error('Контрольная сумма облачной книги не совпала. Загрузка отменена.');
-    const parsed=await importBook(original,entry.fileName),previous=this.cb.allBooks?.().find(b=>b.id===id);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,cloudOwners:[...new Set([...(previous?.cloudOwners||[]),previous?.cloudOwner,this.owner].filter(Boolean))],addedAt:Date.now(),marks:[]};
-    if(await shelfState.commit(book,this.owner,b=>this.cb.addBook(b))){this.details.downloaded++;added=true;}
+    try{
+     const response=await this.api('/api/cloud/book/'+entry.id);const original=await response.arrayBuffer();
+     if(await shelfState.isHidden(entry.id,this.owner))continue;
+     const id=sha256(original);
+     if(id!==entry.id)throw new Error('Контрольная сумма облачной книги не совпала. Загрузка отменена.');
+     const parsed=await importBook(original,entry.fileName),previous=this.cb.allBooks?.().find(b=>b.id===id);const book={...parsed,id,original,fileName:entry.fileName,cloudOwner:this.owner,cloudOwners:[...new Set([...(previous?.cloudOwners||[]),previous?.cloudOwner,this.owner].filter(Boolean))],addedAt:Date.now(),marks:[]};
+     if(await shelfState.commit(book,this.owner,b=>this.cb.addBook(b))){this.details.downloaded++;added=true;}
+    }catch(error){if(error.status===401||error.status===409)throw error;bookErrors.push(error);}
    }
    await this.sendPending({allowHidden});
    const settings=latestReadingSettings(this.remote);if(settings)await this.cb.remoteSettings?.(settings);
@@ -131,7 +136,7 @@ export class CloudSync{
     const key='position:'+b.id,states=this.remote.filter(x=>x.key===key);
     if(states.length){
      const latest=newestState(states,key),marks=mergeMarks(b.marks||[],...states.map(x=>x.payload?.marks||[]));
-     await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[])));
+     if(await this.cb.remotePosition(b,latest,marks,mergeAnnotations(b.progress?.annotations||[],...states.map(x=>x.payload?.annotations||[]))))remoteChanged=true;
     }
     const keyAppearance=bookAppearanceKey(b.id);
     const independent=this.remote.some(x=>x.key===keyAppearance);
@@ -145,13 +150,20 @@ export class CloudSync{
      await this.queue(keyAppearance,localAppearance.settings,localAppearance.updatedAt);
     }
    }
-   this.failures=0;this.error=null;
    this.remoteBooksCount=snapshot.books.length+local.filter(b=>b.id!=='sample'&&b.cloudOwner===this.owner&&!remoteIds.has(b.id)).length;
    this.lastSuccessfulAt=Date.now();
-   this.setStatus(Object.keys(this.pending).length?'Изменения ожидают отправки…':'Синхронизировано');
-   // A cloud sync result is only successful when all requested book files and
-   // per-device state writes returned without errors.
-   if(added)this.cb.libraryChanged?.();
+   // One corrupt or temporarily unavailable book must not block uploads of
+   // reading positions, annotations, bookmarks and typography for other books.
+   if(bookErrors.length){
+    this.error=new Error('Некоторые книги не обновились ('+bookErrors.length+'). Прогресс и настройки синхронизированы.');
+    this.failures++;
+    this.setStatus('Частичная синхронизация: '+this.error.message);
+    if(this.canSync())this.retryTimer=setTimeout(()=>{this.retryTimer=null;this.sync();},Math.min(300000,15000*2**Math.min(5,this.failures-1)));
+   }else{
+    this.failures=0;this.error=null;
+    this.setStatus(Object.keys(this.pending).length?'Изменения ожидают отправки…':'Синхронизировано');
+   }
+   if(added||remoteChanged)this.cb.libraryChanged?.();
   }catch(e){
    if(e.status===401){this.user=null;this.remote=[];}
    this.setStatus(e.status===401?'Войти для синхронизации':'Не удалось синхронизировать: '+(e.message||'ошибка подключения'));

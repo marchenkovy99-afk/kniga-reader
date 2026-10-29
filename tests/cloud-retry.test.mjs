@@ -224,3 +224,33 @@ test('switching accounts restores their own queues and preserves unsent edits',a
  assert.equal(writes.length,0);assert.equal(h.prefs.get('cloud-pending:account-a:'+h.cloud.deviceId).settings.payload.fontSize,37);
  account='account-a';await h.cloud.sync();assert.equal(writes[0].account,'account-a');assert.equal(writes[0].record.payload.fontSize,37);
 });
+
+test('a corrupt cloud book does not block other state uploads or the retry queue',async()=>{
+ const id='a'.repeat(64),sent=[];
+ const h=harness({api:async(url,opts={})=>{
+  if(url==='/api/cloud')return Response.json({userId:'owner-1',displayName:'reader@example.test',books:[{id,fileName:'unreadable.fb2'}],states:[]});
+  if(url==='/api/cloud/book/'+id)return new Response(new TextEncoder().encode('different bytes'));
+  if(url==='/api/cloud/state'){sent.push(JSON.parse(opts.body));return Response.json({saved:true});}
+  throw Error('Unexpected request: '+url);
+ }});
+ h.cloud.deviceId='offline-recovery';h.cloud.owner='owner-1';
+ await h.cloud.queue('settings',{fontSize:28},450);
+ await h.cloud.sync();
+ assert.equal(sent.length,1,'pending settings are uploaded despite a damaged remote book');
+ assert.equal(Object.keys(h.cloud.pending).length,0,'successful writes leave the pending queue');
+ assert.match(h.cloud.status,/Частичная синхронизация/);
+ assert.ok(h.cloud.retryTimer,'failed book download can be retried later');
+ assert.equal(h.bookWrites.length,0,'invalid book bytes must not be saved');
+});
+test('a downloaded reading progress update refreshes the library without adding a book',async()=>{
+ const key='position:'+'a'.repeat(64),updated=[],renders=[];
+ const b={id:'a'.repeat(64),cloudOwner:'owner-1',blocks:[{text:'abc'}]};
+ const h=harness({bookList:[b],api:async url=>{
+  if(url==='/api/cloud')return Response.json({userId:'owner-1',books:[{id:b.id,fileName:'book.fb2'}],states:[{key,deviceId:'other-device',clientUpdatedAt:500,payload:{anchor:{block:0,offset:2}}}]});
+  throw Error('Unexpected request: '+url);
+ },callbacks:{remotePosition:async(_b,record)=>{updated.push(record);return true;},libraryChanged:()=>renders.push('refresh')}});
+ h.cloud.deviceId='device-current';h.cloud.owner='owner-1';
+ await h.cloud.sync();
+ assert.equal(updated.length,1);
+ assert.deepEqual(renders,['refresh']);
+});

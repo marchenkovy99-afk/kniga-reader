@@ -29,7 +29,8 @@ test('opening, backgrounding and repagination cannot stamp an old position as a 
 });
 test('an untouched newly opened book accepts the newer cloud position',async()=>{
  const h=harness();const next={anchor:{block:2,offset:4},updatedAt:200};
- await h.context.receive(h.book,{payload:next,clientUpdatedAt:200},[],[]);
+ const changed=await h.context.receive(h.book,{payload:next,clientUpdatedAt:200},[],[]);
+ assert.equal(changed,true,'new cloud progress is reported so the library can refresh');
  assert.equal(h.book.progress.updatedAt,200);
  assert.deepEqual({...h.context.anchor},next.anchor);
  assert.equal(h.context.layouts,1);
