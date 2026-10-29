@@ -136,7 +136,8 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
 }
 try{
  const manifest=JSON.parse(readFileSync(path.join(dist,'manifest.webmanifest'),'utf8'));
- assert.ok(['standalone','fullscreen'].includes(manifest.display),'the installed PWA must launch without a browser tab');
+ assert.equal(manifest.display,'standalone','PWA must use the same standalone launch mode as iOS Home Screen');
+ assert.ok(!manifest.display_override?.includes('fullscreen'),'PWA display override must not change its fullscreen/status-bar geometry');
  assert.match(manifest.start_url,/^\.\//,'start URL should stay in the PWA scope');
  for(const screen of [{width:393,height:852},{width:375,height:812},{width:430,height:932}]){
   await exerciseInstalledReader(screen);
