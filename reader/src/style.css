@@ -470,7 +470,10 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
    safe area. Opaque status bar remains; navigation shows on a central tap. */
 /* Fine-tuned iPhone reading offset: 6px higher, always inside the safe area.
    Pagination reads this same stage inset and never shifts an already laid-out page. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 10px)}
+/* Keep the first line above the previous position, without entering iOS status UI.
+   Reserve a real 24px bottom paint gutter so descenders never touch the screen edge.
+   The stage, layout measurements and pagination all use these same insets. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 6px);--reader-bottom-inset:max(24px,calc(env(safe-area-inset-bottom,0px) - 10px))}
 .reader::before{display:none}
 .reader.chrome-hidden .reader-header{display:none}
 .reader-header{box-shadow:0 4px 0 #08090a}
