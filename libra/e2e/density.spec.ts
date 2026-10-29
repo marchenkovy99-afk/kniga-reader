@@ -19,7 +19,10 @@ test('type sizes 14, 18, 24 preserve chapter content and avoid massive page gaps
  const original=await flow.innerText();
  expect(original).toContain('КОНЕЦ');
  for(const fontSize of [14,18,24]){
-  await page.locator('.reading-zones').click({position:{x:190,y:220}});
+  if(!await page.locator('.reading-bottom').evaluate(el=>el.classList.contains('visible'))){
+   await page.locator('.reading-zones').click({position:{x:190,y:220}});
+  }
+  await expect(page.locator('.reading-bottom')).toHaveClass(/visible/);
   await page.getByRole('button',{name:'Текст'}).click();
   await page.locator('.sheet-settings input[type=range]').first().fill(String(fontSize));
   await page.getByRole('button',{name:'Закрыть'}).click();
