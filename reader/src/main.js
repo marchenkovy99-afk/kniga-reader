@@ -5,8 +5,11 @@ import {createBookSelection} from './selection-controller.js';
 import {attachBookSelectionMenu} from './selection-menu.js';
 import {importBook,escapeHTML as esc} from './importer.js';
 import {upgradeBookPresentation} from './book-upgrade.js';
-import {defaults,clampSettings,restoreSettings,pageForAnchor} from './anchors.js';
+import {defaults,clampSettings,restoreSettings,pageForAnchor,compareAnchors} from './anchors.js';
 import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
+import {createDocumentModel,migrateAnchor} from './document-model.js';
+import {createPageRenderer} from './page-renderer.js';
+import {readReadingViewport,geometryRepair} from './viewport-manager.js';
 import * as storage from './storage.js';
 import {shelfState} from './shelf-state.js';
 import {CloudSync} from './cloud.js';
@@ -29,6 +32,8 @@ const paths={grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
+const readerEngine=new URLSearchParams(location.search).get('engine')==='legacy'?'legacy':'dom';
+let readerPageRenderer=null,paginationComplete=true;
 let libraryView='grid',readingTouched=false,selectionUI=null,pendingJump=null;
 let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const accountState=createAccountState(storage),appearanceWriters=new Map();
@@ -107,7 +112,7 @@ function fileInput(){return '<input id="file-input" type="file" accept=".fb2,.fb
 function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();});}}
 function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
-function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;pendingJump=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
+function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;pendingJump=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];readerPageRenderer?.clear();readerPageRenderer=null;paginationComplete=true;if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
 async function persistPosition(){if(!current)return;const book=current,id=book.id,owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await localState(owner).setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt,owner);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
@@ -277,44 +282,71 @@ function verifyVisiblePage(){
  const stage=document.querySelector('#book-stage');if(!stage||stage.dataset.layoutState!=='ready')return;
  try{checkRenderedPage(stage);}catch(error){holdLayout();const loader=document.querySelector('#page-loading');loader.textContent=error.message;loader.classList.add('layout-error');}
 }
-async function layout(){
+async function layout(repair=null,attempt=0){
  if(!current)return;clearQuoteActions();holdLayout();const controller=new AbortController();abort=controller;
  const stage=document.querySelector('#book-stage');if(!stage)return;
- const width=Math.floor(stage.clientWidth),height=Math.floor(stage.clientHeight);if(width<100||height<80)return;
- lastSize=`${width}x${height}`;
- const loader=document.querySelector('#page-loading');
- const target={...(pendingJump||anchor)},snapshot={...settings},bookSnapshot=current,paintQuery=viewportPaintQuery(window);
- try{
-  await document.fonts.ready;
-  if(controller.signal.aborted)return;
-  if(stage.clientWidth!==width||stage.clientHeight!==height){scheduleLayout();return;}
-  const result=await paginationCache.load({bookId:bookSnapshot.id,blocks:bookSnapshot.blocks,width,height,settings:snapshot,environment:typographyEnvironment(snapshot,width),signal:controller.signal,onMiss:()=>{loader.hidden=false;},onProgress:p=>{if(!controller.signal.aborted)loader.textContent=`Готовим страницы · ${p}%`;}});
-  if(controller.signal.aborted)return;
-  if(flip){flip.destroy();flip=null;}
-  stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
-  const book=document.createElement('div');book.id='flipbook';book.className='viewport-guard';book.setAttribute('aria-label','Книга с перелистыванием страниц');
-  const paintGuard=document.createElement('style');paintGuard.textContent=`@media ${paintQuery}{#flipbook.viewport-guard{visibility:visible}}`;stage.append(paintGuard,book);
-  const nodes=pages.map((p,i)=>{const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);return node;});pageNodes=nodes;hydrateAround(pageIndex);
-  const motion=pageTurnMotion(snapshot,matchMedia('(prefers-reduced-motion: reduce)').matches);
-  flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
-  let initializing=true;
-  flip.on('flip',e=>{if(initializing)return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();requestAnimationFrame(verifyVisiblePage);});
-  flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
-  book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
-  updateProgress();
-  // The engine applies page transforms in its rendering frame. Verify that
-  // final geometry, not just the detached pagination measurement.
+ const viewport=readReadingViewport(stage),width=Math.min(viewport.width,repair?.width||viewport.width),height=Math.min(viewport.height,repair?.height||viewport.height);if(width<100||height<80)return;
+ lastSize=`${viewport.width}x${viewport.height}`;
+ const loader=document.querySelector('#page-loading'),snapshot={...settings},bookSnapshot=current,paintQuery=viewportPaintQuery(window);
+ const model=createDocumentModel(bookSnapshot.blocks,{id:bookSnapshot.id});
+ const target=migrateAnchor(model,pendingJump||anchor);
+ let installed=false,initializing=false;
+ const stillCurrent=()=>!controller.signal.aborted&&current===bookSnapshot&&document.querySelector('#book-stage')===stage;
+ const sizeMatches=()=>stage.clientWidth===viewport.width&&stage.clientHeight===viewport.height;
+ const renderSnapshot=async(result,{complete=false}={})=>{
+  if(!stillCurrent())return;
+  // A prefix is usable only after the exact restored/jump anchor is covered.
+  if(!complete&&compareAnchors(result.at(-1).end,target)<=0)return;
+  if(!sizeMatches()){scheduleLayout();return;}
+  paginationComplete=complete;
+  const firstPaint=!installed;
+  if(!installed){
+   if(flip){flip.destroy();flip=null;}
+   readerPageRenderer?.clear();readerPageRenderer=readerEngine==='dom'?createPageRenderer(model):null;
+   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
+   const book=document.createElement('div');book.id='flipbook';book.className='viewport-guard';book.setAttribute('aria-label','Книга с перелистыванием страниц');
+   const paintGuard=document.createElement('style');paintGuard.textContent=`@media ${paintQuery}{#flipbook.viewport-guard{visibility:visible}}`;stage.append(paintGuard,book);
+   pageNodes=[];appendPageNodes();hydrateAround(pageIndex);
+   const motion=pageTurnMotion(snapshot,matchMedia('(prefers-reduced-motion: reduce)').matches);
+   flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
+   initializing=true;
+   flip.on('flip',e=>{if(initializing||!stillCurrent())return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();requestAnimationFrame(verifyVisiblePage);});
+   flip.loadFromHTML(pageNodes);flip.turnToPage(pageIndex);initializing=false;
+   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
+   anchor=target;installed=true;
+  }else{
+   const oldCount=pages.length;pages=result;
+   if(result.length>oldCount){
+    appendPageNodes();hydrateAround(pageIndex);initializing=true;
+    flip.updateFromHtml(pageNodes);flip.turnToPage(pageIndex);initializing=false;
+   }
+  }
+  if(firstPaint)await Promise.all((stage.closest('.reader')?.getAnimations?.()||[]).map(animation=>animation.finished.catch(()=>{})));
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-  if(controller.signal.aborted)return;
-  if(stage.clientWidth!==width||stage.clientHeight!==height){scheduleLayout();return;}
+  if(!stillCurrent())return;
+  if(!sizeMatches()){scheduleLayout();return;}
   checkRenderedPage(stage);
   const jumped=Boolean(pendingJump);pendingJump=null;
-  anchor=target; // Keep the precise source anchor through consecutive typography edits.
-  stage.dataset.layoutState='ready';stage.removeAttribute('aria-busy');updateProgress();
+  stage.dataset.layoutState='ready';stage.dataset.paginationComplete=String(complete);stage.removeAttribute('aria-busy');updateProgress();
   if(jumped){current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();}
- }catch(e){if(e.name!=='AbortError'&&!controller.signal.aborted){holdLayout();const errorLoader=document.querySelector('#page-loading');errorLoader.textContent=e.message;errorLoader.classList.add('layout-error');message(e.message,true);}}
+ };
+ try{
+  await document.fonts.ready;if(!stillCurrent())return;
+  if(!sizeMatches()){scheduleLayout();return;}
+  const result=await paginationCache.load({bookId:bookSnapshot.id,blocks:bookSnapshot.blocks,model,width,height,settings:snapshot,engine:readerEngine,environment:typographyEnvironment(snapshot,width),signal:controller.signal,onBatch:renderSnapshot,onMiss:()=>{if(!installed)loader.hidden=false;},onProgress:p=>{if(stillCurrent()&&!installed)loader.textContent=`Готовим страницы · ${p}%`;}});
+  if(!stillCurrent())return;
+  await renderSnapshot(result,{complete:true});
+ }catch(e){
+  if(e.name==='AbortError'||!stillCurrent())return;
+  // Reflow once from independently observed final bounds. Never trim DOM.
+  const text=pageNodes[pageIndex]?.querySelector('.book-text');
+  const smaller=geometryRepair(viewport,text);
+  if(attempt===0&&smaller){await layout(smaller,1);return;}
+  holdLayout();const errorLoader=document.querySelector('#page-loading');errorLoader.textContent=e.message;errorLoader.classList.add('layout-error');message(e.message,true);
+ }
 }
-function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
+function appendPageNodes(){for(let i=pageNodes.length;i<pages.length;i++){const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);pageNodes.push(node);}}
+function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}" data-engine="${readerEngine}">${readerPageRenderer&&pages[i].fragments?readerPageRenderer.html(pages[i]):pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
 function updateProgress(){
  if(!current||!pages.length)return;
  const before=current.blocks.slice(0,anchor.block).reduce((sum,b)=>sum+b.text.length,0)+anchor.offset;
@@ -323,6 +355,7 @@ function updateProgress(){
  document.querySelector('#reader-chapter-remaining').textContent=chapterReadingStatus(pages,pageIndex,current.chapters)?.label||`До конца книги · ${pages.length-pageIndex} стр.`;
  document.querySelector('#reader-page-position').textContent=`${pageIndex+1} из ${pages.length}`;
  const caption=document.querySelector('.appearance-position');if(caption)caption.textContent=`${pageIndex+1} / ${pages.length} · ${chapterReadingStatus(pages,pageIndex,current.chapters)?.label||'До конца книги '+(pages.length-pageIndex)+' стр.'}`;
+ if(!paginationComplete){document.querySelector('#reader-page-position').textContent+='+';document.querySelector('#reader-chapter-remaining').textContent='Готовим оставшиеся страницы…';}
  const progress=document.querySelector('#reading-progress');progress.max=pages.length-1;progress.value=pageIndex;progress.style.setProperty('--reader-progress',`${pages.length>1?pageIndex/(pages.length-1)*100:0}%`);
  progress.setAttribute('aria-valuetext',`Страница ${pageIndex+1} из ${pages.length}`);
  document.querySelector('#prev-page').disabled=pageIndex===0;document.querySelector('#next-page').disabled=pageIndex>=pages.length-1;
@@ -333,7 +366,7 @@ function updateProgress(){
 }
 function turn(dir){if(selectionUI?.active||!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
 function goPage(index){clearQuoteActions();if(!flip||!pages.length||document.querySelector('#book-stage')?.dataset.layoutState!=='ready')return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();requestAnimationFrame(verifyVisiblePage);}
-function jump(target){closeSheet();if(!current)return;if(document.querySelector('#book-stage')?.dataset.layoutState!=='ready'){pendingJump={...target};scheduleLayout();return;}goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
+function jump(target){closeSheet();if(!current)return;if(document.querySelector('#book-stage')?.dataset.layoutState!=='ready'||(!paginationComplete&&compareAnchors(pages.at(-1).end,target)<0)){pendingJump={...target};scheduleLayout();return;}goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
  if(!current||!pages.length)return;
  const marks=current.marks||[],existing=activeMarks(current).find(m=>pageForAnchor(pages,m.anchor)===pageIndex);
@@ -596,3 +629,5 @@ async function init(){
 init();
 
 
+
+document.fonts?.addEventListener('loadingdone',()=>{if(current)scheduleLayout();});

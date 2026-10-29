@@ -1,0 +1,35 @@
+name: Reader engine acceptance
+on:
+  pull_request:
+  push:
+    branches: [feat/dom-pagination-engine]
+permissions:
+  contents: read
+concurrency:
+  group: engine-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run check
+      - run: npm run build:pages
+      - name: Install Chromium and WebKit
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Verify engine and complete reader flows
+        run: node tests/engine.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reader-engine-results
+          path: test-results/engine/
+          if-no-files-found: ignore

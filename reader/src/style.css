@@ -391,6 +391,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .book-text{padding-top:4px;padding-bottom:2px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
+.book-text[data-engine=dom]{overflow:visible}
 .sheet.appearance-sheet{width:min(480px,calc(100% - 24px));margin:auto auto max(12px,env(safe-area-inset-bottom));border-radius:28px;max-height:min(72dvh,650px);box-shadow:0 12px 48px #0003}
 .appearance-sheet .sheet-content{padding:4px 18px 18px}
 .appearance-sheet .setting-control{grid-template-columns:minmax(76px,1fr) 44px minmax(24px,1fr) 42px 44px;gap:6px}

@@ -25,6 +25,14 @@ test('ordinary vertical or horizontal scroll overflow fails early',()=>{
  assert.equal(visibleContentFits(page({scrollHeight:101})),false);
  assert.equal(visibleContentFits(page({scrollWidth:201})),false);
 });
+test('empty trailing padding in integer scroll bounds is not mistaken for clipped glyphs',()=>{
+ const el=page({scrollHeight:101,textRects:[rect(8,1,192,99)]});
+ el.ownerDocument.defaultView={getComputedStyle:()=>({paddingBottom:'2px',paddingRight:'0px'})};
+ assert.equal(visibleContentFits(el),true);
+ const clipped=page({scrollHeight:101,textRects:[rect(8,1,192,100.25)]});
+ clipped.ownerDocument.defaultView=el.ownerDocument.defaultView;
+ assert.equal(visibleContentFits(clipped),false,'padding never excuses an out-of-bounds glyph');
+});
 test('a page that fits its old box must also fit the currently visible stage',()=>{
  const stage={clientWidth:200,clientHeight:60,clientLeft:0,clientTop:0,getBoundingClientRect:()=>rect(10,20,210,80)};
  assert.equal(visibleContentFits(page(),stage),false,'a shorter stage clips otherwise intact text');

@@ -24,6 +24,11 @@ test('theme, page animation and object property order do not invalidate saved pa
  await createPaginationCache({storage,paginate}).load(changed);
  assert.equal(calculations,1);
 });
+test('explicit rollback engine never reuses new engine pagination',async()=>{
+ const storage=disk();let calculations=0;const paginate=async()=>{calculations++;return structuredClone(pages);};
+ const cache=createPaginationCache({storage,paginate});await cache.load(input());
+ await cache.load({...input(),engine:'legacy'});assert.equal(calculations,2);
+});
 test('typography, viewport, browser and source changes each require new pagination',async()=>{
  for(const change of [
   {settings:{...defaults,fontSize:30}},{settings:{...defaults,font:'sans'}},{settings:{...defaults,lineHeight:2}},

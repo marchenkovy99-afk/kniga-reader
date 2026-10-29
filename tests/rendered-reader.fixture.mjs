@@ -7,7 +7,7 @@ const results=[];
 const check=(value,message)=>{if(!value)throw Error(message);};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,16));
 const paintTick=()=>new Promise(resolve=>frame.contentWindow.requestAnimationFrame(resolve));
-async function until(fn,label){const start=performance.now();while(!fn()){if(performance.now()-start>45000)throw Error('Timeout: '+label);await tick();}}
+async function until(fn,label){const start=performance.now();while(!fn()){const error=frame.contentDocument?.querySelector('#page-loading.layout-error');if(error&&!error.hidden)throw Error(label+': '+error.textContent+' '+JSON.stringify(geometry()));if(performance.now()-start>45000)throw Error('Timeout: '+label);await tick();}}
 function publish(){report.textContent=JSON.stringify(results,null,2);}
 const settings={font:'sans',fontSize:22,lineHeight:1.1,margin:8,paragraphGap:0,paragraphSpacingVersion:1,indent:1.3,letterSpacing:0,align:'justify',hyphens:true,theme:'paper'};
 const prose='Утром он открыл книгу и продолжил чтение. Каждая строка должна оставаться видимой полностью. В конце страницы текст не исчезает, а продолжается на следующей. ';
@@ -18,18 +18,20 @@ await storage.putBook({...book,id,original:bytes.buffer,fileName:'visibility.fb2
 await storage.setPreference('cloud-owner',null);
 await storage.setPreference(accountPreferenceKey(null,'settings'),settings);
 await storage.setPreference(accountPreferenceKey(null,'settings-updatedAt'),Date.now());
+await storage.deletePreference(accountPreferenceKey(null,'position:'+id));
+await storage.deletePreference('pagination-cache:'+id);
 frame.src='/kniga-reader/?rendered-visibility-test';
 await until(()=>frame.contentDocument?.querySelector(`[data-book="${id}"]`),'library');
 const doc=()=>frame.contentDocument;
 doc().querySelector(`[data-book="${id}"]`).click();
 function active(){return doc().querySelector('.book-page[aria-hidden="false"] .book-text');}
 function pending(){const loader=doc().querySelector('#page-loading');return Boolean(loader&&!loader.hidden);}
-async function stable(){await until(()=>active()&&!pending()&&doc().querySelector('#book-stage').dataset.layoutState==='ready'&&Math.abs(doc().querySelector('.reader').clientHeight-frame.clientHeight)<1&&Math.abs(active().getBoundingClientRect().height-doc().querySelector('#book-stage').clientHeight)<1,'reading layout');await tick();}
+async function stable(){await until(()=>active()&&!pending()&&doc().querySelector('#book-stage').dataset.layoutState==='ready'&&doc().querySelector('#book-stage').dataset.paginationComplete==='true'&&Math.abs(doc().querySelector('.reader').clientHeight-frame.clientHeight)<1&&Math.abs(active().getBoundingClientRect().height-doc().querySelector('#book-stage').clientHeight)<1,'reading layout');await tick();}
 await stable();
 function geometry(){
  const text=active();if(!text)return {hidden:true};
  const win=frame.contentWindow,style=win.getComputedStyle(text),page=text.closest('.book-page');
- if(style.visibility==='hidden'||win.getComputedStyle(page).visibility==='hidden'||win.getComputedStyle(doc().querySelector('#flipbook')).visibility==='hidden')return {hidden:true};
+ const hidden=style.visibility==='hidden'||win.getComputedStyle(page).visibility==='hidden'||win.getComputedStyle(doc().querySelector('#flipbook')).visibility==='hidden';
  const stage=doc().querySelector('#book-stage'),b=stage.getBoundingClientRect(),t=text.getBoundingClientRect(),r=doc().querySelector('.reader').getBoundingClientRect();
  let min=Infinity,max=-Infinity,clipped=0,nodes=0;
  const walker=doc().createTreeWalker(text,4),range=doc().createRange();let node;
@@ -40,7 +42,7 @@ function geometry(){
    if(rect.left<b.left-.02||rect.right>b.right+.02||rect.top<b.top-.02||rect.bottom>b.bottom+.02||rect.top<0||rect.bottom>win.innerHeight+.02)clipped++;
   }
  }
- return {clipped,nodes,first:min,last:max,top:b.top,bottom:b.bottom,viewport:win.innerHeight,textHeight:t.height,stageHeight:stage.clientHeight,readerHeight:r.height,position:doc().querySelector('#reader-page-position').textContent,font:style.fontSize};
+ return {hidden,scrollHeight:text.scrollHeight,scrollWidth:text.scrollWidth,width:text.clientWidth,clipped,nodes,first:min,last:max,top:b.top,bottom:b.bottom,viewport:win.innerHeight,textHeight:t.height,stageHeight:stage.clientHeight,readerHeight:r.height,position:doc().querySelector('#reader-page-position').textContent,font:style.fontSize};
 }
 async function scenario(name,fn){try{const details=await fn();results.push({name,status:'PASS',...details});}catch(e){results.push({name,status:'FAIL',error:e.message});}publish();}
 await scenario('Every rendered page preserves all source text inside the real reading viewport',async()=>{

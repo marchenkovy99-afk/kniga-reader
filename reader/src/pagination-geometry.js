@@ -2,7 +2,12 @@ import {readerPaintHeight} from './reader-window.js';
 // scrollHeight/scrollWidth are integers and can miss a clipped fraction of a
 // text row. Range rectangles also catch superscripts and nowrap inline runs.
 export function visibleContentFits(element,clip=element){
- if(element.scrollHeight>element.clientHeight||element.scrollWidth>element.clientWidth)return false;
+ const doc=element.ownerDocument,view=doc.defaultView,style=view?.getComputedStyle?.(element);
+ // scrollHeight includes trailing padding after a fractional final line box.
+ // Only that empty padding may exceed the integer client size. Every actual
+ // glyph and replaced element is still tested against exact bounds below.
+ const trailingY=Math.max(0,parseFloat(style?.paddingBottom)||0),trailingX=Math.max(0,parseFloat(style?.paddingRight)||0);
+ if(element.scrollHeight>element.clientHeight+trailingY||element.scrollWidth>element.clientWidth+trailingX)return false;
  const box=element.getBoundingClientRect();
  const clipBox=clip.getBoundingClientRect();
  const contentLeft=box.left+element.clientLeft,contentTop=box.top+element.clientTop;
@@ -12,7 +17,6 @@ export function visibleContentFits(element,clip=element){
  // A flipbook page or its intermediate layers can crop glyphs even when
  // the full book stage still has room. Intersect every clipping ancestor
  // between the text and its requested viewport, including transformed pages.
- const doc=element.ownerDocument,view=doc.defaultView;
  if(clip!==element){
   for(let ancestor=element.parentElement;ancestor&&ancestor!==clip;ancestor=ancestor.parentElement){
    const style=view?.getComputedStyle?.(ancestor);

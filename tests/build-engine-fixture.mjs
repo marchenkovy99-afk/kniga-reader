@@ -1,0 +1,14 @@
+import {build} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+const name=process.argv[2]||'engine';
+const output=process.argv[3];
+const entry=fileURLToPath(new URL(`./${name}.fixture.mjs`,import.meta.url));
+const built=await build({configFile:false,logLevel:'silent',build:{write:false,minify:false,lib:{entry,formats:['es']}}});
+const files=(Array.isArray(built)?built[0]:built).output;
+const code=files.find(f=>f.type==='chunk'&&f.isEntry).code;
+for(const file of files)if(file.type==='chunk'&&!file.isEntry)await writeFile(join(dirname(output),file.fileName),file.code);
+const css=await readFile(new URL('../reader/src/style.css',import.meta.url),'utf8');
+await writeFile(output.replace(/\.html$/,'.mjs'),code);
+await writeFile(output,`<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Running ${name}</title><style>${css}\nbody{overflow:auto!important;background:#eee;padding:12px}#results{font:13px/1.5 monospace;white-space:pre-wrap;color:#111}.qa-pages{position:absolute;left:0;top:0;z-index:-1}.qa-page{background:white;color:black;margin:0}</style><h1>${name} regression</h1><pre id="results">Running…</pre><div id="preview"></div><script type="module" src="./${output.split('/').at(-1).replace(/\.html$/,'.mjs')}"></script></html>`);
