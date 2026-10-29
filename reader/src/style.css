@@ -490,3 +490,45 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 
 /* Pagination remains available to the engine and screen-reader slider, but is never painted. */
 .reader .reader-bottom-page-number,.reader .reader-page-position{display:none!important}
+
+/* Theme consistency: a single palette applies to both shelf and reading UI.
+   Keep OLED truly black and remove hard-coded dark chrome on light pages. */
+:root[data-theme=paper]{
+ --paper:#f6f3ec;--ink:#222321;--reading-ink:#222321;--muted:#64645f;
+ --line:#dedbd4;--surface:#f6f3ec;--sheet:#f6f3ec;--soft:#eae7e0;
+ --accent:#f36a32;--accent-text:#201b17;color-scheme:light
+}
+:root[data-theme=white]{
+ --paper:#ffffff;--ink:#242824;--reading-ink:#242824;--muted:#626960;
+ --line:#e0e4dc;--surface:#f5f6f2;--sheet:#ffffff;--soft:#e7eee5;
+ --accent:#f36a32;--accent-text:#201b17;color-scheme:light
+}
+:root[data-theme=night]{
+ --paper:#1d1f1e;--ink:#f2f0e9;--reading-ink:#f2f0e9;--muted:#b6b5af;
+ --line:#41433f;--surface:#272926;--sheet:#242624;--soft:#30322f;
+ --accent:#f36a32;--accent-text:#201b17;color-scheme:dark
+}
+:root[data-theme=oled]{
+ --paper:#000000;--ink:#f2f2ef;--reading-ink:#f2f2ef;--muted:#aaaaaa;
+ --line:#3b3b3b;--surface:#171717;--sheet:#171717;--soft:#252525;
+ --accent:#f36a32;--accent-text:#201b17;color-scheme:dark
+}
+:root[data-theme] body:not(.reading){
+ --paper:inherit;--ink:inherit;--muted:inherit;--line:inherit;
+ --accent:inherit;--accent-text:inherit;--surface:inherit;
+ --sheet:inherit;--soft:inherit;--ui-coral:var(--accent);
+ background:var(--paper);color:var(--ink)
+}
+:root[data-theme] .theme-sample.paper{background:#f6f3ec;color:#222321}
+:root[data-theme] .theme-sample.white{background:#fff;color:#242824}
+:root[data-theme] .theme-sample.night{background:#1d1f1e;color:#f2f0e9}
+:root[data-theme] .theme-sample.oled{background:#000;color:#f2f2ef}
+:root[data-theme] .book-text{color:var(--reading-ink,var(--ink))}
+:root[data-theme] .reader-header,
+:root[data-theme] .reader-top-controls,
+:root[data-theme] .reader-header #to-library{
+ color:var(--ink)
+}
+:root[data-theme] .reader-header{box-shadow:none}
+:root[data-theme] .reader-top-controls .icon-button{background:var(--paper);color:var(--ink)}
+:root[data-theme] .reader::before{background:var(--paper)}
