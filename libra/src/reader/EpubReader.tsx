@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReaderPosition, ReaderSettings, StoredBook } from '../domain';
+import type { ReaderSettings, StoredBook } from '../domain';
 import { PALETTES } from '../theme';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';

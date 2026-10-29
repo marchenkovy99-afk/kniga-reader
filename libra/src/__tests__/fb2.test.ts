@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe,it,expect } from 'vitest';
 import { parseFB2 } from '../fb2';
 const sample=`<?xml version="1.0" encoding="UTF-8"?>
