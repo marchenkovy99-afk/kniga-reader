@@ -52,6 +52,14 @@ try{
  }
  console.log(JSON.stringify(pages,null,2));
  assert.ok(pages.every(p=>p.readerHeight===852),'installed reader must fill its actual window even when dynamic viewport units are too short');
+ // Showing the chrome must only paint overlays; the book cannot be repaginated.
+ const readingSnapshot=()=>page.evaluate(()=>{
+  const stage=document.querySelector('#book-stage'),text=document.querySelector('.book-page[aria-hidden="false"] .book-text');
+  return {width:stage.clientWidth,height:stage.clientHeight,layout:stage.dataset.layoutState,page:document.querySelector('#reader-page-position').textContent,markup:text.innerHTML,source:text.textContent,bookPages:document.querySelectorAll('.book-page').length,ariaBusy:stage.getAttribute('aria-busy')};
+ });
+ const beforeChrome=await readingSnapshot();
+ const assertUnchangedChrome=async()=>assert.deepEqual(await readingSnapshot(),beforeChrome,
+  'opening and hiding the floating chrome must never repaginate, change source text or show a loading state');
  const originalAnchor=await page.evaluate(()=>{const fragment=document.querySelector('.book-page[aria-hidden="false"] [data-block]');return {block:Number(fragment.dataset.block),offset:Number(fragment.dataset.from)};});
  const assertAnchorPresent=async()=>{
   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
@@ -59,14 +67,21 @@ try{
   assert.ok(found,'reflow must keep the reader at the original source anchor without skipping text');
  };
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
- await assertAnchorPresent();
+ await assertUnchangedChrome();
+ assert.ok(await page.locator('.reader-footer').isVisible(),'floating toolbar opens on top of the existing page');
+ assert.ok(await page.locator('.reader-header').isVisible(),'floating header opens without shifting book text');
  const footer=await page.locator('.reader-footer').boundingBox();
  assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
  await assertAnchorPresent();
  const controlsBottom=staleInnerHeight?778:852;
  for(const button of await page.locator('.reader-tools button:visible').all()){const bounds=await button.boundingBox();assert.ok(bounds&&bounds.y+bounds.height<=controlsBottom, 'every visible control must fit inside the interactive viewport');}
- await page.locator('#appearance').click();await page.locator('dialog[open]').waitFor();await page.locator('#close-sheet').click();
- await assertAnchorPresent();
+ await page.locator('#appearance').click();await page.locator('dialog[open]').waitFor();await assertUnchangedChrome();
+ await page.locator('#close-sheet').click();await assertUnchangedChrome();
+ await page.locator('#book-stage').tap({position:{x:190,y:300}});
+ await assertUnchangedChrome();
+ assert.equal(await page.locator('.reader-footer').isVisible(),false,'hiding the toolbar does not change the page');
+ await page.locator('#book-stage').tap({position:{x:190,y:300}});
+ await assertUnchangedChrome();
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
  const session=await page.context().newCDPSession(page);
  await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
