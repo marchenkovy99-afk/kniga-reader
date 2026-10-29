@@ -93,7 +93,7 @@ function theme(){
  const actual=settings.theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'night':'white'):settings.theme;
  const isDark=actual==='night'||actual==='oled';
  document.documentElement.dataset.theme=actual;
- const paper=getComputedStyle(document.body).getPropertyValue('--paper').trim();
+ const paper=getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
  // The root canvas also paints iOS safe areas and browser overscroll. Library
  // tokens can differ from reader tokens, so use the active body's paper color.
  document.documentElement.style.setProperty('--viewport-paper',paper);

@@ -586,3 +586,21 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
  .reader .reader-header{height:44px;min-height:44px}
  .reader .reader-footer{bottom:calc(env(safe-area-inset-bottom,0px) + 4px);max-height:52dvh}
 }
+
+/* One background token paints the reader, library, iOS safe areas and chrome.
+   No separate black strip or inherited body palette for a light theme. */
+:root[data-theme]{background:var(--paper)!important;--viewport-paper:var(--paper)}
+:root[data-theme] body,
+:root[data-theme] body:not(.reading),
+:root[data-theme] #app,
+:root[data-theme] .reader{background-color:var(--paper);color:var(--ink)}
+:root[data-theme] body:not(.reading){
+ --paper:var(--viewport-paper);
+ --ink:inherit;--muted:inherit;--line:inherit;
+ --surface:inherit;--sheet:inherit;--soft:inherit
+}
+:root[data-theme] .reader::before,
+:root[data-theme] .reader-header,
+:root[data-theme] .reader-header .icon-button,
+:root[data-theme] .reader-top-controls .icon-button{background-color:var(--paper)!important;color:var(--ink)}
+:root[data-theme] .reader-header{box-shadow:none!important}
