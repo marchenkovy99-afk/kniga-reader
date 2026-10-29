@@ -34,7 +34,7 @@ export function describeReadingGeometry({doc=document,win=window,glyphBounds,pag
  return {
   viewportHeight:px(win.innerHeight),visualHeight:px(win.visualViewport?.height),
   documentHeight:px(doc.documentElement?.clientHeight),
-  cssHeight:px(doc.documentElement?.getBoundingClientRect?.().height||0),
+  cssHeight:px(doc.querySelector?.('.reader')?.getBoundingClientRect?.().height||win.innerHeight),
   installed:Boolean(win.navigator?.standalone||win.matchMedia?.('(display-mode: standalone)')?.matches),
   readerTop:digit(doc.querySelector?.('.reader')?.getBoundingClientRect?.().top),
   readerBottom:digit(doc.querySelector?.('.reader')?.getBoundingClientRect?.().bottom),
