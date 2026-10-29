@@ -58,6 +58,7 @@ try{
   return {width:stage.clientWidth,height:stage.clientHeight,layout:stage.dataset.layoutState,page:document.querySelector('#reader-page-position').textContent,markup:text.innerHTML,source:text.textContent,bookPages:document.querySelectorAll('.book-page').length,ariaBusy:stage.getAttribute('aria-busy')};
  });
  const beforeChrome=await readingSnapshot();
+ assert.equal(await page.locator('.reader-header').isVisible(),false,'top navigation must be hidden during immersive reading');
  const assertUnchangedChrome=async()=>assert.deepEqual(await readingSnapshot(),beforeChrome,
   'opening and hiding the floating chrome must never repaginate, change source text or show a loading state');
  const originalAnchor=await page.evaluate(()=>{const fragment=document.querySelector('.book-page[aria-hidden="false"] [data-block]');return {block:Number(fragment.dataset.block),offset:Number(fragment.dataset.from)};});
@@ -71,7 +72,7 @@ try{
  assert.ok(await page.locator('.reader-footer').isVisible(),'floating toolbar opens on top of the existing page');
  assert.ok(await page.locator('.reader-header').isVisible(),'top controls stay visible without shifting book text');
  const topbar=await page.locator('.reader-header').boundingBox();
- assert.ok(topbar&&topbar.y+topbar.height<=pages[0].stageTop,'top navigation never overlaps the text viewport');
+ assert.ok(topbar&&topbar.y>=59&&topbar.y+topbar.height<=pages[0].stageBottom,'top navigation remains on screen only while opened');
  for(const id of ['prev-page','next-page','toggle-bookmark'])assert.ok(await page.locator('#'+id).isVisible(),id+' must live in the top navigation');
  const footer=await page.locator('.reader-footer').boundingBox();
  assert.ok(footer.width>=368&&footer.height>=111,'floating controls should be visibly larger without exceeding iPhone width');
@@ -85,6 +86,7 @@ try{
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
  await assertUnchangedChrome();
  assert.equal(await page.locator('.reader-footer').isVisible(),false,'hiding the toolbar does not change the page');
+ assert.equal(await page.locator('.reader-header').isVisible(),false,'hiding controls restores the reading surface');
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
  await assertUnchangedChrome();
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
@@ -95,10 +97,10 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.stageTop>=115&&p.stageTop<=116),'installed page starts just below the iOS safe area');
+ assert.ok(pages.every(p=>p.stageTop>=75&&p.stageTop<=76),'installed page starts just below the iOS safe area');
  assert.ok(pages.every(p=>p.stageBottom>=841&&p.stageBottom<=843),'reading area may use only the remaining safe pixels below without clipping');
- assert.ok(pages.every(p=>p.stageHeight>=725),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=115&&p.first<=123),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.stageHeight>=760),'pagination must receive the reclaimed bottom pixels');
+ assert.ok(pages.every(p=>p.first>=75&&p.first<=83),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}

@@ -464,3 +464,11 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-top-controls #toggle-bookmark.marked{color:var(--accent)}
 .reader-top-controls #toggle-bookmark.marked svg{fill:var(--accent);stroke:var(--accent)}
 @media(max-width:359px){.reader-header{padding-inline:8px}.reader-top-controls{gap:4px}}
+
+/* Immersive reading does not reserve the 56px black toolbar.
+   Both the page and its DOM pagination geometry start below the real iOS
+   safe area. Opaque status bar remains; navigation shows on a central tap. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 16px)}
+.reader::before{display:none}
+.reader.chrome-hidden .reader-header{display:none}
+.reader-header{box-shadow:0 4px 0 #08090a}
