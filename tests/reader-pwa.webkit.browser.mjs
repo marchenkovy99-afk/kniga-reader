@@ -120,11 +120,11 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading,'rendered page must exist');
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
-   assert.ok(reading.first>=top+6&&reading.first<=top+14,'first line must stay close to, and below, the iOS safe area');
-   assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(24,bottom-10)))<=1,'last line must remain on-screen');
+   assert.ok(reading.first>=top+2&&reading.first<=top+10,'first line must stay close to, and below, the iOS safe area');
+   assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(44,bottom+10)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
    assert.ok(reading.last<=reading.stage.bottom,'last glyph must not be cropped');
-   assert.ok(height-reading.last>=23.5,'last glyph descenders must clear the physical viewport edge by 24px');
+   assert.ok(height-reading.last>=43.5,'last glyph descenders must clear the physical viewport edge by at least 44px');
    if(samples.length){
     const previous=samples.at(-1).markers.at(-1),next=reading.markers[0];
     assert.ok(next.block===previous.block?next.from===previous.to:next.block===previous.block+1&&next.from===0,'source anchor must continue without missing or duplicating characters');

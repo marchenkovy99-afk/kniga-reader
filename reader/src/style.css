@@ -392,7 +392,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-footer .reading-progress{height:25px;margin:0;width:100%;display:block}
 .reader-footer .icon{width:23px;height:23px}
 .reader-footer .type-button{font-size:22px}
-.book-text{padding-top:4px;padding-bottom:0}
+.book-text{padding-top:4px;padding-bottom:4px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .book-text[data-engine=dom]{overflow:visible}
@@ -470,10 +470,11 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
    safe area. Opaque status bar remains; navigation shows on a central tap. */
 /* Fine-tuned iPhone reading offset: 6px higher, always inside the safe area.
    Pagination reads this same stage inset and never shifts an already laid-out page. */
-/* Keep the first line above the previous position, without entering iOS status UI.
-   Reserve a real 24px bottom paint gutter so descenders never touch the screen edge.
-   The stage, layout measurements and pagination all use these same insets. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 6px);--reader-bottom-inset:max(24px,calc(env(safe-area-inset-bottom,0px) - 10px))}
+/* Move the text 4px higher but keep it below the iOS status area.
+   Reserve 44px below the book: mobile Safari can paint less than its reported
+   viewport height, so checking the stage boundary alone is not sufficient.
+   These measured stage insets are shared by rendering and pagination. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 2px);--reader-bottom-inset:max(44px,calc(env(safe-area-inset-bottom,0px) + 10px))}
 .reader::before{display:none}
 .reader.chrome-hidden .reader-header{display:none}
 .reader-header{box-shadow:0 4px 0 #08090a}

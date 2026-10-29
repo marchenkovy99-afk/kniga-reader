@@ -99,12 +99,12 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.stageTop>=65&&p.stageTop<=66),'installed page starts just below the iOS safe area');
- assert.ok(pages.every(p=>p.stageBottom>=827&&p.stageBottom<=829),'reading area may use only the remaining safe pixels below without clipping');
- assert.ok(pages.every(p=>p.stageHeight>=760),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=65&&p.first<=73),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.stageTop>=61&&p.stageTop<=62),'installed page starts just below the iOS safe area');
+ assert.ok(pages.every(p=>p.stageBottom>=807&&p.stageBottom<=809),'reading area may use only the remaining safe pixels below without clipping');
+ assert.ok(pages.every(p=>p.stageHeight>=740),'pagination must receive the reclaimed bottom pixels');
+ assert.ok(pages.every(p=>p.first>=61&&p.first<=69),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
- assert.ok(pages.every(p=>852-p.stageBottom>=23.5),'screen edge must have at least 24px clearance below every book page');
+ assert.ok(pages.every(p=>852-p.stageBottom>=43.5),'screen edge must have at least 44px clearance below every book page');
  assert.ok(pages.every(p=>p.last<=p.stageBottom+.05),'last glyph descenders must not be cropped by the page viewport');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}
