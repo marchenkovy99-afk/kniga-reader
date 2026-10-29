@@ -15,10 +15,11 @@ import {supabase} from './supabase-client.js';
 import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance,legacyAppearanceTimestamp} from './sync-model.js';
 import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
 import {createReadingFullscreen} from './reading-fullscreen.js';
-import {trackReaderWindow} from './reader-window.js';
+import {trackReaderWindow,viewportPaintQuery} from './reader-window.js';
 import './style.css';
 import {renderCover,prepareCoverImage} from './covers.js';
 import {assertPageIntegrity} from './page-integrity.js';
+import {visibleContentFits} from './pagination-geometry.js';
 import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
 import {createPaginationCache} from './pagination-cache.js';
@@ -27,7 +28,7 @@ const paths={grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
-let libraryView='grid',readingTouched=false,selectionUI=null;
+let libraryView='grid',readingTouched=false,selectionUI=null,pendingJump=null;
 let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const accountState=createAccountState(storage),appearanceWriters=new Map();
 let localOwner=null,allBooks=[],appearanceTail=Promise.resolve();
@@ -37,7 +38,7 @@ function writeAppearance(value,owner=localOwner){
  appearanceTail=appearanceWriters.get(owner)(value);return appearanceTail;
 }
 const readingFullscreen=createReadingFullscreen(document);
-const updateReaderWindow=trackReaderWindow(window,document);
+const updateReaderWindow=trackReaderWindow(window,document,()=>scheduleLayout());
 const paginationCache=createPaginationCache({storage,paginate,validatePages:assertPageIntegrity,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
@@ -105,7 +106,7 @@ function fileInput(){return '<input id="file-input" type="file" accept=".fb2,.fb
 function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();});}}
 function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
-function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
+function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;pendingJump=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
 async function persistPosition(){if(!current)return;const book=current,id=book.id,owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await localState(owner).setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt,owner);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
@@ -212,32 +213,63 @@ async function openBook(id){
  document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
  document.querySelector('#reading-progress').onchange=e=>goPage(Number(e.target.value));
  await layout();
- resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const key=`${Math.round(stage.clientWidth)}x${Math.round(stage.clientHeight)}`;if(key!==lastSize){clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>layout(),200);}});resizeObserver.observe(document.querySelector('#book-stage'));
+ resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const key=`${Math.floor(stage.clientWidth)}x${Math.floor(stage.clientHeight)}`;if(key!==lastSize)scheduleLayout(80);});resizeObserver.observe(document.querySelector('#book-stage'));
+}
+// The old page is no longer readable as a page once its viewport changes.
+// Keep the source and anchor, but do not paint a partially clipped old layout.
+function holdLayout(){
+ abort?.abort();
+ const stage=document.querySelector('#book-stage');if(!stage)return;
+ stage.dataset.layoutState='pending';stage.setAttribute('aria-busy','true');
+ let loader=document.querySelector('#page-loading');
+ if(!loader){loader=document.createElement('div');loader.id='page-loading';loader.className='page-loading';loader.setAttribute('role','status');stage.append(loader);}
+ loader.classList.remove('layout-error');loader.hidden=false;loader.textContent='Пересчитываем страницы…';
+}
+function scheduleLayout(delay=0){if(!current)return;holdLayout();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,delay);}
+function checkRenderedPage(stage){
+ const text=pageNodes[pageIndex]?.querySelector('.book-text');
+ if(!text||!visibleContentFits(text,stage))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
+}
+function verifyVisiblePage(){
+ const stage=document.querySelector('#book-stage');if(!stage||stage.dataset.layoutState!=='ready')return;
+ try{checkRenderedPage(stage);}catch(error){holdLayout();const loader=document.querySelector('#page-loading');loader.textContent=error.message;loader.classList.add('layout-error');}
 }
 async function layout(){
- if(!current)return;clearQuoteActions();abort?.abort();const controller=new AbortController();abort=controller;
+ if(!current)return;clearQuoteActions();holdLayout();const controller=new AbortController();abort=controller;
  const stage=document.querySelector('#book-stage');if(!stage)return;
  const width=Math.floor(stage.clientWidth),height=Math.floor(stage.clientHeight);if(width<100||height<80)return;
  lastSize=`${width}x${height}`;
- let loader=document.querySelector('#page-loading');if(!loader){loader=document.createElement('div');loader.id='page-loading';loader.className='page-loading';loader.setAttribute('role','status');stage.append(loader);}loader.hidden=true;loader.textContent='Пересчитываем страницы…';
- const target={...anchor},snapshot={...settings},bookSnapshot=current;
+ const loader=document.querySelector('#page-loading');
+ const target={...(pendingJump||anchor)},snapshot={...settings},bookSnapshot=current,paintQuery=viewportPaintQuery(window);
  try{
   await document.fonts.ready;
+  if(controller.signal.aborted)return;
+  if(stage.clientWidth!==width||stage.clientHeight!==height){scheduleLayout();return;}
   const result=await paginationCache.load({bookId:bookSnapshot.id,blocks:bookSnapshot.blocks,width,height,settings:snapshot,environment:typographyEnvironment(snapshot,width),signal:controller.signal,onMiss:()=>{loader.hidden=false;},onProgress:p=>{if(!controller.signal.aborted)loader.textContent=`Готовим страницы · ${p}%`;}});
   if(controller.signal.aborted)return;
   if(flip){flip.destroy();flip=null;}
   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
-  const book=document.createElement('div');book.id='flipbook';book.setAttribute('aria-label','Книга с перелистыванием страниц');stage.append(book);
+  const book=document.createElement('div');book.id='flipbook';book.className='viewport-guard';book.setAttribute('aria-label','Книга с перелистыванием страниц');
+  const paintGuard=document.createElement('style');paintGuard.textContent=`@media ${paintQuery}{#flipbook.viewport-guard{visibility:visible}}`;stage.append(paintGuard,book);
   const nodes=pages.map((p,i)=>{const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);return node;});pageNodes=nodes;hydrateAround(pageIndex);
   const motion=pageTurnMotion(snapshot,matchMedia('(prefers-reduced-motion: reduce)').matches);
   flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
   let initializing=true;
-  flip.on('flip',e=>{if(initializing)return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();});
+  flip.on('flip',e=>{if(initializing)return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();requestAnimationFrame(verifyVisiblePage);});
   flip.loadFromHTML(nodes);flip.turnToPage(pageIndex);initializing=false;
   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
-  anchor=target; // Keep the precise source anchor through consecutive typography edits.
   updateProgress();
- }catch(e){if(e.name!=='AbortError'){loader.hidden=false;loader.textContent=e.message;loader.classList.add('layout-error');message(e.message,true);}}
+  // The engine applies page transforms in its rendering frame. Verify that
+  // final geometry, not just the detached pagination measurement.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(controller.signal.aborted)return;
+  if(stage.clientWidth!==width||stage.clientHeight!==height){scheduleLayout();return;}
+  checkRenderedPage(stage);
+  const jumped=Boolean(pendingJump);pendingJump=null;
+  anchor=target; // Keep the precise source anchor through consecutive typography edits.
+  stage.dataset.layoutState='ready';stage.removeAttribute('aria-busy');updateProgress();
+  if(jumped){current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();}
+ }catch(e){if(e.name!=='AbortError'&&!controller.signal.aborted){holdLayout();const errorLoader=document.querySelector('#page-loading');errorLoader.textContent=e.message;errorLoader.classList.add('layout-error');message(e.message,true);}}
 }
 function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}">${pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
 function updateProgress(){
@@ -257,8 +289,8 @@ function updateProgress(){
  document.querySelectorAll('.book-page').forEach((el,i)=>el.setAttribute('aria-hidden',String(i!==pageIndex)));
 }
 function turn(dir){if(selectionUI?.active||!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
-function goPage(index){clearQuoteActions();if(!flip||!pages.length)return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();}
-function jump(target){closeSheet();if(!pages.length)return;goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
+function goPage(index){clearQuoteActions();if(!flip||!pages.length||document.querySelector('#book-stage')?.dataset.layoutState!=='ready')return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();requestAnimationFrame(verifyVisiblePage);}
+function jump(target){closeSheet();if(!current)return;if(document.querySelector('#book-stage')?.dataset.layoutState!=='ready'){pendingJump={...target};scheduleLayout();return;}goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
  if(!current||!pages.length)return;
  const marks=current.marks||[],existing=activeMarks(current).find(m=>pageForAnchor(pages,m.anchor)===pageIndex);
@@ -304,7 +336,7 @@ function refreshAppearanceControls(){
 }
 function applyLiveAppearance(next){
  settings={...next};theme();refreshAppearanceControls();
- if(current){clearTimeout(layoutTimer);layoutTimer=setTimeout(()=>layout(),300);}
+ if(current)scheduleLayout(300);
 }
 
 const ranges={fontSize:['Размер текста',12,48,1,'px'],lineHeight:['Межстрочный интервал',1,2.5,.05,'×'],margin:['Боковые поля',8,72,1,'px'],paragraphGap:['Между абзацами',0,2,.1,'em'],indent:['Отступ первой строки',0,3,.1,'em'],letterSpacing:['Между буквами',-.5,3,.1,'px']};
@@ -319,7 +351,7 @@ function showSettings(){
  const sheet=document.querySelector('#sheet');sheet.classList.add('appearance-sheet');
  if(current&&pages.length){const caption=document.createElement('p');caption.className='appearance-position';caption.textContent=`${pageIndex+1} / ${pages.length} · ${chapterReadingStatus(pages,pageIndex,current.chapters)?.label||'До конца книги '+(pages.length-pageIndex)+' стр.'}`;sheet.querySelector('.handle').after(caption);}
  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{settingsTab=b.dataset.tab;showSettings();});
- const change=(key,value)=>{settings=clampSettings({...settings,[key]:value});saveSettings();syncControls(key);clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,420);};document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{const presets={novel:{fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0,indent:1.3},nonfiction:{fontSize:20,lineHeight:1.5,margin:20,paragraphGap:.3,indent:0},compact:{fontSize:19,lineHeight:1.35,margin:12,paragraphGap:0,indent:1}};settings=clampSettings({...settings,...presets[b.dataset.preset]});saveSettings();showSettings();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,430);});
+ const change=(key,value)=>{settings=clampSettings({...settings,[key]:value});saveSettings();syncControls(key);scheduleLayout(180);};document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{const presets={novel:{fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0,indent:1.3},nonfiction:{fontSize:20,lineHeight:1.5,margin:20,paragraphGap:.3,indent:0},compact:{fontSize:19,lineHeight:1.35,margin:12,paragraphGap:0,indent:1}};settings=clampSettings({...settings,...presets[b.dataset.preset]});saveSettings();showSettings();scheduleLayout(180);});
  const syncControls=key=>{for(const prefix of ['range-','number-']){const el=document.getElementById(prefix+key);if(el&&!(el.type==='number'&&document.activeElement===el))el.value=settings[key];}};
  document.querySelectorAll('[data-setting]').forEach(e=>e.oninput=()=>change(e.dataset.setting,Number(e.value)));
  for(const key of Object.keys(ranges)){const input=document.getElementById('number-'+key);if(input){input.oninput=()=>{const n=Number(input.value);if(input.value!==''&&Number.isFinite(n)&&n>=ranges[key][1]&&n<=ranges[key][2])change(key,n);};input.onchange=()=>{change(key,input.value===''?defaults[key]:Number(input.value));input.value=settings[key];};}}

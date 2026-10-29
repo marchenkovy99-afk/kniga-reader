@@ -25,3 +25,13 @@ test('ordinary vertical or horizontal scroll overflow fails early',()=>{
  assert.equal(visibleContentFits(page({scrollHeight:101})),false);
  assert.equal(visibleContentFits(page({scrollWidth:201})),false);
 });
+test('a page that fits its old box must also fit the currently visible stage',()=>{
+ const stage={clientWidth:200,clientHeight:60,clientLeft:0,clientTop:0,getBoundingClientRect:()=>rect(10,20,210,80)};
+ assert.equal(visibleContentFits(page(),stage),false,'a shorter stage clips otherwise intact text');
+ assert.equal(visibleContentFits(page({textRects:[rect(12,4,188,58)]}),stage),true);
+});
+test('rendered text must fit the browser viewport while CSS stage sizing catches up',()=>{
+ const el=page(),stage={clientWidth:200,clientHeight:100,clientLeft:0,clientTop:0,getBoundingClientRect:()=>rect(10,20,210,120)};
+ el.ownerDocument.defaultView={innerWidth:240,innerHeight:60};
+ assert.equal(visibleContentFits(el,stage),false);
+});

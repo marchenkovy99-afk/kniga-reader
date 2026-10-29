@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {trackReaderWindow} from '../reader/src/reader-window.js';
+import * as readerWindow from '../reader/src/reader-window.js';
 function windowHeight({installed=true,width=393,height=778,screenWidth=393,screenHeight=852,visualHeight=height,scale=1,property='--reader-window-height'}={}){
  let value;
  const win={navigator:{standalone:installed,userAgent:'iPhone'},innerWidth:width,innerHeight:height,screen:{width:screenWidth,height:screenHeight},visualViewport:{height:visualHeight,scale,addEventListener(){}},matchMedia:()=>({matches:false}),addEventListener(){}};
@@ -18,3 +19,24 @@ test('controls stay inside the shorter interactive viewport',()=>assert.equal(wi
 test('controls need no extra inset in ordinary browser windows',()=>assert.equal(windowHeight({installed:false,property:'--reader-controls-inset'}),'0px'));
 
 test('installed app uses shorter visual viewport instead of hidden screen pixels',()=>assert.equal(windowHeight({visualHeight:704}),'704px'));
+test('viewport changes invalidate the old page before the new window height is applied',()=>{
+ const events=new Map(),log=[];
+ const win={innerHeight:852,visualViewport:{height:852,addEventListener(){}},addEventListener:(name,fn)=>events.set(name,fn)};
+ const doc={documentElement:{style:{setProperty:(key,value)=>log.push([key,value])}},addEventListener(){}};
+ trackReaderWindow(win,doc,()=>log.push(['invalidate']));log.length=0;
+ win.innerHeight=393;win.visualViewport.height=393;events.get('resize')();
+ assert.deepEqual(log[0],['invalidate']);
+ assert.deepEqual(log[1],['--reader-window-height','393px']);
+ log.length=0;win.innerWidth=320;events.get('resize')();
+ assert.deepEqual(log[0],['invalidate'],'width-only changes invalidate old line wraps too');
+});
+test('the paint guard follows CSS viewport sizes even when iOS JS and CSS heights disagree',()=>{
+ assert.equal(typeof readerWindow.viewportPaintQuery,'function');
+ const fake=(width,height,cssHeight)=>({innerWidth:width,innerHeight:height,matchMedia:query=>{
+  const [,minimum,axis,value]=query.match(/^\((min-)?(width|height):(\d+)px\)$/);
+  const actual=axis==='width'?width:cssHeight;
+  return {matches:minimum?actual>=Number(value):actual===Number(value)};
+ }});
+ assert.equal(readerWindow.viewportPaintQuery(fake(393,852,852)),'(min-width:393px) and (min-height:852px)');
+ assert.equal(readerWindow.viewportPaintQuery(fake(393,852,803)),'(min-width:393px) and (min-height:803px)');
+});
