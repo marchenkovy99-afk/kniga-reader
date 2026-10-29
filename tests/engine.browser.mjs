@@ -43,6 +43,28 @@ try{
     assert.equal(result,'pass',`${browserName}/${fixture}: ${report}`);assert.deepEqual(errors,[],`${browserName}/${fixture} page errors`);
     console.log(`${browserName}/${fixture}: PASS`);await page.close();
    }
+   // Reopen a real cached PWA shell and its persisted source book offline.
+   // Chromium supports the service-worker/offline automation used here;
+   // desktop WebKit geometry coverage above remains a separate check.
+   if(browserName==='chromium'){
+    const offline=await browser.newContext({viewport:{width:393,height:852},serviceWorkers:'allow'});
+    try{
+     await offline.route('**/*.supabase.co/**',route=>route.abort());
+     const page=await offline.newPage();await page.goto(`${base}/kniga-reader/`);
+     await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller),null,{timeout:60000});
+     await page.reload();
+     await page.waitForFunction(async()=>{const script=document.querySelector('script[type="module"][src]')?.src,css=document.querySelector('link[rel="stylesheet"]')?.href;return script&&css&&Boolean(await caches.match(script))&&Boolean(await caches.match(css));});
+     await page.locator('[data-book="sample"]').click();
+     await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
+     const expected=await page.locator('.book-page[aria-hidden="false"] .book-text').textContent();
+     await offline.setOffline(true);await page.reload();
+     await page.locator('[data-book="sample"]').click();
+     await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
+     assert.equal(await page.locator('.book-page[aria-hidden="false"] .book-text').textContent(),expected,'offline reopen changed source text');
+     await writeFile(join(root,'test-results/engine/chromium-offline.json'),JSON.stringify({offlineShell:true,persistedBook:true,identicalSourcePage:true}));
+     console.log('chromium/offline: PASS');
+    }finally{await offline.close();}
+   }
   }finally{await browser.close();}
  }
 }finally{server.close();}
