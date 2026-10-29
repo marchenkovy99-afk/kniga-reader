@@ -38,7 +38,10 @@ test('typography, viewport, browser and source changes each require new paginati
   {blocks:[{text:'Новая редакция',html:'Новая редакция'}]},
   {blocks:[{text:'Пример текста',html:'Пример текста',presentation:{role:'epigraph'}}]},
  ]){
-  const storage=disk();let calculations=0;const paginate=async()=>{calculations++;return structuredClone(pages);};
+  const storage=disk();let calculations=0;const paginate=async(blocks)=>{
+   calculations++;const text=blocks[0].text;
+   return [{html:'<div>'+text+'</div>',start:{block:0,offset:0},end:{block:0,offset:text.length}}];
+  };
   await createPaginationCache({storage,paginate}).load(input());
   await createPaginationCache({storage,paginate}).load({...input(),...change});
   assert.equal(calculations,2,JSON.stringify(change));
