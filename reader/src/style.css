@@ -367,11 +367,10 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .list-view .book-meta h3,.list-view .book-meta p{white-space:normal;overflow-wrap:anywhere}
 .list-view .book-more{right:0;top:0}
 
-/* Standalone iOS paints a translucent status-bar edge below its safe-area.
-   Keep the first glyph beneath that effect. At the bottom, use the safe-area
-   minus the empty gesture gutter; the final glyph also has page padding.
-   The pagination engine measures the same live stage and refuses clipped rows. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 22px);--reader-bottom-inset:max(2px,calc(env(safe-area-inset-bottom,0px) - 32px))}
+/* The safe area owns the system status bar. Keep only a small readable gap
+   below it; a second status-bar-sized gutter wastes a whole text row.
+   Leave the gesture indicator clear. Both bounds are measured by pagination. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 4px);--reader-bottom-inset:max(12px,calc(env(safe-area-inset-bottom,0px) - 20px))}
 .reader-header{min-height:48px;padding:2px 8px;gap:8px;background:transparent}
 .reader-heading{visibility:hidden}
 .reader-header .icon-button{border-radius:50%;background:var(--paper)}
@@ -388,7 +387,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-footer .reading-progress{height:25px;margin:0;width:100%;display:block}
 .reader-footer .icon{width:23px;height:23px}
 .reader-footer .type-button{font-size:22px}
-.book-text{padding-top:4px;padding-bottom:2px}
+.book-text{padding-top:2px;padding-bottom:2px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .book-text[data-engine=dom]{overflow:visible}

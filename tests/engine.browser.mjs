@@ -13,7 +13,7 @@ const root=fileURLToPath(new URL('../',import.meta.url)),out=await mkdtemp(join(
 await cp(join(root,'docs'),join(out,'kniga-reader'),{recursive:true});
 const index=join(out,'kniga-reader/index.html');
 await writeFile(index,(await readFile(index,'utf8')).replace(/connect-src[^;\"]*/g,"connect-src 'none'"));
-for(const name of ['engine','engine-performance'])execFileSync(process.execPath,[join(root,'tests/build-engine-fixture.mjs'),name,join(out,`${name}.html`)],{cwd:root});
+for(const name of ['engine','engine-performance','reading-insets'])execFileSync(process.execPath,[join(root,'tests/build-engine-fixture.mjs'),name,join(out,`${name}.html`)],{cwd:root});
 execFileSync(process.execPath,[join(root,'tests/build-rendered-reader-fixture.mjs'),join(out,'reader.html')],{cwd:root});
 const server=createServer(async(req,res)=>{
  try{
@@ -33,7 +33,7 @@ try{
   try{
    const context=await browser.newContext({viewport:{width:1200,height:1000},serviceWorkers:'block'});
    await context.route('**/*.supabase.co/**',route=>route.abort());
-   for(const fixture of ['engine','reader','engine-performance']){
+   for(const fixture of ['engine','reader','engine-performance','reading-insets']){
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(`${base}/${fixture}.html`);
     await page.waitForFunction(()=>['pass','fail'].includes(document.body.dataset.result),null,{timeout:180000});
