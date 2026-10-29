@@ -371,20 +371,21 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
    Keep the first glyph beneath that effect. At the bottom, use the safe-area
    minus the empty gesture gutter; the final glyph also has page padding.
    The pagination engine measures the same live stage and refuses clipped rows. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 22px);--reader-bottom-inset:max(12px,calc(env(safe-area-inset-bottom,0px) - 22px))}
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 20px);--reader-bottom-inset:max(10px,calc(env(safe-area-inset-bottom,0px) - 24px))}
 .reader-header{min-height:48px;padding:2px 8px;gap:8px;background:transparent}
 .reader-heading{visibility:hidden}
 .reader-header .icon-button{border-radius:50%;background:var(--paper)}
-.reader:not(.chrome-hidden) .reader-header{position:relative;top:auto;left:auto;right:auto;flex-shrink:0}
-.reader-footer{width:min(340px,calc(100% - 24px));border:1px solid var(--line);border-radius:30px;background:var(--sheet);box-shadow:0 5px 24px #00000012;padding:9px 16px 6px}
-.reader:not(.chrome-hidden) .reader-footer{position:relative;bottom:auto;left:auto;right:auto;flex-shrink:0;margin:5px auto 6px}
+/* The reader chrome is a paint-only overlay. Never let either bar participate
+   in flex sizing: its visibility cannot change the page height or pagination. */
+.reader-footer{position:absolute;left:50%;right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);transform:translateX(-50%);width:min(340px,calc(100% - 24px));margin:0;border:1px solid var(--line);border-radius:30px;background:var(--sheet);box-shadow:0 5px 24px #00000012;padding:9px 16px 6px}
+
 .reader-footer .reader-tools{display:flex;justify-content:space-between;gap:8px;padding:0;height:44px}
 .reader-footer .reader-tools>.icon-button{width:48px;height:44px;border-radius:50%}
 .reader-footer .nav-arrows{display:none}
 .reader-footer .page-status{gap:6px;font-size:10px;line-height:1.4;margin:0}
 .reader-footer .reader-page-position{font-size:12px}
 .reader-footer .reading-progress{height:22px;margin:0;width:100%;display:block}
-.book-text{padding-top:8px;padding-bottom:8px}
+.book-text{padding-top:6px;padding-bottom:5px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .sheet.appearance-sheet{width:min(480px,calc(100% - 24px));margin:auto auto max(12px,env(safe-area-inset-bottom));border-radius:28px;max-height:min(72dvh,650px);box-shadow:0 12px 48px #0003}
