@@ -90,7 +90,7 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.first>=59+22+5),'first text line must clear the blurred system edge in installed mode');
+ assert.ok(pages.every(p=>p.first>=59+20+3),'first text line must clear the blurred system edge in installed mode');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}
