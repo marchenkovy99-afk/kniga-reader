@@ -63,4 +63,26 @@ await run('Oversized tables reject explicitly; source survives',async()=>{
  const text='строка'.repeat(60),html='<table>'+Array.from({length:60},()=>'<tr><td>строка</td></tr>').join('')+'</table>';
  let rejected=false;try{await paginate([{type:'table',html,text}],{width:320,height:260,settings:{...settings,fontSize:48}});}catch(e){rejected=/не помещается/i.test(e.message);}check(rejected,'Oversized table accepted');return {safeRejection:true};
 });
+await run('Zero-text DOM breaks belong to one source slice and never disappear',async()=>{
+ const model=createDocumentModel([{type:'p',html:'a<br/><br/>b',text:'ab'}]),renderer=createPageRenderer(model);
+ const container=document.createElement('div');container.innerHTML=renderer.html({fragments:[{block:0,from:0,to:1}]})+renderer.html({fragments:[{block:0,from:1,to:2}]});
+ check(container.querySelectorAll('br').length===2,'Explicit source breaks vanished at a page boundary');
+ check(container.textContent==='ab','Source changed while preserving explicit breaks');return {preservedBreaks:2};
+});
+await run('Empty lines and a small table do not force whole-page isolation',async()=>{
+ const blocks=[block('Начало.'),{type:'p',html:'<br/>',text:''},block('Продолжение.'),{type:'table',html:'<table><tr><td>Ячейка</td></tr></table>',text:'Ячейка'},block('После таблицы.')];
+ const pages=await paginate(blocks,{width:393,height:600,settings});check(pages.length===1,`Short content split into ${pages.length} pages`);return {pages:pages.length};
+});
+await run('An illustration stays with its short caption',async()=>{
+ const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==';
+ const blocks=[{type:'image',text:'',html:`<img src="${png}"/>`},block('Подпись к иллюстрации.','p',{role:'caption'}),block('Следующий абзац.')];
+ const pages=await paginate(blocks,{width:393,height:600,settings});
+ check(pages[0].fragments.some(p=>p.block===1),'Image caption was moved away from its illustration');return {pages:pages.length};
+});
+await run('A single giant paragraph can cancel during bounded source preparation',async()=>{
+ const text=prose.repeat(16000),controller=new AbortController(),started=performance.now();let batches=0;
+ setTimeout(()=>controller.abort(),0);let aborted=false;
+ try{await paginate([block(text)],{width:320,height:480,settings,signal:controller.signal,onBatch:()=>{batches++;}});}catch(e){aborted=e.name==='AbortError';}
+ check(aborted&&batches===0,'An obsolete giant paragraph was published');return {sourceCharacters:text.length,cancelMs:Math.round(performance.now()-started),batches};
+});
 document.body.dataset.result=results.every(r=>r.status==='PASS')?'pass':'fail';document.title=`${document.body.dataset.result}: DOM engine`;

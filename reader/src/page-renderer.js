@@ -17,14 +17,16 @@ export function createPageRenderer(model,doc=document){
   const {root,nodes,length}=source(index);
   if(from===0&&to===length)return root.innerHTML;
   if(from===to)return '';
-  const boundary=(offset,end)=>{
+  const boundary=offset=>{
    if(offset===0)return [root,0];
    if(offset===length)return [root,root.childNodes.length];
    let low=0,high=nodes.length-1;
-   while(low<high){const mid=Math.floor((low+high)/2);if(end?nodes[mid].end>=offset:nodes[mid].end>offset)high=mid;else low=mid+1;}
+   // The same boundary is used for both adjacent slices. Zero-text siblings
+   // such as BRs between text nodes therefore belong to the previous slice.
+   while(low<high){const mid=Math.floor((low+high)/2);if(nodes[mid].end>offset)high=mid;else low=mid+1;}
    return [nodes[low].node,offset-nodes[low].start];
   };
-  const range=doc.createRange();range.setStart(...boundary(from,false));range.setEnd(...boundary(to,true));
+  const range=doc.createRange();range.setStart(...boundary(from));range.setEnd(...boundary(to));
   const output=doc.createElement('div');output.append(range.cloneContents());return output.innerHTML;
  }
  function fragment(part){

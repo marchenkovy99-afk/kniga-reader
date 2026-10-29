@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDocumentModel,graphemeBoundaries,assertSourceRanges,migrateAnchor} from '../reader/src/document-model.js';
+import {createDocumentModel,graphemeBoundaries,assertSourceRanges,migrateAnchor,prepareBlockBoundaries} from '../reader/src/document-model.js';
 
 test('document model freezes source, retains formatting, chapter and stable legacy positions',()=>{
  const source=[{id:'title',type:'h2',text:'Глава',html:'Глава'},{id:'para',type:'p',text:'Ёж 👨‍👩‍👧‍👦 е\u0301',html:'Ёж <em>👨‍👩‍👧‍👦</em> е\u0301',presentation:{italic:true}}];
@@ -30,4 +30,10 @@ test('empty image blocks are represented exactly once and version tracks formatt
  const page={fragments:[{block:0,from:0,to:0},{block:1,from:0,to:3}],start:{block:0,offset:0},end:{block:1,offset:3}};
  assert.doesNotThrow(()=>assertSourceRanges(model,[page]));
  assert.notEqual(model.version,createDocumentModel([{...source[0]}, {...source[1],html:'<b>end</b>'}]).version);
+});
+test('large grapheme preparation yields and cancels without caching a partial index',async()=>{
+ const block={text:'е\u0301'.repeat(10000)},controller=new AbortController();let yields=0;
+ await assert.rejects(prepareBlockBoundaries(block,{signal:controller.signal,yieldWork:async()=>{if(++yields===2)controller.abort();}}),{name:'AbortError'});
+ const recovered=await prepareBlockBoundaries(block,{yieldWork:async()=>{yields++;}});
+ assert.equal(recovered.length,10001);assert.equal(recovered.at(-1),20000);assert.ok(yields>2);
 });

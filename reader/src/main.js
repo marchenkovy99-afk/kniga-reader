@@ -9,7 +9,7 @@ import {defaults,clampSettings,restoreSettings,pageForAnchor,compareAnchors} fro
 import {paginate,applyTypography,typographyEnvironment} from './pagination.js';
 import {createDocumentModel,migrateAnchor} from './document-model.js';
 import {createPageRenderer} from './page-renderer.js';
-import {readReadingViewport,geometryRepair} from './viewport-manager.js';
+import {readReadingViewport,geometryRepair,sameReadingViewport} from './viewport-manager.js';
 import * as storage from './storage.js';
 import {shelfState} from './shelf-state.js';
 import {CloudSync} from './cloud.js';
@@ -33,7 +33,7 @@ const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="no
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
 const readerEngine=new URLSearchParams(location.search).get('engine')==='legacy'?'legacy':'dom';
-let readerPageRenderer=null,paginationComplete=true;
+let readerPageRenderer=null,paginationComplete=true,geometryRecovery=0,readerLayoutWidth=0;
 let libraryView='grid',readingTouched=false,selectionUI=null,pendingJump=null;
 let cloud=null,cloudPoll=null,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const accountState=createAccountState(storage),appearanceWriters=new Map();
@@ -260,8 +260,10 @@ async function openBook(id){
  enableReaderGeometryReport();
  document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
  document.querySelector('#reading-progress').onchange=e=>goPage(Number(e.target.value));
+ const openingStage=document.querySelector('#book-stage');
  await layout();
- resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const key=`${Math.floor(stage.clientWidth)}x${Math.floor(stage.clientHeight)}`;if(key!==lastSize)scheduleLayout(80);});resizeObserver.observe(document.querySelector('#book-stage'));
+ if(current!==b||owner!==localOwner||document.querySelector('#book-stage')!==openingStage)return;
+ resizeObserver=new ResizeObserver(()=>{const stage=document.querySelector('#book-stage');if(!stage)return;const size=readReadingViewport(stage),key=`${size.width}x${size.height}`;if(key!==lastSize)scheduleLayout(80);});resizeObserver.observe(document.querySelector('#book-stage'));
 }
 // The old page is no longer readable as a page once its viewport changes.
 // Keep the source and anchor, but do not paint a partially clipped old layout.
@@ -273,17 +275,17 @@ function holdLayout(){
  if(!loader){loader=document.createElement('div');loader.id='page-loading';loader.className='page-loading';loader.setAttribute('role','status');stage.append(loader);}
  loader.classList.remove('layout-error');loader.hidden=false;loader.textContent='Пересчитываем страницы…';
 }
-function scheduleLayout(delay=0){if(!current)return;holdLayout();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,delay);}
+function scheduleLayout(delay=0){if(!current)return;geometryRecovery=0;holdLayout();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,delay);}
 function checkRenderedPage(stage){
  const text=pageNodes[pageIndex]?.querySelector('.book-text');
  if(!text||!visibleContentFits(text,stage))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
 }
 function verifyVisiblePage(){
  const stage=document.querySelector('#book-stage');if(!stage||stage.dataset.layoutState!=='ready')return;
- try{checkRenderedPage(stage);}catch(error){holdLayout();const loader=document.querySelector('#page-loading');loader.textContent=error.message;loader.classList.add('layout-error');}
+ try{checkRenderedPage(stage);}catch(error){if(geometryRecovery===0){geometryRecovery=1;const repair=geometryRepair(readReadingViewport(stage),pageNodes[pageIndex]?.querySelector('.book-text'),stage),book=current,controller=abort;paginationCache.remove(book.id).then(()=>{if(current===book&&abort===controller)layout(repair,1);});holdLayout();return;}holdLayout();const loader=document.querySelector('#page-loading');loader.textContent=error.message;loader.classList.add('layout-error');}
 }
 async function layout(repair=null,attempt=0){
- if(!current)return;clearQuoteActions();holdLayout();const controller=new AbortController();abort=controller;
+ if(!current)return;geometryRecovery=attempt;clearQuoteActions();holdLayout();const controller=new AbortController();abort=controller;
  const stage=document.querySelector('#book-stage');if(!stage)return;
  const viewport=readReadingViewport(stage),width=Math.min(viewport.width,repair?.width||viewport.width),height=Math.min(viewport.height,repair?.height||viewport.height);if(width<100||height<80)return;
  lastSize=`${viewport.width}x${viewport.height}`;
@@ -292,7 +294,7 @@ async function layout(repair=null,attempt=0){
  const target=migrateAnchor(model,pendingJump||anchor);
  let installed=false,initializing=false;
  const stillCurrent=()=>!controller.signal.aborted&&current===bookSnapshot&&document.querySelector('#book-stage')===stage;
- const sizeMatches=()=>stage.clientWidth===viewport.width&&stage.clientHeight===viewport.height;
+ const sizeMatches=()=>sameReadingViewport(stage,viewport);
  const renderSnapshot=async(result,{complete=false}={})=>{
   if(!stillCurrent())return;
   // A prefix is usable only after the exact restored/jump anchor is covered.
@@ -303,7 +305,7 @@ async function layout(repair=null,attempt=0){
   if(!installed){
    if(flip){flip.destroy();flip=null;}
    readerPageRenderer?.clear();readerPageRenderer=readerEngine==='dom'?createPageRenderer(model):null;
-   stage.innerHTML='';pages=result;pageIndex=pageForAnchor(pages,target);
+   stage.innerHTML='';readerLayoutWidth=width;pages=result;pageIndex=pageForAnchor(pages,target);
    const book=document.createElement('div');book.id='flipbook';book.className='viewport-guard';book.setAttribute('aria-label','Книга с перелистыванием страниц');
    const paintGuard=document.createElement('style');paintGuard.textContent=`@media ${paintQuery}{#flipbook.viewport-guard{visibility:visible}}`;stage.append(paintGuard,book);
    pageNodes=[];appendPageNodes();hydrateAround(pageIndex);
@@ -340,13 +342,13 @@ async function layout(repair=null,attempt=0){
   if(e.name==='AbortError'||!stillCurrent())return;
   // Reflow once from independently observed final bounds. Never trim DOM.
   const text=pageNodes[pageIndex]?.querySelector('.book-text');
-  const smaller=geometryRepair(viewport,text);
-  if(attempt===0&&smaller){await layout(smaller,1);return;}
+  const smaller=geometryRepair(viewport,text,stage);
+  if(attempt===0){await paginationCache.remove(bookSnapshot.id);if(stillCurrent())await layout(smaller,1);return;}
   holdLayout();const errorLoader=document.querySelector('#page-loading');errorLoader.textContent=e.message;errorLoader.classList.add('layout-error');message(e.message,true);
  }
 }
 function appendPageNodes(){for(let i=pageNodes.length;i<pages.length;i++){const node=document.createElement('section');node.className='book-page';node.setAttribute('data-density','soft');node.setAttribute('aria-label',`Страница ${i+1}`);pageNodes.push(node);}}
-function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}" data-engine="${readerEngine}">${readerPageRenderer&&pages[i].fragments?readerPageRenderer.html(pages[i]):pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
+function hydrateAround(center){const stage=document.querySelector('#book-stage'),width=readerLayoutWidth||Math.floor(stage?.clientWidth||400);for(let i=Math.max(0,center-5);i<=Math.min(pageNodes.length-1,center+5);i++){const node=pageNodes[i];if(!node||node.dataset.ready==='yes')continue;node.innerHTML=`<div class="book-text" data-page="${i}" data-engine="${readerEngine}">${readerPageRenderer&&pages[i].fragments?readerPageRenderer.html(pages[i]):pages[i].html}</div>`;applyTypography(node.querySelector('.book-text'),settings,width);node.dataset.ready='yes';renderNotesOnPage(node);}}
 function updateProgress(){
  if(!current||!pages.length)return;
  const before=current.blocks.slice(0,anchor.block).reduce((sum,b)=>sum+b.text.length,0)+anchor.offset;

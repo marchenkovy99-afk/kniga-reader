@@ -2,10 +2,24 @@ import {sha256} from 'js-sha256';
 
 const segmenter=new Intl.Segmenter('ru',{granularity:'grapheme'});
 export function graphemeBoundaries(text){
- const boundaries=[...segmenter.segment(text)].map(part=>part.index);
+ const boundaries=[];for(const part of segmenter.segment(text))boundaries.push(part.index);
  boundaries.push(text.length);return boundaries;
 }
 const indexes=new WeakMap();
+export async function prepareBlockBoundaries(block,{signal,yieldWork}={}){
+ if(indexes.has(block))return indexes.get(block);
+ const offsets=[];let count=0;
+ for(const part of segmenter.segment(block.text)){
+  offsets.push(part.index);
+  if(++count%1024===0){await yieldWork?.();if(signal?.aborted)throw new DOMException('Cancelled','AbortError');}
+ }
+ offsets.push(block.text.length);indexes.set(block,offsets);return offsets;
+}
+export function hasBoundary(block,offset){
+ const values=blockBoundaries(block);let low=0,high=values.length-1;
+ while(low<high){const mid=(low+high)>>>1;if(values[mid]<offset)low=mid+1;else high=mid;}
+ return values[low]===offset;
+}
 export function blockBoundaries(block){
  if(!indexes.has(block))indexes.set(block,graphemeBoundaries(block.text));
  return indexes.get(block);
@@ -34,8 +48,7 @@ export function assertSourceRanges(model,pages,{complete=true,start={block:0,off
   for(const fragment of fragments){
    const source=model.blocks[block];
    if(!source||fragment.block!==block||fragment.from!==offset||!Number.isInteger(fragment.to)||fragment.to<offset||fragment.to>source.text.length||(source.text.length&&fragment.to===offset))integrityError();
-   const boundaries=blockBoundaries(source);
-   if(!boundaries.includes(offset)||!boundaries.includes(fragment.to))integrityError();
+   if(!hasBoundary(source,offset)||!hasBoundary(source,fragment.to))integrityError();
    offset=fragment.to;if(offset===source.text.length){block++;offset=0;}
   }
  }

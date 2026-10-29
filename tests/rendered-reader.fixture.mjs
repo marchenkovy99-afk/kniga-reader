@@ -139,5 +139,19 @@ await scenario('A search jump requested during repagination reaches and saves it
  check(saved?.anchor?.block===5&&saved?.anchor?.offset===0,'Search target was not persisted');
  return {anchor:saved.anchor,clippedRectangles:0};
 });
+await scenario('Closing a partially prepared long book cancels cleanly',async()=>{
+ const longSource='<?xml version="1.0"?><FictionBook><body><section>'+Array.from({length:140},()=>`<p>${prose.repeat(5)}</p>`).join('')+'</section></body></FictionBook>';
+ const longBytes=new TextEncoder().encode(longSource),longBook=await importBook(longBytes,'cancel.fb2'),longId='cancel-stream-test';
+ await storage.putBook({...longBook,id:longId,original:longBytes.buffer,fileName:'cancel.fb2',addedAt:Date.now(),marks:[],localStateOwner:null,cloudOwner:null});
+ await storage.deletePreference('pagination-cache:'+longId);
+ frame.contentWindow.location.reload();await until(()=>doc().querySelector(`[data-book="${longId}"]`),'long book library');
+ const errors=[];frame.contentWindow.addEventListener('error',e=>errors.push(e.message));frame.contentWindow.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
+ doc().querySelector(`[data-book="${longId}"]`).click();
+ await until(()=>doc().querySelector('#book-stage')?.dataset.layoutState==='ready'&&doc().querySelector('#book-stage')?.dataset.paginationComplete==='false','first usable prefix');
+ doc().querySelector('#to-library').click();await until(()=>doc().querySelector(`[data-book="${longId}"]`),'return from streaming');
+ await new Promise(resolve=>setTimeout(resolve,200));
+ check(errors.length===0,errors.join('; '));check(!doc().querySelector('#book-stage'),'Stale work reopened a closed book');
+ return {cancelledWithoutErrors:true,sourceCharacters:longBook.chars};
+});
 document.body.dataset.result=results.every(r=>r.status==='PASS')?'pass':'fail';
 document.title=document.body.dataset.result.toUpperCase()+' — rendered reader';
