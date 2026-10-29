@@ -12,6 +12,7 @@ export function describeReadingGeometry({doc=document,win=window,glyphBounds,pag
  const stage=doc.querySelector?.('#book-stage');
  const text=doc.querySelector?.('.book-page[aria-hidden="false"]')?.querySelector?.('.book-text');
  const stageBox=stage?.getBoundingClientRect?.();
+ const pageBox=doc.querySelector?.('.book-page[aria-hidden="false"]')?.getBoundingClientRect?.();
  const rects=glyphBounds||[];
  if(!glyphBounds&&text&&doc.createTreeWalker&&doc.createRange){
   const walker=doc.createTreeWalker(text,4),range=doc.createRange();let node;
@@ -38,6 +39,7 @@ export function describeReadingGeometry({doc=document,win=window,glyphBounds,pag
   readerTop:digit(doc.querySelector?.('.reader')?.getBoundingClientRect?.().top),
   readerBottom:digit(doc.querySelector?.('.reader')?.getBoundingClientRect?.().bottom),
   stageTop:digit(stageBox?.top),stageBottom:digit(stageBox?.bottom),
+  renderedPageBottom:digit(pageBox?.bottom),
   firstGlyphTop:digit(firstGlyphTop),lastGlyphBottom:digit(lastGlyphBottom),
   lineHeight:digit(lineHeight),freeSpace:digit(gap),
   emptyLines:lineHeight>0&&gap!==null?Math.max(0,Math.floor((gap-2)/lineHeight)):null,
@@ -56,6 +58,7 @@ export function diagnosticSummary(d){
   'Высота окна: '+val(d.viewportHeight)+' · visual: '+val(d.visualHeight)+' · document: '+val(d.documentHeight),
   'CSS-контейнер: '+val(d.cssHeight)+' · PWA: '+yes(d.installed),
   'Границы страницы: '+val(d.stageTop)+'–'+val(d.stageBottom),
+  'Граница листа: '+val(d.renderedPageBottom),
   'Последняя строка: '+val(d.lastGlyphBottom),
   'Свободное место: '+val(d.freeSpace)+' px · примерно '+val(d.emptyLines)+' строк',
   'Шрифт: '+val(d.fontSize)+' px · шаг строки: '+val(d.lineHeight)+' px',
