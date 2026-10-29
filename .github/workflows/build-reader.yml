@@ -38,6 +38,8 @@ jobs:
           INSTALLED_APP=1 node tests/reader-geometry.browser.mjs
           node tests/pagination-layout.browser.mjs
           node tests/reader-pwa.webkit.browser.mjs
+      - name: Verify source integrity and complex DOM pagination in Chromium and WebKit
+        run: node tests/engine.browser.mjs
       - name: Save PWA WebKit screenshots
         if: always()
         uses: actions/upload-artifact@v4
