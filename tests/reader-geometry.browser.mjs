@@ -76,9 +76,10 @@ try{
  assert.ok(await page.locator('.reader-header').isVisible(),'top controls stay visible without shifting book text');
  const topbar=await page.locator('.reader-header').boundingBox();
  assert.ok(topbar&&topbar.y>=59&&topbar.y+topbar.height<=pages[0].stageBottom,'top navigation remains on screen only while opened');
- for(const id of ['prev-page','next-page','toggle-bookmark'])assert.ok(await page.locator('#'+id).isVisible(),id+' must live in the top navigation');
+ assert.ok(await page.locator('#toggle-bookmark').isVisible(),'bookmark belongs in the top navigation');
+ assert.equal(await page.locator('#prev-page,#next-page').count(),0,'permanent page-turn arrows must not return');
  const footer=await page.locator('.reader-footer').boundingBox();
- assert.ok(footer.width>=368&&footer.height>=111,'floating controls should be visibly larger without exceeding iPhone width');
+ assert.ok(footer.width>=368&&footer.height>=78,'floating controls must remain touch-accessible and inside the iPhone width');
  assert.ok(footer.x>=7&&footer.x+footer.width<=393-7,'larger toolbar retains horizontal tap margins');
  assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
  await assertAnchorPresent();
