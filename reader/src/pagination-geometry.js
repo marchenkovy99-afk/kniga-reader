@@ -8,7 +8,21 @@ export function visibleContentFits(element,clip=element){
  const clipLeft=clipBox.left+clip.clientLeft,clipTop=clipBox.top+clip.clientTop;
  let left=Math.max(contentLeft,clipLeft),top=Math.max(contentTop,clipTop);
  let right=Math.min(contentLeft+element.clientWidth,clipLeft+clip.clientWidth),bottom=Math.min(contentTop+element.clientHeight,clipTop+clip.clientHeight);
+ // A flipbook page or its intermediate layers can crop glyphs even when
+ // the full book stage still has room. Intersect every clipping ancestor
+ // between the text and its requested viewport, including transformed pages.
  const view=element.ownerDocument.defaultView;
+ if(clip!==element){
+  for(let ancestor=element.parentElement;ancestor&&ancestor!==clip;ancestor=ancestor.parentElement){
+   const style=view?.getComputedStyle?.(ancestor);
+   const clipsX=/^(hidden|clip|scroll|auto)$/.test(style?.overflowX||'');
+   const clipsY=/^(hidden|clip|scroll|auto)$/.test(style?.overflowY||'');
+   if(!clipsX&&!clipsY)continue;
+   const bounds=ancestor.getBoundingClientRect();
+   if(clipsX){left=Math.max(left,bounds.left+ancestor.clientLeft);right=Math.min(right,bounds.left+ancestor.clientLeft+ancestor.clientWidth);}
+   if(clipsY){top=Math.max(top,bounds.top+ancestor.clientTop);bottom=Math.min(bottom,bounds.top+ancestor.clientTop+ancestor.clientHeight);}
+  }
+ }
  if(clip!==element&&view){
   const visual=view.visualViewport;
   left=Math.max(left,visual?.offsetLeft||0);top=Math.max(top,visual?.offsetTop||0);
