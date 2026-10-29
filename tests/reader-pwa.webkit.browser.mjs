@@ -118,12 +118,22 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
   assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
   const footer=await page.locator('.reader-footer').boundingBox();
   assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
+  const chromeBottomGap=height-footer.y-footer.height;
+  assert.ok(chromeBottomGap>=8&&chromeBottomGap<=24,
+   'PWA controls should sit close to the screen bottom without entering the home gesture strip; gap='+chromeBottomGap);
   await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-controls.png')});
   await page.locator('#appearance').click();
   await page.locator('dialog[open]').waitFor();
   assert.deepEqual(await snapshot(),before,'appearance sheet must not silently change page');
   await page.locator('#close-sheet').click();
   assert.deepEqual(await snapshot(),before,'closing appearance sheet must not repaginate');
+  // iOS standalone may temporarily report a smaller visual reading window.
+  // Controls remain anchored to the device viewport, not the reader container.
+  await page.evaluate(h=>{document.body.style.setProperty('height',h+'px','important');},height-54);
+  const shortenedFooter=await page.locator('.reader-footer').boundingBox();
+  assert.ok(Math.abs(shortenedFooter.y+shortenedFooter.height-(footer.y+footer.height))<=1,
+   'shrinking the reading container must not pull the floating toolbar upward');
+  await page.evaluate(()=>document.body.style.removeProperty('height'));
   await page.reload();
   await page.locator('[data-book="pwa-fixture"]').click();
   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
