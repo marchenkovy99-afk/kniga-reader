@@ -21,9 +21,9 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  const touch=useRef<{x:number;y:number}|null>(null);
  const ignoreClick=useRef(false);
  const update=<K extends keyof ReaderSettings>(key:K,value:ReaderSettings[K])=>onSettings({...settings,[key]:value});
- function onTap(x:number){
+ function onTap(x:number, left:number, width:number){
    if(sheet){setSheet(null);return;}
-   const ratio=x/window.innerWidth;
+   const ratio=(x-left)/Math.max(1,width);
    if(ratio<.28)onPrevious();else if(ratio>.72)onNext();else setPanels(v=>!v);
  }
  async function mark(){
@@ -51,7 +51,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          window.setTimeout(()=>{ignoreClick.current=false},350);
        }
      }}
-     onClick={e=>{if(ignoreClick.current)return;onTap(e.clientX)}} />
+     onClick={e=>{if(ignoreClick.current)return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
    <header className={'reading-top '+(panels?'visible':'')}>
      <button aria-label="В библиотеку" onClick={onBack}><Icon name="back"/></button>
      <span className="reading-title">{book.title}</span>
