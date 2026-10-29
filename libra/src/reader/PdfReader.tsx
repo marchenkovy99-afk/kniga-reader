@@ -18,7 +18,7 @@ export function PdfReader({book,settings,onSettings,onBack}:Props){
        if(!cancelled){setDocument(loaded);setCount(loaded.numPages)}
      }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть PDF')}
    }void open();
-   return ()=>{cancelled=true;void task?.destroy?.().catch(()=>{});};
+   return ()=>{cancelled=true;if(task)void task.destroy().catch(()=>{});};
  },[book.id,book.file]);
  useEffect(()=>{
    if(!document||!canvas.current||!container.current)return;

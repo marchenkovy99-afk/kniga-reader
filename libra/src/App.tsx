@@ -17,14 +17,15 @@ export default function App(){
  const [settings,setSettings]=useState<ReaderSettings>(DEFAULT_SETTINGS);
  const [opened,setOpened]=useState<StoredBook|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
+ const [hydrated,setHydrated]=useState(false);
  useEffect(()=>{
   let live=true;
   Promise.all([listBooks(),loadSettings()]).then(([stored,preferences])=>{
-   if(!live)return;setBooks(stored);if(preferences)setSettings({...DEFAULT_SETTINGS,...preferences});
+   if(!live)return;setBooks(stored);if(preferences)setSettings({...DEFAULT_SETTINGS,...preferences});setHydrated(true);
   }).catch(e=>{if(live)setError('Не удалось открыть локальную библиотеку: '+String(e))});
   return ()=>{live=false};
  },[]);
- useEffect(()=>{setTheme(settings.theme);void saveSettings(settings).catch(()=>{})},[settings]);
+ useEffect(()=>{setTheme(settings.theme);if(hydrated)void saveSettings(settings).catch(()=>{})},[settings,hydrated]);
  async function refresh(){try{setBooks(await listBooks())}catch(e){setError(String(e))}}
  async function importFiles(list:FileList){
    setLoading(true);setError('');

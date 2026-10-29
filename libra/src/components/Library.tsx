@@ -22,7 +22,7 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,load
       <button className="continue-card" onClick={()=>onOpen(continueBook)}>
         <BookCover book={continueBook} large/>
         <span className="continue-info"><span className="continue-tag">ПОСЛЕДНЯЯ КНИГА</span><strong>{continueBook.title}</strong><span className="continue-author">{continueBook.author}</span>
-        <span className="continue-line"><span style={{width:Math.round(((continueBook.position?.chapter||0)+1)*100/10)+'%'}}/></span>
+        <span className="continue-line"><span style={{width:Math.round((continueBook.position?.fraction||0)*100)+'%'}}/></span>
         <span className="continue-footer">Открыть книгу <span>↗</span></span></span>
       </button>
     </section>}

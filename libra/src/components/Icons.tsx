@@ -1,7 +1,7 @@
-import type { SVGProps } from 'react';
+import type { SVGProps, ReactNode } from 'react';
 type IconName='plus'|'search'|'book'|'bookmark'|'settings'|'back'|'list'|'type'|'more'|'check'|'trash'|'close'|'sun'|'cloud';
 export function Icon({name,size=22,...props}:{name:IconName,size?:number}&SVGProps<SVGSVGElement>){
- const paths:Record<IconName,React.ReactNode>={
+ const paths:Record<IconName,ReactNode>={
  plus:<path d="M12 5v14M5 12h14"/>,search:<><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
  book:<><path d="M4 5.8C8 4.5 10.5 5 12 7c1.5-2 4-2.5 8-1.2v13.5c-3.5-1-6.2-.6-8 1.1-1.8-1.7-4.5-2.1-8-1.1z"/><path d="M12 7v13.4"/></>,
  bookmark:<path d="M6.5 4.5h11v16l-5.5-4-5.5 4z"/>,

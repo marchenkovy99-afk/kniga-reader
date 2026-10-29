@@ -6,6 +6,7 @@ import { ReadingControls } from '../components/ReadingControls';
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function EpubReader({book,settings,onSettings,onBack}:Props){
  const host=useRef<HTMLDivElement>(null),rendition=useRef<any>(null);
+ const lastCfi=useRef(book.position?.cfi||'');
  const [error,setError]=useState(''),[progress,setProgress]=useState(0),[location,setLocation]=useState(book.position?.cfi||'');
  useEffect(()=>{
    let cancelled=false,epub:any,rend:any;
@@ -23,12 +24,12 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
        rend.on('relocated',(loc:any)=>{
          if(cancelled)return;
          const cfi=loc?.start?.cfi||'';
-         setLocation(cfi);
+         setLocation(cfi);lastCfi.current=cfi;
          const percent=Math.round((loc?.start?.percentage||0)*100);
          setProgress(percent);
          void savePosition(book.id,{chapter:0,page:0,fraction:percent/100,cfi,updatedAt:Date.now()});
        });
-       await rend.display(book.position?.cfi||undefined);
+       await rend.display(lastCfi.current||undefined);
      }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть EPUB')}
    }
    void mount();

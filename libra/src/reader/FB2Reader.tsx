@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from '../domain';
 import { parseFB2 } from '../fb2';
-import { clampPage, measureColumns, progressOf, restoreFraction } from '../pagination';
+import { clampPage, measureColumns, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 const GAP=24;
