@@ -370,7 +370,10 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 /* The safe area owns the system status bar. Keep only a small readable gap
    below it; a second status-bar-sized gutter wastes a whole text row.
    Leave the gesture indicator clear. Both bounds are measured by pagination. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 4px);--reader-bottom-inset:max(12px,calc(env(safe-area-inset-bottom,0px) - 20px))}
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 4px);--reader-bottom-inset:max(10px,calc(env(safe-area-inset-bottom,0px) - 24px))}
+/* The translucent iOS status area already paints the page colour. The old
+   high-z-index pseudo-element could composite across the first text row. */
+.reader::before{display:none}
 .reader-header{min-height:48px;padding:2px 8px;gap:8px;background:transparent}
 .reader-heading{visibility:hidden}
 .reader-header .icon-button{border-radius:50%;background:var(--paper)}
@@ -387,7 +390,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-footer .reading-progress{height:25px;margin:0;width:100%;display:block}
 .reader-footer .icon{width:23px;height:23px}
 .reader-footer .type-button{font-size:22px}
-.book-text{padding-top:4px;padding-bottom:2px}
+.book-text{padding-top:4px;padding-bottom:0}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .book-text[data-engine=dom]{overflow:visible}
@@ -411,3 +414,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-geometry-actions{display:flex;gap:10px;margin-top:14px}
 .reader-geometry-actions button{flex:1;min-height:46px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font-size:15px}
 .reader-geometry-actions button:first-child{background:var(--accent);color:var(--accent-text)}
+
+/* The immersive page number uses the reserved bottom strip, not the text area. */
+.reader-bottom-page-number{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:110;display:block;min-height:10px;padding:0 6px;background:var(--paper);color:var(--muted);font:500 9px/10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;pointer-events:none}
+.reader:not(.chrome-hidden) .reader-bottom-page-number{display:none}

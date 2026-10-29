@@ -14,7 +14,7 @@ for(const screen of [{width:393,height:852,top:59,bottom:34},{width:430,height:9
   const loaded=new Promise(resolve=>frame.onload=resolve);document.querySelector('#preview').append(frame);await loaded;
   const doc=frame.contentDocument,stage=doc.querySelector('.book-stage'),bounds=stage.getBoundingClientRect();
   check(bounds.top>=screen.top&&bounds.top<=screen.top+4.1,`Excess top space: ${bounds.top-screen.top}px beyond safe area`);
-  const bottomInset=screen.height-bounds.bottom,expectedBottom=Math.max(12,screen.bottom-20);
+  const bottomInset=screen.height-bounds.bottom,expectedBottom=Math.max(10,screen.bottom-24);
   check(Math.abs(bottomInset-expectedBottom)<1,`Gesture gutter: ${bottomInset}px, expected ${expectedBottom}px`);
   const settings={font:'sans',fontSize:22,lineHeight:1.2,margin:12,paragraphGap:0,indent:1.3,letterSpacing:0,align:'justify',hyphens:true};
   const pages=await paginate(blocks,{width:Math.floor(bounds.width),height:Math.floor(bounds.height),settings});assertPageIntegrity(blocks,pages);

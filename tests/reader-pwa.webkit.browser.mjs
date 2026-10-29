@@ -121,7 +121,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
    assert.ok(reading.first>=top&&reading.first<=top+12,'first line must stay close to, and below, the iOS safe area');
-   assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(12,bottom-20)))<=1,'last line must remain on-screen');
+   assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(10,bottom-24)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
    assert.ok(reading.last<=reading.stage.bottom,'last glyph must not be cropped');
    if(samples.length){
@@ -144,6 +144,9 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
     'ordinary prose must not leave two or more usable lines unfilled: '+JSON.stringify({position:sample.position,unused,density,start:sample.markers[0],end:sample.markers.at(-1)}));
   }
   console.log('PWA_PAGE_DENSITY',width+'x'+height,JSON.stringify(samples.map(s=>({position:s.position,unused:Math.round((s.stage.bottom-s.last)*10)/10,end:s.markers.at(-1),start:s.markers[0]}))));
+  const immersiveNumber=page.locator('#reader-bottom-page-number');
+  assert.equal(await immersiveNumber.isVisible(),true,'page number stays visible with reading controls hidden');
+  assert.equal(await immersiveNumber.textContent(),await page.locator('#reader-page-position').textContent(),'immersive page number tracks current page');
   const snapshot=()=>page.evaluate(()=>{
    const stage=document.querySelector('#book-stage'),active=document.querySelector('.book-page[aria-hidden="false"] .book-text');
    return {height:stage.clientHeight,width:stage.clientWidth,ready:stage.dataset.layoutState,html:active.innerHTML,source:active.textContent,count:document.querySelectorAll('.book-page').length,number:document.querySelector('#reader-page-position').textContent};
@@ -151,6 +154,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const before=await snapshot();
   await page.locator('#book-stage').tap({position:{x:Math.floor(width/2),y:Math.floor(height/3)}});
   assert.equal(await page.locator('.reader-footer').isVisible(),true,'floating controls open over text');
+  assert.equal(await immersiveNumber.isVisible(),false,'immersive counter must not duplicate the toolbar counter');
   assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
   const footer=await page.locator('.reader-footer').boundingBox();
   assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
