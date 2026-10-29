@@ -51,7 +51,9 @@ await run('Inline emphasis, superscripts, newlines, poetry, quotes and headings'
 });
 await run('Typography boundary matrix',async()=>{
  let pages=0;for(let i=0;i<18;i++){
-  const stats=await inspect([block(prose.repeat(8))],{width:[320,393,720][i%3],height:[260,480,600][i%3],settings:{...settings,font:['serif','sans','literary'][i%3],fontSize:[12,32,48][Math.floor(i/3)%3],lineHeight:[1,1.1,2.5][i%3],margin:i%2?72:8,indent:i%2?3:0,letterSpacing:i%2?3:-.5,align:i%2?'justify':'left',hyphens:i%3!==0}});pages+=stats.pages;
+  const config={width:[320,393,720][i%3],height:[260,480,600][i%3],settings:{...settings,font:['serif','sans','literary'][i%3],fontSize:[12,32,48][Math.floor(i/3)%3],lineHeight:[1,1.1,2.5][i%3],margin:i%2?72:8,indent:i%2?3:0,letterSpacing:i%2?3:-.5,align:i%2?'justify':'left',hyphens:i%3!==0}};
+  try{const stats=await inspect([block(prose.repeat(8))],config);pages+=stats.pages;}
+  catch(error){throw Error('Typography matrix case '+i+': '+JSON.stringify(config)+'; '+error.message);}
  }return {scenarios:18,pages};
 });
 await run('Progressive pages arrive before completion; abort stops old results',async()=>{
