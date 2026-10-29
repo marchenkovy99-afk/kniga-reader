@@ -7,7 +7,17 @@ export function applyTypography(element,s,width){
  const contentWidth=Math.max(0,width-2*margin);
  const minimumTextRoom=Math.min(contentWidth,Math.max(48,3.2*s.fontSize+2*Math.max(0,s.letterSpacing)));
  const indentPx=Math.max(0,Math.min((Number(s.indent)||0)*s.fontSize,contentWidth-minimumTextRoom));
+ // A font's glyph rectangle can extend above and below its CSS line box.
+ // With 48px Georgia at line-height:1, the previous 2px padding placed its
+ // first glyph at y=-1px. A strict (correct) clip validator then rejected
+ // even a single character. Reserve only the measured-size safety allowance;
+ // ordinary reading settings keep their existing compact 2px top inset.
+ const glyphOverhang=Math.max(0,((1.15-Number(s.lineHeight))*s.fontSize)/2);
+ const topClearance=Math.max(2,Math.ceil(glyphOverhang+2));
+ const bottomClearance=Math.max(4,Math.ceil(glyphOverhang+3));
  const variables={'--font-size':`${s.fontSize}px`,'--line-height':s.lineHeight,'--page-margin':`${margin}px`,'--paragraph-gap':`${s.paragraphGap}em`,'--indent':`${indentPx}px`,'--letter-spacing':`${s.letterSpacing}px`,'--text-align':s.align,'--hyphens':s.hyphens?'auto':'none'};
+ element.style.setProperty('padding-top',`${topClearance}px`);
+ element.style.setProperty('padding-bottom',`${bottomClearance}px`);
  for(const [name,value] of Object.entries(variables))element.style.setProperty(name,String(value));
  element.dataset.font=s.font;
 }
