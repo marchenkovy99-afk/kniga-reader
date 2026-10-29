@@ -42,7 +42,22 @@ export function parseFB2(xml:string):ParsedFB2{
       target.push({kind:'table',rows});return;
     }
     if(tag==='p'||tag==='v'||tag==='subtitle'||tag==='text-author'){
-      target.push({kind:tag==='v'?'verse':tag==='subtitle'?'heading':'paragraph',text:xmlText(element)});return;
+      const kind=tag==='v'?'verse':tag==='subtitle'?'heading':'paragraph';
+      // Inline pictures must survive. Split around image nodes, preserving the
+      // complete sequence of text segments and illustrations.
+      const hasPicture=Array.from(element.getElementsByTagName('*')).some(el=>el.localName==='image');
+      if(!hasPicture){target.push({kind,text:xmlText(element)});return;}
+      let buffer='';
+      const flush=()=>{const value=buffer.replace(/\\s+/g,' ').trim();if(value)target.push({kind,text:value});buffer=''};
+      const visit=(node:Node):void=>{
+        if(node.nodeType===Node.TEXT_NODE){buffer+=node.textContent||'';return;}
+        if(node.nodeType!==Node.ELEMENT_NODE)return;
+        const nested=node as Element;
+        if(nested.localName==='image'){flush();walk(nested,target);return;}
+        for(const child of Array.from(node.childNodes))visit(child);
+      };
+      for(const node of Array.from(element.childNodes))visit(node);
+      flush();return;
     }
     if(tag==='title'){
       const title=xmlText(element);if(title)target.push({kind:'heading',text:title});return;
@@ -53,7 +68,8 @@ export function parseFB2(xml:string):ParsedFB2{
   }
   function sectionToChapter(section:Element, prefix:string):void{
     const sectionTitle=xmlText(child(section,'title'))||prefix;
-    const material:Block[]=[];
+    // A section title is visible book content, not merely an entry in the TOC.
+    const material:Block[]=child(section,'title')?[{kind:'heading',text:sectionTitle}]:[];
     for(const element of Array.from(section.children)){
       if(element.localName==='title')continue;
       if(element.localName==='section'){
