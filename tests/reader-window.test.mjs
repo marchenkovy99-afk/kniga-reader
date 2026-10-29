@@ -18,7 +18,18 @@ test('zoom retains the visible viewport geometry',()=>assert.equal(windowHeight(
 test('controls stay inside the shorter interactive viewport',()=>assert.equal(windowHeight({property:'--reader-controls-inset'}),'0px'));
 test('controls need no extra inset in ordinary browser windows',()=>assert.equal(windowHeight({installed:false,property:'--reader-controls-inset'}),'0px'));
 
-test('installed app uses shorter visual viewport instead of hidden screen pixels',()=>assert.equal(windowHeight({visualHeight:704}),'704px'));
+test('installed app uses available CSS viewport despite a stale short visual viewport',()=>assert.equal(windowHeight({visualHeight:704}),'778px'));
+test('ordinary browser tabs still honor the short visual viewport',()=>assert.equal(windowHeight({installed:false,visualHeight:704}),'704px'));
+test('installed app keeps short visual viewport when on-screen keyboard is focused',()=>{
+ const win={navigator:{standalone:true},innerWidth:393,innerHeight:778,visualViewport:{height:470,scale:1,addEventListener(){}},addEventListener(){}};
+ let height;const doc={activeElement:{tagName:'INPUT'},documentElement:{clientHeight:778,style:{setProperty:(key,value)=>{if(key==='--reader-window-height')height=value;}}},addEventListener(){}};
+ trackReaderWindow(win,doc);assert.equal(height,'470px');
+});
+test('installed PWA must not extend past a genuinely shorter CSS viewport',()=>{
+ const win={navigator:{standalone:true},innerWidth:393,innerHeight:852,visualViewport:{height:704,scale:1,addEventListener(){}},addEventListener(){}};
+ let height;const doc={documentElement:{clientHeight:803,style:{setProperty:(key,value)=>{if(key==='--reader-window-height')height=value;}}},addEventListener(){}};
+ trackReaderWindow(win,doc);assert.equal(height,'803px');
+});
 test('viewport changes invalidate the old page before the new window height is applied',()=>{
  const events=new Map(),log=[];
  const win={innerHeight:852,visualViewport:{height:852,addEventListener(){}},addEventListener:(name,fn)=>events.set(name,fn)};
