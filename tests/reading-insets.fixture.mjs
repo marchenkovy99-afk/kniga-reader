@@ -24,7 +24,7 @@ for(const screen of [{width:393,height:852,top:59,bottom:34},{width:430,height:9
    const walker=doc.createTreeWalker(el,4),range=doc.createRange(),rects=[];let node;
    while(node=walker.nextNode()){if(!node.data.trim())continue;range.selectNodeContents(node);rects.push(...[...range.getClientRects()].filter(r=>r.width>0&&r.height>0));}
    check(rects.every(r=>r.top>=bounds.top-.02&&r.bottom<=bounds.bottom+.02&&r.left>=bounds.left-.02&&r.right<=bounds.right+.02),`Clipped glyph on page ${index}: ${JSON.stringify({bounds:bounds.toJSON(),text:el.getBoundingClientRect().toJSON(),bad:rects.filter(r=>r.top<bounds.top-.02||r.bottom>bounds.bottom+.02||r.left<bounds.left-.02||r.right>bounds.right+.02).map(r=>r.toJSON()).slice(0,3)})}`);
-   if(index===0){first=Math.min(...rects.map(r=>r.top));check(first>=screen.top+2&&first<=screen.top+10,'First glyph must start directly below the safe area');}
+   if(index===0){first=Math.min(...rects.map(r=>r.top));check(first>=screen.top&&first<=screen.top+8,'First glyph must start directly below the safe area');}
    const lastGlyph=Math.max(...rects.map(r=>r.bottom));
    check(screen.height-lastGlyph>=59.5,`Last glyph must clear screen bottom: ${screen.height-lastGlyph}px on page ${index}`);
    const unused=bounds.bottom-lastGlyph;

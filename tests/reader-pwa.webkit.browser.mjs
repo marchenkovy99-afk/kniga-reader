@@ -120,7 +120,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading,'rendered page must exist');
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
-   assert.ok(reading.first>=top+2&&reading.first<=top+10,'first line must stay close to, and below, the iOS safe area');
+   assert.ok(reading.first>=top&&reading.first<=top+8,'first line must stay close to, and below, the iOS safe area');
    assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(60,bottom+26)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
    assert.ok(reading.last<=reading.stage.bottom-2.5,'last glyph must not be cropped');

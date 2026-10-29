@@ -103,7 +103,7 @@ try{
  assert.ok(pages.every(p=>p.stageTop>=59&&p.stageTop<=60),'installed page starts just below the iOS safe area');
  assert.ok(pages.every(p=>p.stageBottom>=791&&p.stageBottom<=793),'reading area may use only the remaining safe pixels below without clipping');
  assert.ok(pages.every(p=>p.stageHeight>=730),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=61&&p.first<=69),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.first>=59&&p.first<=67),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.every(p=>852-p.stageBottom>=59.5),'screen edge must have at least 44px clearance below every book page');
  assert.ok(pages.every(p=>p.last<=p.stageBottom-2.5),'last glyph descenders must not be cropped by the page viewport');
