@@ -11,6 +11,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: reader-pages-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   reader:
     runs-on: ubuntu-latest
@@ -50,5 +53,7 @@ jobs:
           git add docs package-lock.json
           if ! git diff --cached --quiet; then
             git commit -m 'Build reader for GitHub Pages'
+            git fetch origin main
+            git rebase origin/main
             git push
           fi
