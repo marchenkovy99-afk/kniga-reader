@@ -8,9 +8,13 @@ import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 
 const GAP=24;
-function BookBlock({block,index,onMediaLoaded}:{block:Block;index:number;onMediaLoaded:()=>void}){
+function BookBlock({block,index,onMediaLoaded,onOpenTable}:{block:Block;index:number;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
+ const oversized=block.kind==='table'&&(block.rows.length>9||block.rows.some(row=>row.join(' ').length>300)||block.rows.flat().join(' ').length>1100);
  if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
- if(block.kind==='table')return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
+ if(block.kind==='table'){
+  if(oversized)return <button data-block-index={index} className="book-table-launch" onClick={()=>onOpenTable(block.rows)}>Большая таблица · {block.rows.length} строк <span>Открыть полностью ↗</span></button>;
+  return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
+ }
  if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{block.text}</h2>;
  if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
  return <p data-block-index={index} className="book-paragraph">{block.text}</p>;
@@ -25,6 +29,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [measuredKey,setMeasuredKey]=useState('');
  const [mediaVersion,setMediaVersion]=useState(0);
+ const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
@@ -126,9 +131,15 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
+  </div>}
+  {expandedTable&&<div className="book-table-overlay" role="presentation">
+   <section className="book-table-panel" role="dialog" aria-modal="true" aria-label="Таблица книги">
+    <header><strong>Таблица · {expandedTable.length} строк</strong><button onClick={()=>setExpandedTable(null)} aria-label="Закрыть таблицу">Готово</button></header>
+    <div className="book-table-scroll"><table><tbody>{expandedTable.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>
+   </section>
   </div>}
  </ReadingControls>;
 }

@@ -121,3 +121,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pdf-page canvas{max-width:100%;max-height:100%;box-shadow:0 2px 20px #0002}
 @media (min-width:740px){.library-main{max-width:920px}.library-header{max-width:974px;margin:auto}.book-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:32px}.continue-card{max-width:460px}.reading-root{max-width:820px;margin:auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+
+/* Exception handling for tables whose rows exceed the page geometry. The
+   complete table opens in a separately scrollable viewer, never under a clip. */
+.book-table-launch{position:relative;z-index:7;width:100%;min-height:92px;padding:18px;border:1px solid var(--border);border-radius:7px;background:color-mix(in srgb,var(--fg) 4%,var(--bg));color:var(--fg);text-align:left;font:500 15px/1.4 Georgia,serif;break-inside:avoid;display:flex;flex-direction:column;justify-content:space-between;gap:13px}
+.book-table-launch span{font:600 12px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--accent)}
+.book-table-overlay{position:absolute;inset:0;z-index:35;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.book-table-panel{min-height:0;flex:1;display:flex;flex-direction:column}
+.book-table-panel header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:20px}
+.book-table-panel header strong{font:500 19px Georgia,serif}
+.book-table-panel header button{background:none;border:0;color:var(--accent);padding:10px 2px;font-weight:600}
+.book-table-scroll{flex:1;overflow:auto;overscroll-behavior:contain;padding:16px;touch-action:pan-x pan-y}
+.book-table-scroll table{border-collapse:collapse;width:max-content;min-width:100%;font:15px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+.book-table-scroll td{border:1px solid var(--border);padding:12px;min-width:130px;max-width:min(65vw,380px);overflow-wrap:anywhere;vertical-align:top}
+.book-image-missing{display:block;padding:16px;border:1px solid var(--border);color:var(--muted);font:13px/1.4 -apple-system,sans-serif}
