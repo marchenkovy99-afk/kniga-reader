@@ -23,13 +23,18 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true});
  });
  if(innerShrink)await page.addInitScript(delta=>{
-  const height=window.innerHeight;
-  Object.defineProperty(window,'innerHeight',{configurable:true,get:()=>height-delta});
+  const initial=window.innerHeight;
+  Object.defineProperty(window,'innerHeight',{configurable:true,get:()=>Math.max(1,(document.documentElement?.clientHeight||initial)-delta)});
  },innerShrink);
  if(visualShrink)await page.addInitScript(delta=>{
   const viewport=window.visualViewport;
-  const height=viewport.height;
-  Object.defineProperty(viewport,'height',{configurable:true,get:()=>height-delta});
+  let proto=viewport,originalGetter;
+  while(proto&&!originalGetter){
+   originalGetter=Object.getOwnPropertyDescriptor(proto,'height')?.get;
+   proto=Object.getPrototypeOf(proto);
+  }
+  if(!originalGetter)throw new Error('VisualViewport height getter is unavailable for PWA test');
+  Object.defineProperty(viewport,'height',{configurable:true,get:()=>Math.max(1,originalGetter.call(viewport)-delta)});
  },visualShrink);
  await page.route('https://reader.test/**',route=>{
   const pathname=new URL(route.request().url()).pathname;
