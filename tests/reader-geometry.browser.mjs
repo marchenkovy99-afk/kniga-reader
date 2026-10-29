@@ -90,9 +90,9 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.stageTop>=69&&p.stageTop<=75),'installed page must use safe space above without reaching the status-bar blur');
+ assert.ok(pages.every(p=>p.stageTop>=80&&p.stageTop<=82),'installed page starts below the top-edge status bar blur');
  assert.ok(pages.every(p=>p.stageBottom>=845&&p.stageBottom<=846),'installed page must reclaim bottom whitespace but retain a system gesture margin');
- assert.ok(pages.every(p=>p.first>=72),'first text line must stay below the blurred system edge in installed mode');
+ assert.ok(pages.every(p=>p.first>=84),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+4),'continued text should fill the page; the book final page may end early');
 }finally{await browser.close();}
