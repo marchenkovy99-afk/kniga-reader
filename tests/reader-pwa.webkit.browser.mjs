@@ -163,6 +163,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const diagnostics=await page.locator('.reader-geometry-sheet textarea').inputValue();
   assert.match(diagnostics,/Границы страницы:/,'on-device diagnostics must include actual stage bounds');
   assert.match(diagnostics,/Последняя строка:/,'on-device diagnostics must report final visible text glyph');
+  assert.match(diagnostics,/Граница листа: \\d+/,'on-device report must distinguish actual flipbook sheet clipping from stage bounds');
   assert.doesNotMatch(diagnostics,/Мы измеряем точную высоту строки|PWA: полный текст страниц/i,'report must not disclose book content or title');
   assert.deepEqual(await snapshot(),before,'opening diagnostic report cannot repaginate the book');
   await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-diagnostics.png')});
