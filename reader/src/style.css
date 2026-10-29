@@ -604,3 +604,11 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 :root[data-theme] .reader-header .icon-button,
 :root[data-theme] .reader-top-controls .icon-button{background-color:var(--paper)!important;color:var(--ink)}
 :root[data-theme] .reader-header{box-shadow:none!important}
+
+/* iOS standalone status bar: paint the same page under the transparent
+   system status area. This cannot work with status-bar-style=default:
+   WebKit then draws an opaque OS-owned light strip above the web view. */
+html:root[data-theme]{background-color:var(--paper)!important}
+html:root[data-theme] body{background-color:var(--paper)!important}
+html:root[data-theme] .reader{background-color:var(--paper)!important}
+html:root[data-theme] .reader::before{background-color:var(--paper)!important}

@@ -99,6 +99,9 @@ function theme(){
  document.documentElement.style.setProperty('--viewport-paper',paper);
  document.documentElement.style.colorScheme=isDark?'dark':'light';
  document.querySelector('meta[name=theme-color]')?.setAttribute('content',paper);
+ // Standalone iOS reads the status bar style at PWA launch; the transparent
+ // mode lets our theme-painted HTML canvas extend underneath the clock.
+ document.querySelector('meta[name=apple-mobile-web-app-status-bar-style]')?.setAttribute('content','black-translucent');
  const toggle=document.querySelector('#library-theme');
  if(toggle){
   const label=isDark?'Включить светлую тему':'Включить тёмную тему';
