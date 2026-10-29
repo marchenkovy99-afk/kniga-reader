@@ -1,0 +1,145 @@
+// WebKit's rendering engine approximates iOS Safari, but Linux WebKit is not a physical iPhone.
+// Safe-area insets and navigator.standalone are injected explicitly to exercise the installed PWA layout.
+import {readFileSync, mkdirSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const {webkit}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+const dist=fileURLToPath(new URL('../docs/',import.meta.url));
+const output=fileURLToPath(new URL('../test-results/pwa/',import.meta.url));
+mkdirSync(output,{recursive:true});
+const browser=await webkit.launch({headless:true});
+const longText='Мы измеряем точную высоту строки, сохраняем каждое слово и проверяем перенос текста на следующую страницу. ';
+const blockText=longText.repeat(19);
+const blocks=Array.from({length:16},(_,i)=>({type:'p',text:blockText,html:blockText}));
+
+async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
+ const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:3,isMobile:true,hasTouch:true,serviceWorkers:'block'});
+ const page=await context.newPage();
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true});
+ });
+ await page.route('https://reader.test/**',route=>{
+  const pathname=new URL(route.request().url()).pathname;
+  if(pathname==='/empty')return route.fulfill({contentType:'text/html',body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body></body></html>'});
+  const relative=pathname.replace(/^\/kniga-reader\//,'')||'index.html';
+  const filename=path.join(dist,relative);
+  if(!filename.startsWith(dist))return route.abort();
+  if(/\.(png|jpg|jpeg|ico|webp)$/.test(relative))return route.fulfill({body:readFileSync(filename),contentType:'image/png'});
+  let body=readFileSync(filename,'utf8');
+  if(relative.endsWith('.css')){
+   body=body.replace(/env\(safe-area-inset-(top|bottom)(?:,\s*0px)?\)/g,(_,edge)=>'var(--test-'+edge+',0px)');
+  }
+  if(relative==='index.html'){
+   body=body.replace('<head>', '<head><style>:root{--test-top:'+top+'px;--test-bottom:'+bottom+'px}</style>');
+  }
+  const contentType=relative.endsWith('.js')?'text/javascript':relative.endsWith('.css')?'text/css':relative.endsWith('.webmanifest')?'application/manifest+json':'text/html';
+  return route.fulfill({body,contentType});
+ });
+ await page.route('https://qwnkigorqsgugcctnfmj.supabase.co/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"guest"}'}));
+ try{
+  await page.goto('https://reader.test/empty');
+  await page.evaluate(async input=>{
+   const chars=input.reduce((n,b)=>n+b.text.length,0);
+   await new Promise((resolve,reject)=>{
+    const request=indexedDB.open('kniga-reader',1);
+    request.onupgradeneeded=()=>{
+     const db=request.result;
+     if(!db.objectStoreNames.contains('books'))db.createObjectStore('books',{keyPath:'id'});
+     if(!db.objectStoreNames.contains('preferences'))db.createObjectStore('preferences');
+    };
+    request.onsuccess=()=>{
+     const db=request.result,tx=db.transaction(['books','preferences'],'readwrite');
+     tx.objectStore('books').put({id:'pwa-fixture',title:'PWA: полный текст страниц',author:'Автотест',blocks:input,presentationVersion:1,chars,chapters:[],fileName:'pwa.fb2',addedAt:1,marks:[]});
+     tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');
+     tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);
+    };
+    request.onerror=()=>reject(request.error);
+   });
+  },blocks);
+  await page.goto('https://reader.test/kniga-reader/');
+  const metadata=await page.evaluate(()=>({
+   capable:document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.content,
+   viewport:document.querySelector('meta[name="viewport"]')?.content,
+   manifest:document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
+   standalone:navigator.standalone
+  }));
+  assert.equal(metadata.capable,'yes','iPhone Home Screen support is required');
+  assert.match(metadata.viewport,/viewport-fit=cover/,'the installed iOS layout must expose safe-area insets');
+  assert.ok(metadata.manifest,'PWA manifest must be linked');
+  assert.equal(metadata.standalone,true,'test must be running with simulated standalone mode');
+  await page.locator('[data-book="pwa-fixture"]').click();
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
+  const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
+  assert.ok(pageCount>=4,'fixture must have several pages');
+  const samples=[];
+  for(let i=0;i<Math.min(4,pageCount);i++){
+   const reading=await page.evaluate(()=>{
+    const stage=document.querySelector('#book-stage');
+    const page=document.querySelector('.book-page[aria-hidden="false"]');
+    const text=page?.querySelector('.book-text');
+    if(!stage||!page||!text)return null;
+    const viewport=stage.getBoundingClientRect(),bounds=page.getBoundingClientRect();
+    const range=document.createRange();range.selectNodeContents(text);
+    const glyphs=[...range.getClientRects()].filter(rect=>rect.height>2&&rect.width>1);
+    const fits=glyphs.every(r=>r.top>=viewport.top-.05&&r.bottom<=viewport.bottom+.05&&r.left>=viewport.left-.05&&r.right<=viewport.right+.05);
+    const markers=[...text.querySelectorAll('[data-block]')].map(x=>({block:Number(x.dataset.block),from:Number(x.dataset.from),to:Number(x.dataset.to)}));
+    return {stage:{top:viewport.top,bottom:viewport.bottom,height:viewport.height},page:{top:bounds.top,bottom:bounds.bottom},first:Math.min(...glyphs.map(x=>x.top)),last:Math.max(...glyphs.map(x=>x.bottom)),glyphs:glyphs.length,fits,markers,pageText:text.textContent,position:document.querySelector('#reader-page-position').textContent,ready:stage.dataset.layoutState};
+   });
+   assert.ok(reading,'rendered page must exist');
+   assert.equal(reading.ready,'ready','book must be visible, not in an error state');
+   assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
+   assert.ok(reading.first>=top+18,'first line must stay below the iOS system edge');
+   assert.ok(reading.stage.bottom<=height+0.1&&reading.stage.bottom>=height-8,'last line must remain on-screen');
+   assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
+   assert.ok(reading.last<=reading.stage.bottom,'last glyph must not be cropped');
+   if(samples.length){
+    const previous=samples.at(-1).markers.at(-1),next=reading.markers[0];
+    assert.ok(next.block===previous.block?next.from===previous.to:next.block===previous.block+1&&next.from===0,'source anchor must continue without missing or duplicating characters');
+   }
+   samples.push(reading);
+   if(i===0)await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-reading.png')});
+   if(i<Math.min(4,pageCount)-1){
+    const before=reading.position;
+    await page.locator('#book-stage').tap({position:{x:width-30,y:Math.min(270,height/3)}});
+    await page.waitForFunction(previous=>document.querySelector('#reader-page-position')?.textContent!==previous,before,{timeout:12000});
+   }
+  }
+  const snapshot=()=>page.evaluate(()=>{
+   const stage=document.querySelector('#book-stage'),active=document.querySelector('.book-page[aria-hidden="false"] .book-text');
+   return {height:stage.clientHeight,width:stage.clientWidth,ready:stage.dataset.layoutState,html:active.innerHTML,source:active.textContent,count:document.querySelectorAll('.book-page').length,number:document.querySelector('#reader-page-position').textContent};
+  });
+  const before=await snapshot();
+  await page.locator('#book-stage').tap({position:{x:Math.floor(width/2),y:Math.floor(height/3)}});
+  assert.equal(await page.locator('.reader-footer').isVisible(),true,'floating controls open over text');
+  assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
+  const footer=await page.locator('.reader-footer').boundingBox();
+  assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
+  await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-controls.png')});
+  await page.locator('#appearance').click();
+  await page.locator('dialog[open]').waitFor();
+  assert.deepEqual(await snapshot(),before,'appearance sheet must not silently change page');
+  await page.locator('#close-sheet').click();
+  assert.deepEqual(await snapshot(),before,'closing appearance sheet must not repaginate');
+  await page.reload();
+  await page.locator('[data-book="pwa-fixture"]').click();
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
+  assert.ok((await page.locator('.book-page[aria-hidden="false"] .book-text').textContent()).length>0,'book must reopen after a standalone reload');
+  assert.equal(errors.length,0,'no uncaught JavaScript errors during installed reader session: '+errors.join('; '));
+  console.log('WebKit PWA',width+'x'+height,JSON.stringify({pages:pageCount,first:samples[0].first,last:samples[0].last,stage:samples[0].stage,toolbar:{width:footer.width,height:footer.height},reopened:true}));
+ }finally{
+  await context.close();
+ }
+}
+try{
+ const manifest=JSON.parse(readFileSync(path.join(dist,'manifest.webmanifest'),'utf8'));
+ assert.ok(['standalone','fullscreen'].includes(manifest.display),'the installed PWA must launch without a browser tab');
+ assert.match(manifest.start_url,/^\.\//,'start URL should stay in the PWA scope');
+ for(const screen of [{width:393,height:852},{width:375,height:812},{width:430,height:932}]){
+  await exerciseInstalledReader(screen);
+ }
+ console.log('WebKit standalone PWA regression passed: reading integrity, safe areas, controls, reload.');
+}finally{await browser.close();}
