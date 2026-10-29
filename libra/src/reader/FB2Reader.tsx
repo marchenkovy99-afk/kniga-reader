@@ -78,8 +78,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
    anchor:anchorRef.current,updatedAt:Date.now()};
   lastPosition.current=position;
-  const timer=window.setTimeout(()=>{void savePosition(book.id,position).catch(console.error)},300);
-  return ()=>clearTimeout(timer);
+  // A small independent IndexedDB record is cheap enough to persist immediately.
+  // Saving on each page flip avoids losing progress when iOS suspends the PWA.
+  void savePosition(book.id,position).catch(console.error);
  },[ready,book.id,chapter,page,pages,geometry.width,layoutKey]);
  const setReaderPage=(target:number)=>{
   if(!ready||!flow.current)return;
