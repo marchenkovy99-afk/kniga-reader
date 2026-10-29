@@ -5,6 +5,8 @@ import {createPageRenderer} from '../reader/src/page-renderer.js';
 import {assertPageIntegrity} from '../reader/src/page-integrity.js';
 
 const results=[],report=document.querySelector('#results'),preview=document.querySelector('#preview');
+const originalConsoleError=console.error.bind(console);
+console.error=(...args)=>{if(args[0]==='DOM_PAGINATION_FIT')window.__lastPaginationFailure=args[1];originalConsoleError(...args);};
 const check=(condition,message)=>{if(!condition)throw Error(message);};
 async function run(name,fn){try{results.push({name,status:'PASS',...await fn()});}catch(e){results.push({name,status:'FAIL',error:e.stack||e.message});}report.textContent=JSON.stringify(results,null,2);}
 const settings={font:'serif',fontSize:22,lineHeight:1.1,margin:8,paragraphGap:0,indent:1.3,letterSpacing:0,align:'justify',hyphens:true};
@@ -53,7 +55,7 @@ await run('Typography boundary matrix',async()=>{
  let pages=0;for(let i=0;i<18;i++){
   const config={width:[320,393,720][i%3],height:[260,480,600][i%3],settings:{...settings,font:['serif','sans','literary'][i%3],fontSize:[12,32,48][Math.floor(i/3)%3],lineHeight:[1,1.1,2.5][i%3],margin:i%2?72:8,indent:i%2?3:0,letterSpacing:i%2?3:-.5,align:i%2?'justify':'left',hyphens:i%3!==0}};
   try{const stats=await inspect([block(prose.repeat(8))],config);pages+=stats.pages;}
-  catch(error){throw Error('Typography matrix case '+i+': '+JSON.stringify(config)+'; '+error.message);}
+  catch(error){throw Error('Typography matrix case '+i+': '+JSON.stringify(config)+'; measured='+JSON.stringify(window.__lastPaginationFailure)+'; '+error.message);}
  }return {scenarios:18,pages};
 });
 await run('Progressive pages arrive before completion; abort stops old results',async()=>{

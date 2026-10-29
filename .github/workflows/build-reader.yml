@@ -33,13 +33,13 @@ jobs:
         run: |
           npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium webkit
+      - name: Verify DOM engine source integrity and complex layout in Chromium and WebKit
+        run: node tests/engine.browser.mjs
       - name: Check installed iPhone PWA in Chromium and WebKit
         run: |
           INSTALLED_APP=1 node tests/reader-geometry.browser.mjs
           node tests/pagination-layout.browser.mjs
           node tests/reader-pwa.webkit.browser.mjs
-      - name: Verify source integrity and complex DOM pagination in Chromium and WebKit
-        run: node tests/engine.browser.mjs
       - name: Save PWA WebKit screenshots
         if: always()
         uses: actions/upload-artifact@v4
