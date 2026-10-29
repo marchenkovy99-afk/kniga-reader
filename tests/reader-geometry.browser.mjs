@@ -33,7 +33,10 @@ try{
  await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book]').first().click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
  const pages=[];
- for(let i=0;i<6;i++){
+ const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
+ assert.ok(pageCount>=2,'fixture must span multiple pages for page-boundary checks');
+ const testedPages=Math.min(pageCount,6);
+ for(let i=0;i<testedPages;i++){
   pages.push(await page.evaluate(()=>{
    const page=document.querySelector('.book-page[aria-hidden="false"]'),text=page.querySelector('.book-text'),reader=document.querySelector('.reader'),stage=document.querySelector('#book-stage');
    const range=document.createRange();range.selectNodeContents(text);const rects=[...range.getClientRects()].filter(r=>r.height>2&&r.width>1),bounds=stage.getBoundingClientRect();
@@ -41,6 +44,7 @@ try{
    return {position:document.querySelector('#reader-page-position').textContent,stageTop:bounds.top,stageBottom:bounds.bottom,allVisible:rects.every(r=>r.left>=bounds.left-.05&&r.right<=bounds.right+.05&&r.top>=bounds.top-.05&&r.bottom<=bounds.bottom+.05&&r.bottom<=window.innerHeight+.05),stageHeight:stage.clientHeight,pageHeight:page.clientHeight,readerHeight:reader.clientHeight,first,last,unused:bounds.bottom-last,lineHeight:parseFloat(getComputedStyle(text).lineHeight),padding:getComputedStyle(text).padding,transform:getComputedStyle(page).transform,clip:getComputedStyle(page).clipPath,pageY:page.getBoundingClientRect().y};
   }));
   if(!i)await page.screenshot({path:'/tmp/kniga-viewport-review.png'});
+  if(i===testedPages-1)break;
   const before=await page.locator('#reader-page-position').textContent();
   await page.locator('#book-stage').tap({position:{x:360,y:220}});
   try{await page.waitForFunction(before=>document.querySelector('#reader-page-position').textContent!==before,before,{timeout:10000});}
