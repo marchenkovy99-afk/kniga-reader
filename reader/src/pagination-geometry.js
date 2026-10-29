@@ -12,7 +12,7 @@ export function visibleContentFits(element,clip=element){
  // A flipbook page or its intermediate layers can crop glyphs even when
  // the full book stage still has room. Intersect every clipping ancestor
  // between the text and its requested viewport, including transformed pages.
- const view=element.ownerDocument.defaultView;
+ const doc=element.ownerDocument,view=doc.defaultView;
  if(clip!==element){
   for(let ancestor=element.parentElement;ancestor&&ancestor!==clip;ancestor=ancestor.parentElement){
    const style=view?.getComputedStyle?.(ancestor);
@@ -36,7 +36,7 @@ export function visibleContentFits(element,clip=element){
  const epsilon=1/64;
  const fits=rect=>rect.width<=0||rect.height<=0||
   (rect.left>=left-epsilon&&rect.top>=top-epsilon&&rect.right<=right+epsilon&&rect.bottom<=bottom+epsilon);
- const doc=element.ownerDocument,range=doc.createRange(),walker=doc.createTreeWalker(element,4);let node;
+ const range=doc.createRange(),walker=doc.createTreeWalker(element,4);let node;
  while(node=walker.nextNode()){
   if(!node.data.trim())continue;
   range.selectNodeContents(node);
