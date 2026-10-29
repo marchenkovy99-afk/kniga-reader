@@ -157,6 +157,17 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const chromeBottomGap=height-footer.y-footer.height;
   assert.ok(chromeBottomGap>=8&&chromeBottomGap<=24,
    'PWA controls should sit close to the screen bottom without entering the home gesture strip; gap='+chromeBottomGap);
+  // On-device diagnostics must be readable and must not change source or pagination.
+  await page.evaluate(()=>{for(let i=0;i<5;i++)document.querySelector('#reader-page-position').click();});
+  await page.locator('.reader-geometry-overlay').waitFor();
+  const diagnostics=await page.locator('.reader-geometry-sheet textarea').inputValue();
+  assert.match(diagnostics,/Границы страницы:/,'on-device diagnostics must include actual stage bounds');
+  assert.match(diagnostics,/Последняя строка:/,'on-device diagnostics must report final visible text glyph');
+  assert.doesNotMatch(diagnostics,/Мы измеряем точную высоту строки|PWA: полный текст страниц/i,'report must not disclose book content or title');
+  assert.deepEqual(await snapshot(),before,'opening diagnostic report cannot repaginate the book');
+  await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-diagnostics.png')});
+  await page.locator('.reader-geometry-actions button').last().click();
+  assert.deepEqual(await snapshot(),before,'closing diagnostics cannot repaginate the book');
   await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-controls.png')});
   await page.locator('#appearance').click();
   await page.locator('dialog[open]').waitFor();
