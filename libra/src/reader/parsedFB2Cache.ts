@@ -1,4 +1,5 @@
 import {parseFB2} from '../fb2';
+import {decodeFB2Blob} from '../fb2Encoding';
 import type {ParsedFB2,StoredBook} from '../domain';
 
 /**
@@ -21,7 +22,7 @@ export function seedParsedFB2(id:string,parsed:ParsedFB2):void{
 export function loadParsedFB2(book:StoredBook):Promise<ParsedFB2>{
  const hit=cache.get(book.id);
  if(hit){remember(book.id,hit);return hit}
- const result=book.file.text().then(parseFB2).catch(error=>{
+ const result=decodeFB2Blob(book.file).then(parseFB2).catch(error=>{
   if(cache.get(book.id)===result)cache.delete(book.id);
   throw error;
  });

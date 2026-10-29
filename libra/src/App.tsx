@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
 import { listBooks, deleteBook, loadSettings, saveBook, saveSettings } from './storage';
 import { parseFB2 } from './fb2';
+import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
 import { setTheme } from './theme';
 import { Library } from './components/Library';
@@ -38,7 +39,7 @@ export default function App(){
        let title=file.name.replace(/\.[^.]+$/,'').replace(/_/g,' '),author='Автор не указан',cover: string|undefined;
        const id=crypto.randomUUID();
        if(format==='fb2'){
-         const parsed=parseFB2(await file.text());title=parsed.title;author=parsed.author;cover=parsed.cover;
+         const parsed=parseFB2(await decodeFB2Blob(file));title=parsed.title;author=parsed.author;cover=parsed.cover;
          seedParsedFB2(id,parsed);
        }
        if(format==='epub'){
