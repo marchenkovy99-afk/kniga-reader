@@ -33,7 +33,6 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
- const initial=useRef(true);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  useEffect(()=>{
@@ -67,9 +66,17 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    const geo={width:geometry.width,gap:GAP};
    const count=measureColumns(current.scrollWidth,geometry.width,GAP);
    const anchored=anchorRef.current?getAnchorPage(current,anchorRef.current,geo):null;
-   const selected=previous.current?count-1:anchored??(initial.current&&lastPosition.current?.chapter===chapter?
-    clampPage(lastPosition.current.page,count):0);
-   previous.current=false;initial.current=false;
+   // Re-running measurements (fonts.ready, image loads, viewport changes)
+   // must not undo an explicit chapter-boundary jump. Reuse the last page
+   // until a precise source anchor is available.
+   const selected=previous.current?count-1:anchored??(
+    lastPosition.current?.chapter===chapter?clampPage(lastPosition.current.page,count):0);
+   if(previous.current){
+    lastPosition.current={chapter,page:selected,fraction:1,updatedAt:Date.now()};
+    const lastAnchor=getPageAnchor(current,selected,geo);
+    if(lastAnchor)anchorRef.current=lastAnchor;
+   }
+   previous.current=false;
    setPages(count);setPage(clampPage(selected,count));setMeasuredKey(layoutKey);
   };
   const frame=requestAnimationFrame(compute);

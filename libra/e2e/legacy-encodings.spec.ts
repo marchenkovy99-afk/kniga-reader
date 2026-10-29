@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const head='<?xml version="1.0" encoding="windows-1251"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>';
-const mid='</book-title></title-info></description><body><section><title><p>Глава</p></title><p>';
+const mid='</book-title></title-info></description><body><section><title><p>Chapter</p></title><p>';
 const tail='</p></section></body></FictionBook>';
 
 test('legacy Windows-1251 FB2 keeps Cyrillic during import and after reload',async({page})=>{
