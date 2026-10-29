@@ -76,7 +76,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
   const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
   assert.ok(pageCount>=4,'fixture must have several pages');
   const samples=[];
-  for(let i=0;i<Math.min(4,pageCount);i++){
+  for(let i=0;i<Math.min(10,pageCount);i++){
    const reading=await page.evaluate(()=>{
     const stage=document.querySelector('#book-stage');
     const page=document.querySelector('.book-page[aria-hidden="false"]');
@@ -102,12 +102,13 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34}) {
    }
    samples.push(reading);
    if(i===0)await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-reading.png')});
-   if(i<Math.min(4,pageCount)-1){
+   if(i<Math.min(10,pageCount)-1){
     const before=reading.position;
     await page.locator('#book-stage').tap({position:{x:width-30,y:Math.min(270,height/3)}});
     await page.waitForFunction(previous=>document.querySelector('#reader-page-position')?.textContent!==previous,before,{timeout:12000});
    }
   }
+  console.log('PWA_PAGE_DENSITY',width+'x'+height,JSON.stringify(samples.map(s=>({position:s.position,unused:Math.round((s.stage.bottom-s.last)*10)/10,end:s.markers.at(-1),start:s.markers[0]}))));
   const snapshot=()=>page.evaluate(()=>{
    const stage=document.querySelector('#book-stage'),active=document.querySelector('.book-page[aria-hidden="false"] .book-text');
    return {height:stage.clientHeight,width:stage.clientWidth,ready:stage.dataset.layoutState,html:active.innerHTML,source:active.textContent,count:document.querySelectorAll('.book-page').length,number:document.querySelector('#reader-page-position').textContent};
