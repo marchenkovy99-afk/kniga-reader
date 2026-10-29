@@ -52,20 +52,27 @@ try{
  }
  console.log(JSON.stringify(pages,null,2));
  assert.ok(pages.every(p=>p.readerHeight===852),'installed reader must fill its actual window even when dynamic viewport units are too short');
- const before=await page.locator('#reader-page-position').textContent();
+ const originalAnchor=await page.evaluate(()=>{const fragment=document.querySelector('.book-page[aria-hidden="false"] [data-block]');return {block:Number(fragment.dataset.block),offset:Number(fragment.dataset.from)};});
+ const assertAnchorPresent=async()=>{
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
+  const found=await page.evaluate(anchor=>[...document.querySelectorAll('.book-page[aria-hidden="false"] [data-block]')].some(fragment=>Number(fragment.dataset.block)===anchor.block&&Number(fragment.dataset.from)<=anchor.offset&&Number(fragment.dataset.to)>=anchor.offset),originalAnchor);
+  assert.ok(found,'reflow must keep the reader at the original source anchor without skipping text');
+ };
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
+ await assertAnchorPresent();
  const footer=await page.locator('.reader-footer').boundingBox();
  assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
- assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
+ await assertAnchorPresent();
  const controlsBottom=staleInnerHeight?778:852;
  for(const button of await page.locator('.reader-tools button:visible').all()){const bounds=await button.boundingBox();assert.ok(bounds&&bounds.y+bounds.height<=controlsBottom, 'every visible control must fit inside the interactive viewport');}
  await page.locator('#appearance').click();await page.locator('dialog[open]').waitFor();await page.locator('#close-sheet').click();
- assert.equal(await page.locator('#reader-page-position').textContent(),before,'opening appearance must not turn the page');
+ await assertAnchorPresent();
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
  const session=await page.context().newCDPSession(page);
  await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
  await page.waitForFunction(()=>document.querySelector('.reader').clientHeight===900);
- await page.waitForFunction(()=>document.querySelector('.book-page[aria-hidden="false"]').clientHeight===document.querySelector('#book-stage').clientHeight);
+ await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
+ await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
  assert.ok(pages.every(p=>p.first>=59+22+5),'first text line must clear the blurred system edge in installed mode');
