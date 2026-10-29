@@ -387,7 +387,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-footer .reading-progress{height:25px;margin:0;width:100%;display:block}
 .reader-footer .icon{width:23px;height:23px}
 .reader-footer .type-button{font-size:22px}
-.book-text{padding-top:2px;padding-bottom:2px}
+.book-text{padding-top:4px;padding-bottom:2px}
 .book-stage[data-layout-state=pending] #flipbook{visibility:hidden;pointer-events:none}
 #flipbook.viewport-guard{visibility:hidden}
 .book-text[data-engine=dom]{overflow:visible}
