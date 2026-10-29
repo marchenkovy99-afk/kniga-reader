@@ -125,7 +125,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
   position={position} progress={progressOf(chapter,page,pages,chapters.length)}
   caption={ready?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
-  chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)}>
+  chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
    <div className="page-viewport" ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}

@@ -135,3 +135,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .book-table-scroll table{border-collapse:collapse;width:max-content;min-width:100%;font:15px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
 .book-table-scroll td{border:1px solid var(--border);padding:12px;min-width:130px;max-width:min(65vw,380px);overflow-wrap:anywhere;vertical-align:top}
 .book-image-missing{display:block;padding:16px;border:1px solid var(--border);color:var(--muted);font:13px/1.4 -apple-system,sans-serif}
+
+/* Permit a large-table control to receive real taps through the page-turn overlay.
+   Normal text stays passive, so the original navigation zones still work. */
+.reading-interactive .reading-content{z-index:6;pointer-events:none}
+.reading-interactive .book-table-launch,
+.reading-interactive .book-table-overlay{pointer-events:auto}
+.reading-interactive .book-table-overlay{z-index:35}

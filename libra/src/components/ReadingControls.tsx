@@ -8,9 +8,9 @@ type Props={
   onBack:()=>void; onNext:()=>void; onPrevious:()=>void;
   position:ReaderPosition; progress:number; caption:string;
   chapters?:{title:string}[]; currentChapter?:number; onChapter?:(index:number)=>void;
-  children:ReactNode;
+  children:ReactNode; interactiveContent?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|null>(null);
  const [marked,setMarked]=useState(false);
@@ -25,7 +25,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  async function mark(){
    await toggleBookmark(book.id,position);setMarked(v=>!v);
  }
- return <div className="reading-root">
+ return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")}>
    <div className="reading-content">{children}</div>
    <div className="reading-zones" role="presentation"
      onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
