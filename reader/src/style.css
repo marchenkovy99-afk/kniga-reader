@@ -483,5 +483,10 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader.chrome-hidden .reader-header{display:none}
 .reader-header{box-shadow:0 4px 0 #08090a}
 
+/* An illustration within prose must not reserve a whole page's height.
+   Image-only blocks continue to use the full-page presentation. */
+.book-text .paragraph.book-inline-illustration{height:auto}
+.book-text .paragraph.book-inline-illustration img{max-height:min(25svh,180px);width:auto;max-width:100%;object-fit:contain}
+
 /* Pagination remains available to the engine and screen-reader slider, but is never painted. */
 .reader .reader-bottom-page-number,.reader .reader-page-position{display:none!important}

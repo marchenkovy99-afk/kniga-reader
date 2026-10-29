@@ -31,7 +31,7 @@ export function createPageRenderer(model,doc=document){
  }
  function fragment(part){
   const block=model.blocks[part.block],tag=['h2','h3'].includes(block.type)?block.type:'div';
-  const el=doc.createElement(tag);el.className=`paragraph ${block.type==='verse'?'verse':''} ${presentationClasses(block.presentation)} ${part.from?'continued':''} ${part.to<block.text.length?'page-continues':''}`;
+  const el=doc.createElement(tag);el.className=`paragraph ${block.type==='verse'?'verse':''} ${presentationClasses(block.presentation)} ${part.from?'continued':''} ${part.to<block.text.length?'page-continues':''} ${block.text.length&&/<img\b/i.test(block.html)?'book-inline-illustration':''}`;
   el.dataset.block=String(part.block);el.dataset.from=String(part.from);el.dataset.to=String(part.to);
   el.dataset.blockId=block.id;
   if(part.reserveHeight)el.style.height=`${part.reserveHeight}px`;

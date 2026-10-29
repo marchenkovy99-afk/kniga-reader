@@ -59,9 +59,24 @@ await run('Progressive pages arrive before completion; abort stops old results',
  const job=paginate(blocks,{width:393,height:600,settings,signal:controller.signal,onBatch:async(pages,{complete})=>{check(!complete,'No prefix before completion');batches++;firstAt=pages.length;assertSourceRanges(createDocumentModel(blocks),pages,{complete:false});controller.abort();}});
  let aborted=false;try{await job;}catch(e){aborted=e.name==='AbortError';}check(aborted,'Old generation completed after cancellation');return {batches,firstAt};
 });
-await run('Oversized tables reject explicitly; source survives',async()=>{
+await run('Long tables paginate without losing cell text',async()=>{
  const text='строка'.repeat(60),html='<table>'+Array.from({length:60},()=>'<tr><td>строка</td></tr>').join('')+'</table>';
- let rejected=false;try{await paginate([{type:'table',html,text}],{width:320,height:260,settings:{...settings,fontSize:48}});}catch(e){rejected=/не помещается/i.test(e.message);}check(rejected,'Oversized table accepted');return {safeRejection:true};
+ const options={width:320,height:260,settings:{...settings,fontSize:48}};
+ const pages=await paginate([{type:'table',html,text}],options);
+ check(pages.length>1,'Long table needs multiple pages');
+ let restored='';
+ for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el),'Table is clipped');restored+=el.textContent;el.remove();}
+ check(restored===text,'Table text changed or disappeared');return {pages:pages.length,sourceCharacters:restored.length};
+});
+await run('Mixed image and prose paginate without cropping or duplicating content',async()=>{
+ const image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==';
+ const before='Перед рисунком. '+prose.repeat(5),after='После рисунка. '+prose.repeat(12);
+ const blocks=[{type:'p',text:before+after,html:'<em>'+before+'</em><img src="'+image+'"/><strong>'+after+'</strong>'}];
+ const options={width:393,height:400,settings};
+ const pages=await paginate(blocks,options);let restored='',images=0;
+ for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el),'Inline image page is clipped');images+=el.querySelectorAll('img').length;restored+=el.textContent;el.remove();}
+ check(restored===before+after,'Inline image dropped source text');check(images===1,'Inline image must appear once');
+ return {pages:pages.length,images,sourceCharacters:restored.length};
 });
 await run('Zero-text DOM breaks belong to one source slice and never disappear',async()=>{
  const model=createDocumentModel([{type:'p',html:'a<br/><br/>b',text:'ab'}]),renderer=createPageRenderer(model);

@@ -77,7 +77,9 @@ export async function paginateDOM(blocks,{width,height,settings,signal,onProgres
    const block=model.blocks[i],length=block.text.length;let from=0;
    await prepareBlockBoundaries(block,{signal,yieldWork});
    if(block.type==='h2'&&parts.length)await flush('chapter-start');
-   const indivisible=!length||/<(?:table|img)\b/i.test(block.html);
+   // Tables and illustrations alongside prose have splittable source text.
+   // The previous blanket restriction rejected whole books unnecessarily.
+   const indivisible=!length;
    if(indivisible){
     const next=model.blocks[i+1],isImage=/<img\b/i.test(block.html);
     if(isImage&&next?.presentation.role==='caption'){
