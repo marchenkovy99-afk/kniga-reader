@@ -13,8 +13,8 @@ for(const screen of [{width:393,height:852,top:59,bottom:34},{width:430,height:9
   frame.srcdoc=`<!doctype html><html lang="ru"><style>${styles}</style><body class="reading"><div id="app"><div class="reader chrome-hidden"><main class="book-stage"></main></div></div></body>`;
   const loaded=new Promise(resolve=>frame.onload=resolve);document.querySelector('#preview').append(frame);await loaded;
   const doc=frame.contentDocument,stage=doc.querySelector('.book-stage'),bounds=stage.getBoundingClientRect();
-  check(bounds.top>=screen.top+1.9&&bounds.top<=screen.top+2.1,`Excess top space: ${bounds.top-screen.top}px beyond safe area`);
-  const bottomInset=screen.height-bounds.bottom,expectedBottom=Math.max(44,screen.bottom+10);
+  check(bounds.top>=screen.top-.1&&bounds.top<=screen.top+.1,`Excess top space: ${bounds.top-screen.top}px beyond safe area`);
+  const bottomInset=screen.height-bounds.bottom,expectedBottom=Math.max(60,screen.bottom+26);
   check(Math.abs(bottomInset-expectedBottom)<1,`Gesture gutter: ${bottomInset}px, expected ${expectedBottom}px`);
   const settings={font:'sans',fontSize:22,lineHeight:1.2,margin:12,paragraphGap:0,indent:1.3,letterSpacing:0,align:'justify',hyphens:true};
   const pages=await paginate(blocks,{width:Math.floor(bounds.width),height:Math.floor(bounds.height),settings});assertPageIntegrity(blocks,pages);
@@ -24,11 +24,12 @@ for(const screen of [{width:393,height:852,top:59,bottom:34},{width:430,height:9
    const walker=doc.createTreeWalker(el,4),range=doc.createRange(),rects=[];let node;
    while(node=walker.nextNode()){if(!node.data.trim())continue;range.selectNodeContents(node);rects.push(...[...range.getClientRects()].filter(r=>r.width>0&&r.height>0));}
    check(rects.every(r=>r.top>=bounds.top-.02&&r.bottom<=bounds.bottom+.02&&r.left>=bounds.left-.02&&r.right<=bounds.right+.02),`Clipped glyph on page ${index}: ${JSON.stringify({bounds:bounds.toJSON(),text:el.getBoundingClientRect().toJSON(),bad:rects.filter(r=>r.top<bounds.top-.02||r.bottom>bounds.bottom+.02||r.left<bounds.left-.02||r.right>bounds.right+.02).map(r=>r.toJSON()).slice(0,3)})}`);
-   if(index===0){first=Math.min(...rects.map(r=>r.top));check(first>=screen.top+2&&first<=screen.top+10,'First glyph must start directly below the safe area');}
+   if(index===0){first=Math.min(...rects.map(r=>r.top));check(first>=screen.top&&first<=screen.top+8,'First glyph must start directly below the safe area');}
    const lastGlyph=Math.max(...rects.map(r=>r.bottom));
-   check(screen.height-lastGlyph>=43.5,`Last glyph must clear screen bottom: ${screen.height-lastGlyph}px on page ${index}`);
+   check(screen.height-lastGlyph>=59.5,`Last glyph must clear screen bottom: ${screen.height-lastGlyph}px on page ${index}`);
    const unused=bounds.bottom-lastGlyph;
-   if(index<pages.length-1){check(unused<settings.fontSize*settings.lineHeight+4,`Unused complete row: ${unused}`);maxUnused=Math.max(maxUnused,unused);}
+   check(unused>=9.5,`Last glyph descenders too close to page clip: ${unused}px on page ${index}`);
+   if(index<pages.length-1){check(unused<settings.fontSize*settings.lineHeight+16,`Unused complete row: ${unused}`);maxUnused=Math.max(maxUnused,unused);}
    restored+=el.textContent;
   }
   check(restored===text,'Source text changed');
