@@ -26,14 +26,23 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run build:pages
-      - name: Install Chromium for reading-page regression checks
+      - name: Install Chromium and WebKit for PWA regression checks
         run: |
           npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - name: Check iPhone installed-app layout and unclipped pages
+          npx playwright install --with-deps chromium webkit
+      - name: Check installed iPhone PWA in Chromium and WebKit
         run: |
           INSTALLED_APP=1 node tests/reader-geometry.browser.mjs
           node tests/pagination-layout.browser.mjs
+          node tests/reader-pwa.webkit.browser.mjs
+      - name: Save PWA WebKit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-webkit-screenshots
+          path: test-results/pwa/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Publish compiled reader
         run: |
           git config user.name 'github-actions[bot]'
