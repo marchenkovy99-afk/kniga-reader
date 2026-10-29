@@ -30,7 +30,7 @@ try{
   const blocks=[{type:'p',text:caption,html:'<em>'+caption+'</em>'},...Array.from({length:20},()=>({type:'p',text,html:text}))];
   await new Promise((resolve,reject)=>{const r=indexedDB.open('kniga-reader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('books',{keyPath:'id'});r.result.createObjectStore('preferences');};r.onsuccess=()=>{const db=r.result,tx=db.transaction(['books','preferences'],'readwrite');tx.objectStore('books').put({id:'test',title:'Геометрия страницы',author:'Тест',blocks,presentationVersion:1,chars:blocks.reduce((n,b)=>n+b.text.length,0),chapters:[],fileName:'test.fb2',addedAt:1,marks:[]});tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};});
  });
- await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book]').first().click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
+ await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
  const pages=[];
  const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
@@ -58,7 +58,7 @@ try{
  assert.ok(footer.y+footer.height<=852&&footer.y+footer.height>=852-60,'the visible control panel must fit above the home indicator');
  assert.equal(await page.locator('#reader-page-position').textContent(),before,'showing controls must preserve page geometry');
  const controlsBottom=staleInnerHeight?778:852;
- for(const button of await page.locator('.reader-tools button').all()){const bounds=await button.boundingBox();assert.ok(bounds.y+bounds.height<=controlsBottom, 'every control must fit inside the interactive viewport');}
+ for(const button of await page.locator('.reader-tools button:visible').all()){const bounds=await button.boundingBox();assert.ok(bounds&&bounds.y+bounds.height<=controlsBottom, 'every visible control must fit inside the interactive viewport');}
  await page.locator('#appearance').click();await page.locator('dialog[open]').waitFor();await page.locator('#close-sheet').click();
  assert.equal(await page.locator('#reader-page-position').textContent(),before,'opening appearance must not turn the page');
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
