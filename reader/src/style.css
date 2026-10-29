@@ -420,3 +420,47 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 /* The immersive page number uses the reserved bottom strip, not the text area. */
 .reader-bottom-page-number{position:fixed;bottom:0;left:50%;transform:translate(-50%,2px);z-index:110;display:block;min-height:10px;padding:0 6px;background:var(--paper);color:var(--muted);font:500 9px/10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;pointer-events:none}
 .reader:not(.chrome-hidden) .reader-bottom-page-number{display:none}
+
+/* Opaque native iOS status bar avoids the system blur over reader text.
+   Page measurement and visible DOM both start below the solid top toolbar. */
+.reader{
+ --reader-top-inset:calc(env(safe-area-inset-top,0px) + 56px);
+ --reader-bottom-inset:max(10px,calc(env(safe-area-inset-bottom,0px) - 24px));
+}
+.reader::before{
+ display:block;
+ position:absolute;
+ inset:0 0 auto;
+ height:var(--reader-top-inset);
+ background:#08090a;
+ z-index:110;
+ pointer-events:none;
+}
+.reader-header{
+ top:calc(env(safe-area-inset-top,0px) + 2px);
+ left:0;
+ right:0;
+ display:flex;
+ height:48px;
+ min-height:48px;
+ padding:2px 12px;
+ gap:8px;
+ background:#08090a;
+ color:#f4f4f2;
+}
+.reader.chrome-hidden .reader-header{display:flex}
+.reader-header .icon-button{
+ width:44px;
+ height:44px;
+ min-width:44px;
+ background:transparent;
+ color:#f4f4f2;
+ border-radius:11px;
+}
+.reader-header #to-library{color:#b6bbb9}
+.reader-header .icon-button:disabled{opacity:.28}
+.reader-top-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto}
+.reader-top-controls .icon{width:21px;height:21px}
+.reader-top-controls #toggle-bookmark.marked{color:var(--accent)}
+.reader-top-controls #toggle-bookmark.marked svg{fill:var(--accent);stroke:var(--accent)}
+@media(max-width:359px){.reader-header{padding-inline:8px}.reader-top-controls{gap:4px}}

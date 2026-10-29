@@ -29,7 +29,7 @@ try{
   return {results,status:document.querySelector('meta[name=apple-mobile-web-app-status-bar-style]').content};
  },theme);
  for(const result of themes.results)for(const key of ['root','reader','page','meta'])assert.equal(result[key],result.body,JSON.stringify(result));
- assert.equal(themes.status,'black-translucent','iOS must draw the themed viewport underneath the system status bar');
+ assert.equal(themes.status,'black','iOS must keep the reading content below an opaque status bar to prevent the OS blur');
  const results=await page.evaluate(async()=>{
   const {restoreSettings}=await import('/src/anchors.js');
   const {paginate,applyTypography}=await import('/src/pagination.js');
