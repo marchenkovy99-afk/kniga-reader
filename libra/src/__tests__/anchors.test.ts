@@ -11,7 +11,18 @@ describe('content-based FB2 anchors',()=>{
   ]);
   expect(flow.textContent).toBe('Начало 🦔Последняя строка');
  });
- it('returns null for an image-only page without manufacturing text',()=>{
+ it('restores an image-only page from its block index',()=>{
+  const flow=document.createElement('div');
+  flow.innerHTML='<figure data-block-index="3"><img alt="Illustration"></figure>';
+  const figure=flow.querySelector('figure')!;
+  Object.defineProperty(flow,'getBoundingClientRect',{value:()=>({left:100,top:0,width:320,height:600})});
+  Object.defineProperty(figure,'getBoundingClientRect',{value:()=>({left:444,top:5,width:310,height:490})});
+  const geo={width:320,gap:24};
+  const anchor=getPageAnchor(flow,1,geo);
+  expect(anchor).toEqual({block:3,textNode:-1,offset:0});
+  expect(getAnchorPage(flow,anchor!,geo)).toBe(1);
+ });
+ it('returns null for an unloaded image-only page without manufacturing text',()=>{
   const flow=document.createElement('div');
   flow.innerHTML='<figure data-block-index="0"><img alt="image"></figure>';
   expect(getPageAnchor(flow,0,{width:320,gap:24})).toBeNull();
