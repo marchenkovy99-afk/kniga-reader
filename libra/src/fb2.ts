@@ -33,7 +33,9 @@ export function parseFB2(xml:string):ParsedFB2{
   function walk(element:Element,target:Block[]){
     const tag=element.localName;
     if(tag==='image'){
-      const src=images.get(href(element).replace(/^#/,''));if(src)target.push({kind:'image',src,alt:''});
+      const ref=href(element).replace(/^#/,'');
+      const src=images.get(ref)||'';
+      target.push({kind:'image',src,alt:src?'':'Изображение '+(ref||'без идентификатора')+' отсутствует в файле'});
       return;
     }
     if(tag==='table'){
@@ -48,7 +50,7 @@ export function parseFB2(xml:string):ParsedFB2{
       const hasPicture=Array.from(element.getElementsByTagName('*')).some(el=>el.localName==='image');
       if(!hasPicture){target.push({kind,text:xmlText(element)});return;}
       let buffer='';
-      const flush=()=>{const value=buffer.replace(/\\s+/g,' ').trim();if(value)target.push({kind,text:value});buffer=''};
+      const flush=()=>{const value=buffer.replace(/\s+/g,' ').trim();if(value)target.push({kind,text:value});buffer=''};
       const visit=(node:Node):void=>{
         if(node.nodeType===Node.TEXT_NODE){buffer+=node.textContent||'';return;}
         if(node.nodeType!==Node.ELEMENT_NODE)return;

@@ -8,8 +8,8 @@ import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 
 const GAP=24;
-function BookBlock({block,index}:{block:Block;index:number}){
- if(block.kind==='image')return <figure data-block-index={index} className="book-figure"><img src={block.src} alt={block.alt}/></figure>;
+function BookBlock({block,index,onMediaLoaded}:{block:Block;index:number;onMediaLoaded:()=>void}){
+ if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
  if(block.kind==='table')return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
  if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{block.text}</h2>;
  if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
@@ -24,6 +24,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [pages,setPages]=useState(1);
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [measuredKey,setMeasuredKey]=useState('');
+ const [mediaVersion,setMediaVersion]=useState(0);
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
@@ -69,7 +70,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
   return ()=>{active=false;cancelAnimationFrame(frame)};
- },[chapters,chapter,geometry.width,geometry.height,layoutKey]);
+ },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion]);
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
   if(!ready||!flow.current)return;
@@ -125,7 +126,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}
