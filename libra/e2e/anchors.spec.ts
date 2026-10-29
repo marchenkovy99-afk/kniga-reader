@@ -16,13 +16,6 @@ test('font adjustment and reload preserve an FB2 text anchor',async({page})=>{
  for(let i=0;i<4;i++){
   await page.locator('.reading-zones').click({position:{x:340,y:240}});
  }
- const first=await page.evaluate(async()=>{
-  const request=indexedDB.open('libra-library',1);
-  const db=await new Promise<IDBDatabase>((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)});
-  const tx=db.transaction('books');
-  const query=tx.objectStore('books').getAll();
-  return new Promise<any>((resolve,reject)=>{query.onsuccess=()=>resolve(query.result[0]?.position);query.onerror=()=>reject(query.error)});
- });
  // The write is deliberately debounced; wait until the anchor reaches storage.
  await expect.poll(async()=>page.evaluate(async()=>{
    const request=indexedDB.open('libra-library',1);
@@ -36,7 +29,6 @@ test('font adjustment and reload preserve an FB2 text anchor',async({page})=>{
   const q=db.transaction('books').objectStore('books').getAll();
   return new Promise<any>(resolve=>{q.onsuccess=()=>resolve(q.result[0]?.position?.anchor)});
  });
- expect(first).toBeDefined();
  // Toggle controls, enlarge font, close sheet. Position must be restored by anchor.
  await page.locator('.reading-zones').click({position:{x:190,y:240}});
  await page.getByRole('button',{name:'Текст'}).click();
