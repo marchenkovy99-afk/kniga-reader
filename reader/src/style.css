@@ -370,7 +370,9 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 /* The safe area owns the system status bar. Keep only a small readable gap
    below it; a second status-bar-sized gutter wastes a whole text row.
    Leave the gesture indicator clear. Both bounds are measured by pagination. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 4px);--reader-bottom-inset:max(10px,calc(env(safe-area-inset-bottom,0px) - 24px))}
+/* Clear the iOS translucent status region before painting the first text row.
+   The page and measurement viewport share these bounds, so pagination remains lossless. */
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 12px);--reader-bottom-inset:max(10px,calc(env(safe-area-inset-bottom,0px) - 24px))}
 /* The translucent iOS status area already paints the page colour. The old
    high-z-index pseudo-element could composite across the first text row. */
 .reader::before{display:none}
@@ -416,5 +418,5 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 .reader-geometry-actions button:first-child{background:var(--accent);color:var(--accent-text)}
 
 /* The immersive page number uses the reserved bottom strip, not the text area. */
-.reader-bottom-page-number{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:110;display:block;min-height:10px;padding:0 6px;background:var(--paper);color:var(--muted);font:500 9px/10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;pointer-events:none}
+.reader-bottom-page-number{position:fixed;bottom:0;left:50%;transform:translate(-50%,2px);z-index:110;display:block;min-height:10px;padding:0 6px;background:var(--paper);color:var(--muted);font:500 9px/10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;pointer-events:none}
 .reader:not(.chrome-hidden) .reader-bottom-page-number{display:none}

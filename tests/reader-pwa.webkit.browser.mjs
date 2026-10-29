@@ -120,7 +120,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading,'rendered page must exist');
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
-   assert.ok(reading.first>=top&&reading.first<=top+12,'first line must stay close to, and below, the iOS safe area');
+   assert.ok(reading.first>=top+12&&reading.first<=top+20,'first line must stay close to, and below, the iOS safe area');
    assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(10,bottom-24)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
    assert.ok(reading.last<=reading.stage.bottom,'last glyph must not be cropped');
@@ -147,6 +147,8 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const immersiveNumber=page.locator('#reader-bottom-page-number');
   assert.equal(await immersiveNumber.isVisible(),true,'page number stays visible with reading controls hidden');
   assert.equal(await immersiveNumber.textContent(),await page.locator('#reader-page-position').textContent(),'immersive page number tracks current page');
+  const numberPosition=await immersiveNumber.boundingBox();
+  assert.ok(numberPosition&&numberPosition.y>=samples[0].stage.bottom&&numberPosition.y<height,'immersive number must be below text and remain on-screen');
   const snapshot=()=>page.evaluate(()=>{
    const stage=document.querySelector('#book-stage'),active=document.querySelector('.book-page[aria-hidden="false"] .book-text');
    return {height:stage.clientHeight,width:stage.clientWidth,ready:stage.dataset.layoutState,html:active.innerHTML,source:active.textContent,count:document.querySelectorAll('.book-page').length,number:document.querySelector('#reader-page-position').textContent};
