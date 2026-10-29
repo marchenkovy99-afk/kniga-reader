@@ -5,10 +5,10 @@ on:
     paths:
       - 'libra/**'
       - '.github/workflows/libra-ci.yml'
-  pull_request:
-    paths:
-      - 'libra/**'
-      - '.github/workflows/libra-ci.yml'
+  workflow_dispatch:
+concurrency:
+  group: libra-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
