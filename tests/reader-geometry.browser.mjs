@@ -31,7 +31,7 @@ try{
   await new Promise((resolve,reject)=>{const r=indexedDB.open('kniga-reader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('books',{keyPath:'id'});r.result.createObjectStore('preferences');};r.onsuccess=()=>{const db=r.result,tx=db.transaction(['books','preferences'],'readwrite');tx.objectStore('books').put({id:'test',title:'Геометрия страницы',author:'Тест',blocks,presentationVersion:1,chars:blocks.reduce((n,b)=>n+b.text.length,0),chapters:[],fileName:'test.fb2',addedAt:1,marks:[]});tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};});
  });
  await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor();
- await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
+ await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
  const pages=[];
  const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
  assert.ok(pageCount>=2,'fixture must span multiple pages for page-boundary checks');
@@ -62,7 +62,7 @@ try{
   'opening and hiding the floating chrome must never repaginate, change source text or show a loading state');
  const originalAnchor=await page.evaluate(()=>{const fragment=document.querySelector('.book-page[aria-hidden="false"] [data-block]');return {block:Number(fragment.dataset.block),offset:Number(fragment.dataset.from)};});
  const assertAnchorPresent=async()=>{
-  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
   const found=await page.evaluate(anchor=>[...document.querySelectorAll('.book-page[aria-hidden="false"] [data-block]')].some(fragment=>Number(fragment.dataset.block)===anchor.block&&Number(fragment.dataset.from)<=anchor.offset&&Number(fragment.dataset.to)>=anchor.offset),originalAnchor);
   assert.ok(found,'reflow must keep the reader at the original source anchor without skipping text');
  };
@@ -88,7 +88,7 @@ try{
  const session=await page.context().newCDPSession(page);
  await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
  await page.waitForFunction(()=>document.querySelector('.reader').clientHeight===900);
- await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready');
+ await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');

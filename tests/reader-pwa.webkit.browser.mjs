@@ -100,7 +100,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    if(documentShrink)assert.ok(height-measurements.layout>=documentShrink-2,'test must reproduce stale document clientHeight despite a full CSS viewport');
    if(visualShrink)assert.ok(height-measurements.visual>=visualShrink-2,'test must reproduce stale visualViewport relative to the actual CSS viewport');
   }
-  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true',{timeout:40000});
   const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
   assert.ok(pageCount>=4,'fixture must have several pages');
   const samples=[];
@@ -184,7 +184,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   await page.evaluate(()=>document.body.style.removeProperty('height'));
   await page.reload();
   await page.locator('[data-book="pwa-fixture"]').click();
-  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready',{timeout:40000});
+  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true',{timeout:40000});
   assert.ok((await page.locator('.book-page[aria-hidden="false"] .book-text').textContent()).length>0,'book must reopen after a standalone reload');
   assert.equal(errors.length,0,'no uncaught JavaScript errors during installed reader session: '+errors.join('; '));
   console.log('WebKit PWA',width+'x'+height+(visualShrink?'-visual-minus-'+visualShrink:'')+(innerShrink?'-inner-minus-'+innerShrink:'')+(documentShrink?'-document-minus-'+documentShrink:''),JSON.stringify({pages:pageCount,first:samples[0].first,last:samples[0].last,stage:samples[0].stage,toolbar:{width:footer.width,height:footer.height},reopened:true}));
