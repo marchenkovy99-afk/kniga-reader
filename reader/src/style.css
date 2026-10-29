@@ -371,7 +371,7 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
    Keep the first glyph beneath that effect. At the bottom, use the safe-area
    minus the empty gesture gutter; the final glyph also has page padding.
    The pagination engine measures the same live stage and refuses clipped rows. */
-.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 12px);--reader-bottom-inset:max(6px,calc(env(safe-area-inset-bottom,0px) - 28px))}
+.reader{--reader-top-inset:calc(env(safe-area-inset-top,0px) + 22px);--reader-bottom-inset:max(6px,calc(env(safe-area-inset-bottom,0px) - 28px))}
 .reader-header{min-height:48px;padding:2px 8px;gap:8px;background:transparent}
 .reader-heading{visibility:hidden}
 .reader-header .icon-button{border-radius:50%;background:var(--paper)}
