@@ -532,3 +532,57 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
 :root[data-theme] .reader-header{box-shadow:none}
 :root[data-theme] .reader-top-controls .icon-button{background:var(--paper);color:var(--ink)}
 :root[data-theme] .reader::before{background:var(--paper)}
+
+/* iPhone PWA: keep reading controls inside safe areas without covering the page.
+   The top chrome is a floating overlay; the reader stage remains unchanged so
+   previously computed source ranges cannot be cropped by a toolbar reflow. */
+.reader{isolation:isolate}
+.reader .reader-header{
+ position:fixed;
+ top:calc(env(safe-area-inset-top,0px) + 4px);
+ left:50%;right:auto;
+ width:min(720px,100%);
+ transform:translateX(-50%);
+ z-index:150;
+ height:50px;min-height:50px;
+ padding:3px 12px;
+ background:var(--paper);
+ color:var(--ink);
+ box-shadow:none;
+}
+.reader.chrome-hidden .reader-header{display:none}
+.reader:not(.chrome-hidden) .reader-header{display:flex}
+.reader .reader-header .icon-button,
+.reader .reader-top-controls .icon-button{
+ background:var(--paper);
+ color:var(--ink);
+ min-width:44px;min-height:44px;
+}
+.reader .reader-header #to-library{color:var(--ink)}
+.reader .reader-footer{
+ position:fixed;
+ left:50%;right:auto;
+ top:auto;
+ bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+ transform:translateX(-50%);
+ width:min(400px,calc(100% - 24px));
+ max-height:min(46dvh,370px);
+ overflow-y:auto;
+ overflow-x:hidden;
+ overscroll-behavior:contain;
+ z-index:160;
+ border:1px solid var(--line);
+ background:var(--sheet);
+ color:var(--ink);
+ box-shadow:0 8px 32px #00000020;
+ padding:10px 14px;
+ border-radius:22px;
+}
+.reader.chrome-hidden .reader-footer{display:none}
+.reader:not(.chrome-hidden) .reader-footer{display:block}
+.reader .reader-footer .reader-tools{min-height:44px}
+.reader .reader-footer .icon-button{min-width:44px;min-height:44px}
+@media(max-height:550px){
+ .reader .reader-header{height:44px;min-height:44px}
+ .reader .reader-footer{bottom:calc(env(safe-area-inset-bottom,0px) + 4px);max-height:52dvh}
+}
