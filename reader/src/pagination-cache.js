@@ -32,17 +32,27 @@ export function createPaginationCache({storage,paginate,onStorageError=()=>{},va
  const report=error=>{if(!reported){reported=true;onStorageError(error);}};
  const remember=(key,bookId,pages)=>{memory.delete(key);memory.set(key,{bookId,pages});if(memory.size>3)memory.delete(memory.keys().next().value);};
  const read=async bookId=>{try{return await storage.getPreference(storageKey(bookId));}catch(error){report(error);return null;}};
+ // Memory entries are shared with the visible reader and must be checked again
+ // before being trusted. A broken set must never bypass source verification.
+ const verified=(blocks,pages)=>{
+  if(!validPages(pages,blocks))return false;
+  try{validatePages(blocks,pages);return true;}catch{return false;}
+ };
  async function load(input){
   const {bookId,blocks,signal,onMiss}=input,key=signature(input);checkAbort(signal);
   const hit=memory.get(key);
-  if(hit){remember(key,bookId,hit.pages);return hit.pages;}
+  if(hit){
+   if(verified(blocks,hit.pages)){remember(key,bookId,hit.pages);return hit.pages;}
+   memory.delete(key);
+  }
   const saved=await read(bookId);checkAbort(signal);
   const entry=saved?.version===VERSION&&Array.isArray(saved.entries)?saved.entries.find(e=>e?.signature===key):null;
-  let intact=false;
-  if(entry&&validPages(entry.pages,blocks)){try{validatePages(blocks,entry.pages);intact=true;}catch{/* Regenerate damaged cached markup from the source. */}}
-  if(intact){remember(key,bookId,entry.pages);return entry.pages;}
+  if(entry&&verified(blocks,entry.pages)){remember(key,bookId,entry.pages);return entry.pages;}
   onMiss?.();
   const pages=await paginate(blocks,input);checkAbort(signal);
+  // The engine may fail or be interrupted before producing a complete book.
+  // Reject that output before exposing it as a complete cache entry.
+  if(!verified(blocks,pages))throw Error('Не пройдена проверка целостности страниц. Исходная книга сохранена.');
   // Serialize read/merge/write so rapid typography changes keep both layouts.
   const write=writes.then(async()=>{
    checkAbort(signal);const previous=await read(bookId);checkAbort(signal);
