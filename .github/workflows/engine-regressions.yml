@@ -27,9 +27,16 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Verify engine and complete reader flows
         run: node tests/engine.browser.mjs
+      - name: Validate installed PWA geometry, pagination and theme surfaces
+        run: |
+          INSTALLED_APP=1 node tests/reader-geometry.browser.mjs
+          node tests/pagination-layout.browser.mjs
+          node tests/reader-pwa.webkit.browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: reader-engine-results
-          path: test-results/engine/
+          path: |
+            test-results/engine/
+            test-results/pwa/
           if-no-files-found: ignore

@@ -38,7 +38,10 @@ test('typography, viewport, browser and source changes each require new paginati
   {blocks:[{text:'Новая редакция',html:'Новая редакция'}]},
   {blocks:[{text:'Пример текста',html:'Пример текста',presentation:{role:'epigraph'}}]},
  ]){
-  const storage=disk();let calculations=0;const paginate=async()=>{calculations++;return structuredClone(pages);};
+  const storage=disk();let calculations=0;const paginate=async(blocks)=>{
+   calculations++;const text=blocks[0].text;
+   return [{html:'<div>'+text+'</div>',start:{block:0,offset:0},end:{block:0,offset:text.length}}];
+  };
   await createPaginationCache({storage,paginate}).load(input());
   await createPaginationCache({storage,paginate}).load({...input(),...change});
   assert.equal(calculations,2,JSON.stringify(change));
@@ -91,4 +94,33 @@ test('truncated, unordered or blank cached pages cannot hide part of the book',a
   assert.deepEqual(await createPaginationCache({storage,paginate}).load(input()),complete);
   assert.equal(calculations,2);
  }
+});
+
+test('corrupted in-memory pages are rejected before reuse',async()=>{
+ const storage=disk();let calculations=0;
+ const paginate=async()=>{calculations++;return structuredClone(pages);};
+ const cache=createPaginationCache({storage,paginate});
+ const opened=await cache.load(input());
+ opened[0].html=''; // The UI receives the same page array; accidental mutation must not be trusted.
+ const restored=await cache.load(input());
+ assert.deepEqual(restored,pages);
+ assert.equal(calculations,1,'valid persistent pages should recover a damaged memory entry');
+});
+test('newly paginated incomplete books are never cached or exposed as complete',async()=>{
+ const storage=disk();let calculations=0;
+ const cache=createPaginationCache({storage,paginate:async()=>{
+  calculations++;return [{html:'<div>Пример</div>',start:{block:0,offset:0},end:{block:0,offset:6}}];
+ }});
+ await assert.rejects(cache.load(input()),/целостност|страниц/i);
+ await assert.rejects(cache.load(input()),/целостност|страниц/i);
+ assert.equal(calculations,2,'invalid outputs must not be saved or reused');
+});
+test('newly paginated markup must pass the configured source validator',async()=>{
+ const storage=disk();let calculations=0;
+ const cache=createPaginationCache({storage,paginate:async()=>{
+  calculations++;return structuredClone(pages);
+ },validatePages:()=>{throw Error('rendered text differs from source');}});
+ await assert.rejects(cache.load(input()),/целостност|страниц/i);
+ await assert.rejects(cache.load(input()),/целостност|страниц/i);
+ assert.equal(calculations,2,'failed source verification must not poison persistent or memory caches');
 });

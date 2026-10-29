@@ -148,7 +148,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const bar=page.locator('.reader-header');
   assert.equal(await bar.isVisible(),false,'reading must not waste vertical space on a persistent black toolbar');
   const metaStyle=await page.locator('meta[name="apple-mobile-web-app-status-bar-style"]').getAttribute('content');
-  assert.equal(metaStyle,'black','opaque status bar disables the translucent iOS system blur');
+  assert.equal(metaStyle,'black-translucent','installed iOS status area must allow the page theme to paint beneath it');
   const immersiveNumber=page.locator('#reader-bottom-page-number');
   assert.equal(await immersiveNumber.isVisible(),false,'no visible number in immersive reading');
   assert.equal(await page.locator('#reader-page-position').isVisible(),false,'no visible page counter even when controls open');
@@ -160,16 +160,17 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   const before=await snapshot();
   await page.locator('#book-stage').tap({position:{x:Math.floor(width/2),y:Math.floor(height/3)}});
   assert.equal(await page.locator('.reader-footer').isVisible(),true,'floating controls open over text');
-  assert.equal(await bar.isVisible(),true,'top arrows and bookmark appear only when controls are opened');
-  for(const id of ['prev-page','next-page','toggle-bookmark'])assert.equal(await page.locator('#'+id).isVisible(),true,'top navigation control '+id);
+  assert.equal(await bar.isVisible(),true,'back navigation and bookmark appear only when controls are opened');
+  assert.equal(await page.locator('#toggle-bookmark').isVisible(),true,'bookmark is available when controls are opened');
+  assert.equal(await page.locator('#prev-page,#next-page').count(),0,'permanent page-turn arrows must not be reintroduced');
   assert.equal(await immersiveNumber.isVisible(),false,'no page numbering when toolbar is visible');
   assert.equal(await page.locator('#reader-page-position').isVisible(),false,'toolbar must not show page numbering');
   assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
   const footer=await page.locator('.reader-footer').boundingBox();
   assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
   const chromeBottomGap=height-footer.y-footer.height;
-  assert.ok(chromeBottomGap>=8&&chromeBottomGap<=24,
-   'PWA controls should sit close to the screen bottom without entering the home gesture strip; gap='+chromeBottomGap);
+  assert.ok(chromeBottomGap>=bottom+8&&chromeBottomGap<=bottom+16,
+   'PWA controls must remain above the home gesture safe area; gap='+chromeBottomGap);
   // On-device diagnostics must be readable and must not change source or pagination.
   await page.evaluate(()=>{for(let i=0;i<5;i++)document.querySelector('#reader-page-position').click();});
   await page.locator('.reader-geometry-overlay').waitFor();
@@ -183,6 +184,19 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   await page.locator('.reader-geometry-actions button').last().click();
   assert.deepEqual(await snapshot(),before,'closing diagnostics cannot repaginate the book');
   await page.screenshot({path:path.join(output,'webkit-'+width+'x'+height+'-controls.png')});
+  // Every theme must paint the root canvas, body, reader and visible page
+  // with one paper color, preventing seams around iOS system safe areas.
+  const palette={paper:'rgb(246, 243, 236)',white:'rgb(255, 255, 255)',night:'rgb(29, 31, 30)',oled:'rgb(0, 0, 0)'};
+  for(const [name,expected] of Object.entries(palette)){
+   for(let tries=0;tries<5&&await page.locator('html').getAttribute('data-theme')!==name;tries++)await page.locator('#cycle-theme').click();
+   assert.equal(await page.locator('html').getAttribute('data-theme'),name,'theme switching must reach '+name);
+   const colors=await page.evaluate(()=>{
+    const css=node=>getComputedStyle(node).backgroundColor;
+    return {root:css(document.documentElement),body:css(document.body),reader:css(document.querySelector('.reader')),page:css(document.querySelector('.book-page[aria-hidden="false"]'))};
+   });
+   for(const key of ['root','body','reader','page'])assert.equal(colors[key],expected,name+' must paint '+key+' with the same background');
+   assert.deepEqual(await snapshot(),before,'switching to '+name+' must not alter pagination or text');
+  }
   await page.locator('#appearance').click();
   await page.locator('dialog[open]').waitFor();
   assert.deepEqual(await snapshot(),before,'appearance sheet must not silently change page');
