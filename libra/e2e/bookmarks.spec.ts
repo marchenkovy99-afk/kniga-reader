@@ -45,3 +45,29 @@ test('saved bookmark has the correct state and reopens its own page',async({page
  await page.getByRole('button',{name:'Закладки'}).click();
  await expect(page.locator('.bookmark-item')).toHaveCount(0);
 });
+
+
+test('bookmarks survive a full reload and reopen at the saved page',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'bookmarks.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await expect(page.locator('.continue-card')).toBeVisible();
+ await page.locator('.continue-card').click();
+ const flow=page.locator('.book-flow');
+ await expect(flow).toBeVisible();
+ for(let i=0;i<3;i++)await page.locator('.reading-zones').click({position:{x:340,y:220}});
+ const savedTransform=await flow.evaluate(el=>getComputedStyle(el).transform);
+ await page.locator('.reading-zones').click({position:{x:190,y:220}});
+ const mark=page.getByRole('button',{name:'Закладка'});
+ await mark.click();
+ await expect(mark).toHaveAttribute('aria-pressed','true');
+ await page.reload();
+ await page.getByRole('button',{name:'Закладки'}).click();
+ await expect(page.locator('.bookmark-item')).toHaveCount(1);
+ await page.locator('.bookmark-item').click();
+ await expect(page.locator('.book-flow')).toBeVisible();
+ await expect.poll(()=>page.locator('.book-flow').evaluate(el=>getComputedStyle(el).transform)).toBe(savedTransform);
+ await page.locator('.reading-zones').click({position:{x:190,y:220}});
+ await expect(page.getByRole('button',{name:'Закладка'})).toHaveAttribute('aria-pressed','true');
+});
