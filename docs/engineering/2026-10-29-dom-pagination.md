@@ -80,7 +80,7 @@ Local Node suite: 182 tests passed. Type checks and production Pages build passe
 - BR ownership, normal flow of empty lines/tables, image-caption pairing;
 - cancellation of a single 1,376,000-character paragraph before any page was published (198 ms in this environment).
 
-The first review-branch CI run passed Chromium/WebKit on commit `29cb2f5`. Final review-fix CI and the last close-during-streaming scenario must be recorded before release; a passing older commit does not validate later changes.
+Final acceptance CI passed on commit `88892e1` (run `40880247158`): Chromium engine, reader, performance and real cached-shell offline restart; WebKit engine, reader and performance. The complete reader fixture includes clean cancellation after closing a partially prepared 110,600-character book. All eight actual-reader scenarios passed. A later documentation-only commit does not change the tested runtime.
 
 ## Performance comparison
 
@@ -97,8 +97,13 @@ The longer sample's total work increased about 13%, while its first prefix becam
 
 ## Remaining acceptance gates
 
-1. Final commit's Chromium/WebKit CI and complete streaming-close regression.
-2. Installed PWA on a physical iPhone: first-line blur, last-line visibility, home indicator clearance, the user's formerly sparse pages, stable panels and source position after restart.
-3. Actual two-device Supabase and offline restart checks with a disposable account/book. Contract/regression tests pass, but no live production-account round trip was performed here.
+1. Installed PWA on a physical iPhone: first-line blur, last-line visibility, home indicator clearance, the user's formerly sparse pages, stable panels and source position after restart.
+2. Actual two-device Supabase and offline restart checks with a disposable account/book. Contract/regression tests pass, but no live production-account round trip was performed here.
 
 The existing production URL remains unchanged. The new engine is not claimed as fully accepted or published while these gates are outstanding.
+
+## Physical acceptance copy
+
+A separate owner-private copy is deployed at https://kniga-engine-acceptance-20261029.marchenkovy99.chatgpt.site/. Its runtime matches review-fix commit `383fa05` (the later `88892e1` only adds the offline test). The normal GitHub Pages application is unchanged. This copy asks for ChatGPT sign-in at the hosting gate; Supabase sign-in inside the reader remains separate.
+
+On iPhone, open this copy in Safari, add it to the Home Screen and import a control book or use the sample. Check the formerly sparse pages, first/last glyphs, gesture-indicator clearance, panel toggles, settings, page turns and restart. The five-tap page-number diagnostics can capture coordinates without book text. This protocol is prepared; no physical-device result is invented.
