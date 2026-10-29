@@ -57,7 +57,7 @@ test('the paint guard follows CSS viewport sizes even when iOS JS and CSS height
 test('standalone PWA trusts CSS media viewport when innerHeight and document clientHeight are both stale',()=>{
  let actual;
  const win={navigator:{standalone:true},innerWidth:393,innerHeight:778,visualViewport:{height:778,scale:1,addEventListener(){}},addEventListener(){},matchMedia:query=>{
-  const match=query.match(/^\\((min-)?(height|width):(\\d+)px\\)$/);
+  const match=query.match(/^\((min-)?(height|width):(\d+)px\)$/);
   const target=match[2]==='height'?852:393;
   return {matches:match[1]?target>=Number(match[3]):target===Number(match[3])};
  }};
@@ -68,7 +68,7 @@ test('standalone PWA trusts CSS media viewport when innerHeight and document cli
 test('CSS media viewport prevents overshooting a genuinely smaller standalone screen',()=>{
  let actual;
  const win={navigator:{standalone:true},innerWidth:393,innerHeight:852,visualViewport:{height:852,scale:1,addEventListener(){}},addEventListener(){},matchMedia:query=>{
-  const match=query.match(/^\\((min-)?(height|width):(\\d+)px\\)$/);
+  const match=query.match(/^\((min-)?(height|width):(\d+)px\)$/);
   const target=match[2]==='height'?803:393;
   return {matches:match[1]?target>=Number(match[3]):target===Number(match[3])};
  }};
