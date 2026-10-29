@@ -4,7 +4,7 @@ import {loadParsedFB2,seedParsedFB2,forgetParsedFB2} from '../reader/parsedFB2Ca
 import {parseFB2} from '../fb2';
 import type {StoredBook} from '../domain';
 const xml='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Тест</book-title></title-info></description><body><section><p>Содержимое</p></section></body></FictionBook>';
-const book=(id:string):StoredBook=>({id,filename:'book.fb2',title:'Тест',author:'Автор',format:'fb2',file:new Blob([xml]),importedAt:1,bookmarks:[]});
+const book=(id:string):StoredBook=>({id,filename:'book.fb2',title:'Тест',author:'Автор',format:'fb2',file:({text:async()=>xml} as unknown as Blob),importedAt:1,bookmarks:[]});
 describe('parsed book LRU',()=>{
  it('returns the same parsed book in one session without reparsing',async()=>{
   const saved=book('lru-test');
