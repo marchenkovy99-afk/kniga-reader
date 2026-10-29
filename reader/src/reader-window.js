@@ -6,14 +6,17 @@
  */
 export function readerPaintHeight(win,doc){
  const inner=Number(win.innerHeight)||0,client=Number(doc.documentElement?.clientHeight)||0;
- const layout=Math.min(inner,client>0?client:inner);
- const visual=Number(win.visualViewport?.height)||layout;
+ const layout=client>0?client:inner;
+ const visual=Number(win.visualViewport?.height)||Math.min(inner,layout);
  const installed=win.navigator?.standalone===true||win.matchMedia?.('(display-mode: standalone)')?.matches===true;
  const focused=doc.activeElement;
  const editable=Boolean(focused?.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(focused?.tagName));
  const zoomed=(Number(win.visualViewport?.scale)||1)>1.05;
  const keyboardLikely=layout-visual>Math.max(140,layout*.23);
- return Math.max(0,installed&&!editable&&!zoomed&&!keyboardLikely?layout:Math.min(layout,visual));
+ // CSS viewport can be taller than both iOS JS-reported heights in a Home
+ // Screen app. Its clientHeight is paintable; physical screen.height is not.
+ // In browser tabs, zoom and keyboard modes use the most conservative bound.
+ return Math.max(0,installed&&!editable&&!zoomed&&!keyboardLikely?layout:Math.min(inner,layout,visual));
 }
 /** Resize before painting, so a stale page is never displayed clipped. */
 export function trackReaderWindow(win,doc,onResize=()=>{}){
