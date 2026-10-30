@@ -1,8 +1,8 @@
 import {test,expect} from '@playwright/test';
 
 /** Stored ZIP writer: minimum EPUB2 fixture, no external services or fixtures. */
-function epubFixture(complex=false,title='EPUB fixture'):Buffer{
- const chapterParagraphs=Array.from({length:140},(_,i)=>
+export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=140):Buffer{
+ const chapterParagraphs=Array.from({length:paragraphCount},(_,i)=>
   '<p>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
   ['mimetype','application/epub+zip'],
