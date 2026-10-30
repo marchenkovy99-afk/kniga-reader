@@ -1,7 +1,8 @@
 import { useEffect,useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icons';
-import type { ReaderSettings, ReaderPosition, StoredBook } from '../domain';
-import { toggleBookmark } from '../storage';
+import type { ReaderSettings, ReaderPosition, StoredBook, SavedQuote } from '../domain';
+import type {QuoteCapture} from '../quoteSelection';
+import { toggleBookmark, addQuote } from '../storage';
 import { sameBookmark } from '../bookmarks';
 import { fontStack,resetTypography,readingInk,maximumTextPreset,balancePageMargins } from '../readerSettings';
 
@@ -11,12 +12,17 @@ type Props={
   position:ReaderPosition; progress:number; caption:string;
   pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
   chapters?:{title:string;page?:number}[]; currentChapter?:number; onChapter?:(index:number)=>void;
+  quoteSelection?:()=>QuoteCapture|null;
   children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
+ const [quoteMode,setQuoteMode]=useState(false);
+ const [quoteCapture,setQuoteCapture]=useState<QuoteCapture|null>(null);
+ const [quoteBusy,setQuoteBusy]=useState(false);
+ const [quoteNotice,setQuoteNotice]=useState('');
  const [markBusy,setMarkBusy]=useState(false);
  const [markError,setMarkError]=useState('');
  const [jump,setJump]=useState('');
@@ -28,6 +34,38 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  const marked=bookmarks.some(saved=>sameBookmark(saved,position));
  const touch=useRef<{x:number;y:number}|null>(null);
  const ignoreClick=useRef(false);
+ useEffect(()=>{setQuoteMode(false);setQuoteCapture(null)},[book.id]);
+ useEffect(()=>{
+  if(!quoteMode||!quoteSelection)return;
+  const check=()=>{const next=quoteSelection();if(next)setQuoteCapture(next)};
+  document.addEventListener('selectionchange',check);
+  window.addEventListener('pointerup',check);
+  window.addEventListener('keyup',check);
+  window.addEventListener('libra-quote-selection',check);
+  return ()=>{
+   document.removeEventListener('selectionchange',check);
+   window.removeEventListener('pointerup',check);
+   window.removeEventListener('keyup',check);
+   window.removeEventListener('libra-quote-selection',check);
+  };
+ },[quoteMode,quoteSelection]);
+ const closeQuoteMode=()=>{setQuoteMode(false);setQuoteCapture(null);window.getSelection()?.removeAllRanges();
+  try{(document.querySelector('.epub-mount iframe') as HTMLIFrameElement|null)?.contentWindow?.getSelection()?.removeAllRanges()}catch{}
+ };
+ async function saveQuote(){
+  if(quoteBusy||!quoteCapture)return;
+  setQuoteBusy(true);
+  try{
+   const quote:SavedQuote={id:crypto.randomUUID(),text:quoteCapture.text,position:quoteCapture.position,createdAt:Date.now()};
+   await addQuote(book.id,quote);closeQuoteMode();setQuoteNotice('Цитата сохранена');
+  }catch(e){setQuoteNotice('Не удалось сохранить цитату: '+String(e))}
+  finally{setQuoteBusy(false)}
+ }
+ async function copyQuote(){
+  if(!quoteCapture)return;
+  try{await navigator.clipboard.writeText(quoteCapture.text);setQuoteNotice('Текст скопирован');closeQuoteMode()}
+  catch{setQuoteNotice('Не удалось скопировать текст')}
+ }
  const update=<K extends keyof ReaderSettings>(key:K,value:ReaderSettings[K])=>onSettings({...settings,[key]:value});
  useEffect(()=>{
   if(!sheet)return;
@@ -38,7 +76,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  useEffect(()=>{
   const key=(event:KeyboardEvent)=>{
    const target=event.target as HTMLElement;
-   if(event.key==='Escape'){setSheet(null);setPanels(false);return;}
+   if(event.key==='Escape'){setSheet(null);setPanels(false);closeQuoteMode();return;}
    if(sheet||modalContentOpen||target.closest('input,select,button,textarea'))return;
    if(safeMode&&(event.key==='PageDown'||event.key==='PageUp'))return;
    if(event.key==='ArrowRight'||event.key==='PageDown'){event.preventDefault();onNext();}
@@ -61,7 +99,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
     setMarkError('Не удалось сохранить закладку');
    }finally{setMarkBusy(false)}
  }
- return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")}>
+ return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")+(quoteMode?" reading-quote-mode":"")}>
    <div className="reading-content">{children}</div>
    <div className="reading-zones" role="presentation"
      onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
@@ -88,6 +126,12 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
      <button type="button" className="reading-panels-close" aria-label="Скрыть управление чтением" title="Скрыть управление чтением" onClick={()=>setPanels(false)}><Icon name="close"/></button>
    </header>
    {markError&&<div className="bookmark-error" role="alert">{markError}</div>}
+   {quoteNotice&&<div className="quote-notice" role="status">{quoteNotice}<button aria-label="Закрыть уведомление" onClick={()=>setQuoteNotice('')}>×</button></div>}
+   {quoteMode&&<div className="quote-mode-tip"><span>Выделите фрагмент текста</span><button type="button" onClick={closeQuoteMode}>Готово</button></div>}
+   {quoteMode&&quoteCapture&&<div className="quote-popover" role="group" aria-label="Действия с выделенной цитатой" style={{left:Math.min(Math.max(14,(quoteCapture.rect.left+quoteCapture.rect.right)/2-116),Math.max(14,window.innerWidth-246)),top:Math.min(Math.max(65,quoteCapture.rect.top-66),Math.max(65,window.innerHeight-110))}} onPointerDown={e=>e.preventDefault()}>
+     <button type="button" onClick={()=>void saveQuote()} disabled={quoteBusy}>Сохранить цитату</button>
+     <button type="button" onClick={()=>void copyQuote()}>Копировать</button>
+   </div>
    <div className={'reading-bottom '+(panels?'visible':'')}>
      {chapterTitle&&<div className="reading-chapter">{chapterTitle}</div>}
      <div className="reading-progress"><span>{caption}</span><strong>{previewPercent}%</strong></div>
@@ -102,6 +146,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
        <button onClick={()=>setSheet('chapters')} disabled={!chapters}><Icon name="list"/>Оглавление</button>
        <button onClick={()=>setSheet('settings')}><Icon name="type"/>Текст</button>
        <button disabled={!totalPages||!onPage} onClick={()=>{setJump(String(pageNumber||1));setSheet('position')}}><Icon name="book"/>Страница</button>
+        <button type="button" aria-pressed={quoteMode} onClick={()=>{setPanels(false);setSheet(null);setQuoteCapture(null);setQuoteMode(true)}}><Icon name="quote"/>Цитата</button>
      </nav>
    </div>
    {sheet&&<div className="sheet-scrim" onClick={()=>setSheet(null)}>
