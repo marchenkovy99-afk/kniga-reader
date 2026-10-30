@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe,it,expect } from 'vitest';
 import { measureColumns,measureColumnStride,clampPage,restoreFraction,progressOf } from '../pagination';
 describe('pagination math',()=>{
