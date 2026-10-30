@@ -1,7 +1,7 @@
 name: LIBRA quote selection checks
 on:
   push:
-    branches: ['feature/libra-comfort-dark-release', 'codex/libra-quotes-toc']
+    branches: ['feature/libra-standalone-v1', 'feature/libra-comfort-dark-release', 'codex/libra-quotes-toc']
     paths:
       - 'libra/**'
       - '.github/workflows/libra-quotes-ci.yml'
