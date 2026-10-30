@@ -51,7 +51,7 @@ test('switching between chapters preserves last page and all body content',async
   await page.getByRole('button',{name:'Показать управление чтением'}).click();
  }
  await page.getByRole('button',{name:'Оглавление'}).click();
- await page.getByRole('button',{name:'Примечания',exact:true}).click();
+ await page.getByRole('button',{name:/^Примечания(?:\s|$)/}).click();
  await expect(flow).toContainText('ФИНАЛЬНОЕ_ПРИМЕЧАНИЕ');
  await page.reload();
  await expect(page.locator('.continue-card')).toBeVisible();
