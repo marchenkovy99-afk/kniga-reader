@@ -135,7 +135,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
    <div className="page-viewport" ref={viewport} style={style}>
-    {actualChapter&&geometry.width>0?<div ref={flow} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
+    {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
      {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
