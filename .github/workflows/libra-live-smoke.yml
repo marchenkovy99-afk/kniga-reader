@@ -1,0 +1,70 @@
+name: LIBRA public deployment smoke
+on:
+  push:
+    branches: ['feature/libra-standalone-v1']
+    paths:
+      - '.github/workflows/libra-live-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check public HTML and PWA assets without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://libra-standalone-preview.vercel.app"
+          curl --fail --silent --show-error --location --retry 3 "$base/" -o /tmp/libra-public.html
+          grep -q 'LIBRA · Библиотека' /tmp/libra-public.html
+          curl --fail --silent --show-error --location "$base/manifest.webmanifest" -o /tmp/libra-manifest.json
+          grep -q '"short_name": "LIBRA"' /tmp/libra-manifest.json
+          curl --fail --silent --show-error --location "$base/sw.js" -o /tmp/libra-public-sw.js
+          grep -q 'cache' /tmp/libra-public-sw.js
+          echo "PUBLIC_HTTP_OK: $base"
+      - name: Install browser smoke runner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Open public LIBRA and import a real FB2
+        run: |
+          node --input-type=module <<'SCRIPT'
+          import { chromium } from '@playwright/test';
+          const browser=await chromium.launch({headless:true});
+          try{
+            const context=await browser.newContext({
+              viewport:{width:390,height:844},deviceScaleFactor:3,
+              isMobile:true,hasTouch:true
+            });
+            const page=await context.newPage(),errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            const url='https://libra-standalone-preview.vercel.app/';
+            const response=await page.goto(url,{waitUntil:'networkidle',timeout:30000});
+            if(response?.status()!==200)throw new Error('Public page HTTP '+response?.status());
+            await page.locator('.library-header h1').waitFor({state:'visible',timeout:15000});
+            const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'+
+              '<description><title-info><book-title>Публичная проверка</book-title></title-info></description>'+
+              '<body><section><p>ТЕКСТ КНИГИ ДОСТУПЕН</p></section></body></FictionBook>';
+            await page.locator('input[type=file]').setInputFiles({
+              name:'public-smoke.fb2',mimeType:'application/xml',buffer:Buffer.from(book)
+            });
+            await page.locator('.continue-card').waitFor({state:'visible',timeout:15000});
+            await page.locator('.continue-card').click();
+            await page.locator('.book-flow').waitFor({state:'visible',timeout:15000});
+            const text=await page.locator('.book-flow').innerText();
+            if(!text.includes('ТЕКСТ КНИГИ ДОСТУПЕН'))
+              throw new Error('Imported book content missing');
+            if(errors.length)throw new Error('Page JavaScript errors: '+errors.join(' | '));
+            console.log('PUBLIC_BROWSER_OK: rendered FB2 on public LIBRA URL');
+            await context.close();
+          }finally{await browser.close()}
+          SCRIPT
