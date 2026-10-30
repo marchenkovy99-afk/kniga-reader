@@ -144,3 +144,54 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .reading-interactive .book-table-overlay{z-index:35}
 
 .bookmark-error{position:absolute;z-index:40;top:calc(env(safe-area-inset-top) + 65px);left:18px;right:18px;padding:12px 16px;text-align:center;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--fg);font-size:13px;box-shadow:0 6px 20px #0002}
+
+
+/* LIBRA editorial refinement: remove pseudo-book decoration, excessive
+   display ornaments and duplicated chrome. Keep every theme color token. */
+.brand-eyebrow{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.02em;
+  text-transform:none;
+}
+.library-header{padding-top:calc(env(safe-area-inset-top) + 23px)}
+.library-header h1{margin-top:3px;font-size:42px;letter-spacing:-.05em}
+.library-greeting{font:13px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;
+  color:var(--muted);margin:14px 0 31px}
+.round-action{background:transparent;color:var(--fg);border:1px solid var(--border);
+  border-radius:12px;box-shadow:none;width:44px;height:44px}
+.section-heading h2{font-size:22px}
+.continue-card{border-radius:12px;box-shadow:none;
+  background:color-mix(in srgb,var(--fg) 2%,var(--bg));gap:16px}
+.book-cover{box-shadow:none;border-radius:4px;background:var(--border)}
+.book-cover::before{display:none}
+.continue-info{padding-top:4px}
+.continue-info>strong{font-size:21px;line-height:1.18}
+.continue-footer{align-items:center}
+.continue-footer span{font-size:19px}
+.book-remove{background:var(--bg);color:var(--muted);
+  border:1px solid var(--border);border-radius:9px}
+.reading-tools{justify-content:center;gap:34px}
+.reading-tools button{min-width:100px;font-size:11px}
+.reading-progress-track{height:2px}
+.sheet-heading strong{font-size:21px}
+.reading-sheet{border-radius:16px 16px 0 0}
+
+/* Every page and every column uses one explicit content width. The viewport
+   is the only clipping surface. In particular, padding belongs to the page
+   region, never to the translated flow whose stride is used by pagination. */
+.page-region{min-width:0;overflow:hidden}
+.page-viewport{min-width:0;max-width:100%;isolation:isolate}
+.book-flow{
+  box-sizing:border-box;
+  max-width:none;
+  -webkit-hyphens:auto;
+  hyphens:auto;
+  text-justify:inter-word;
+  word-spacing:normal;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+.book-paragraph{overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}
+.book-heading,.book-verse{overflow-wrap:anywhere}

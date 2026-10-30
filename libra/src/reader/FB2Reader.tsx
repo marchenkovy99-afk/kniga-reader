@@ -50,7 +50,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const observer=new ResizeObserver(recalc);
   observer.observe(el);recalc();
   return ()=>observer.disconnect();
- },[chapters.length]);
+ // Re-measure synchronously when the margin slider changes. ResizeObserver
+ // alone reports the new content box asynchronously (after a paint), leaving
+ // a frame where the old column stride offsets newly narrowed text.
+ },[chapters.length,settings.margin]);
  const layoutKey=useMemo(()=>[
   chapter,geometry.width,geometry.height,settings.fontSize,
   settings.lineHeight,settings.margin,settings.fontFamily,

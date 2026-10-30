@@ -14,22 +14,22 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,load
  const savedPlaces=sorted.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
  const shown=sorted.filter(b=>(b.title+' '+b.author).toLowerCase().includes(query.toLowerCase()));
  return <div className="library-shell">
-  <header className="library-header"><div><span className="brand-eyebrow">ЛИЧНАЯ БИБЛИОТЕКА</span><h1>LIBRA<span className="brand-dot">.</span></h1></div>
+  <header className="library-header"><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div>
   <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></header>
   <input ref={input} type="file" accept=".fb2,.epub,.pdf,application/pdf" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<main className="library-main">
-    <div className="library-greeting">Ваша история начинается здесь.</div>
+    <div className="library-greeting">Ваша библиотека · FB2, EPUB и PDF</div>
     {continueBook&&<section className="continue-section">
-      <div className="section-heading"><h2>Продолжить чтение</h2><span>СЕЙЧАС</span></div>
+      <div className="section-heading"><h2>Продолжить</h2></div>
       <button className="continue-card" onClick={()=>onOpen(continueBook)}>
         <BookCover book={continueBook} large/>
-        <span className="continue-info"><span className="continue-tag">ПОСЛЕДНЯЯ КНИГА</span><strong>{continueBook.title}</strong><span className="continue-author">{continueBook.author}</span>
+        <span className="continue-info"><strong>{continueBook.title}</strong><span className="continue-author">{continueBook.author}</span>
         <span className="continue-line"><span style={{width:Math.round((continueBook.position?.fraction||0)*100)+'%'}}/></span>
-        <span className="continue-footer">Открыть книгу <span>↗</span></span></span>
+        <span className="continue-footer">Читать <span>→</span></span></span>
       </button>
     </section>}
     <section className="all-books">
-      <div className="section-heading"><h2>Все книги <em>{books.length}</em></h2><span>КОЛЛЕКЦИЯ</span></div>
+      <div className="section-heading"><h2>Все книги <em>{books.length}</em></h2></div>
       <div className="search-wrap"><Icon name="search" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название или автор" aria-label="Поиск книг"/></div>
       {shown.length?<div className="book-grid">{shown.map(book=>
         <div key={book.id} className="book-tile"><button className="book-tile-open" onClick={()=>onOpen(book)}><BookCover book={book}/><strong>{book.title}</strong><small>{book.author}</small></button>

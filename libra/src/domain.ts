@@ -13,7 +13,7 @@ export type ReaderSettings = {
 export const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'paper', fontSize: 18, lineHeight: 1.45,
   margin: 20, paragraphIndent: 1.2,
-  fontFamily: 'serif', align: 'justify', animation: 'slide'
+  fontFamily: 'serif', align: 'left', animation: 'slide'
 };
 export type ReaderPosition = {
   chapter: number;

@@ -64,7 +64,6 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
      <nav className="reading-tools">
        <button onClick={()=>setSheet('chapters')} disabled={!chapters}><Icon name="list"/>Оглавление</button>
        <button onClick={()=>setSheet('settings')}><Icon name="type"/>Текст</button>
-       <button onClick={()=>{setSheet('settings')}}><Icon name="settings"/>Настройки</button>
      </nav>
    </div>
    {sheet&&<div className="sheet-scrim" onClick={()=>setSheet(null)}>
