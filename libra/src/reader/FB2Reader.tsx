@@ -305,7 +305,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
   {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
-   top:`calc(var(--reader-safe-top) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
+   top:`calc(var(--reader-safe-top) + var(--reader-top-clearance, 8px) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
    bottom:`calc(var(--reading-bottom-inset) + ${settings.bottomMargin}px)`}}>
    <div className="page-viewport" data-ready={ready} ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}

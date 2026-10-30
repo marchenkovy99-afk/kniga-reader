@@ -455,7 +455,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 /* Fixed reading gutters: page turns change the visible column instantly. */
 :is(.book-flow,.book-measure-flow){transition:none!important}
 .epub-mount{left:var(--page-left,0px);right:var(--page-right,0px);
- top:calc(var(--reader-safe-top) + var(--page-top,0px) + var(--clipping-alert-height,0px));
+ top:calc(var(--reader-safe-top) + var(--reader-top-clearance) + var(--page-top,0px) + var(--clipping-alert-height,0px));
  bottom:calc(var(--reading-bottom-inset) + var(--page-bottom,0px));
  overflow:hidden;isolation:isolate}
 .epub-page-probe{position:absolute;left:-100000px;top:0;visibility:hidden;pointer-events:none;overflow:hidden;contain:layout paint}
@@ -469,6 +469,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 @media(max-width:340px){.library-account{width:40px;padding:0}.library-account span{display:none}.library-brand{gap:8px}}
 
 /* Reader clarity is a hard invariant, including hidden chrome and text nodes. */
+/* Separate visible glyphs from the iOS status-bar/compositor clip edge.
+   The clearance sits OUTSIDE the measured page viewport, so columns and
+   fragment-height checks use the real reduced height rather than hiding text. */
+.reading-root{--reader-top-clearance:8px}
 .reading-root,.reading-root *{filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;mask-image:none!important;-webkit-mask-image:none!important;text-shadow:none!important}
 .reading-root::before,.reading-root::after,.reading-content::before,.reading-content::after,.page-region::before,.page-region::after{content:none!important;display:none!important}
 .reading-root{--reading-footer-height:16px;--reading-bottom-inset:max(var(--reader-safe-bottom),var(--reading-footer-height));isolation:isolate}
