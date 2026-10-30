@@ -1,6 +1,7 @@
 import {useRef,useState} from 'react';
 import type {ReaderPosition,ReaderSettings,StoredBook} from '../domain';
 import {bookmarkLocationLabel} from '../bookmarks';
+import {removeQuote} from '../storage';
 import {BookCover} from './BookCover';
 import {Icon} from './Icons';
 import {BackupPanel} from './BackupPanel';
@@ -8,7 +9,7 @@ import {CloudPanel} from './CloudPanel';
 import type {CloudController} from '../useCloudSync';
 import {sortLibraryBooks,type LibraryOrder} from '../librarySort';
 type Filter='all'|'reading'|'finished';
-type Tab='library'|'bookmarks'|'settings';
+type Tab='library'|'bookmarks'|'quotes'|'settings';
 type Props={cloud:CloudController;books:StoredBook[];settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;
  onOpen:(b:StoredBook,p?:ReaderPosition)=>void;onImport:(files:FileList)=>void;onDelete:(b:StoredBook)=>void;
  onFavorite:(b:StoredBook)=>void;onBackupImported:()=>Promise<void>;loading:boolean};
@@ -21,9 +22,11 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  const [filter,setFilter]=useState<Filter>('all');
  const [order,setOrder]=useState<LibraryOrder>('recent');
  const [menu,setMenu]=useState<string|null>(null);
+ const [quoteMessage,setQuoteMessage]=useState('');
  const recent=sortLibraryBooks(books,'recent');
  const continueBook=recent.find(b=>b.position&&fraction(b)<1)||recent[0];
  const places=recent.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
+ const quotes=recent.flatMap(book=>(book.quotes||[]).map(quote=>({book,quote}))).sort((a,b)=>b.quote.createdAt-a.quote.createdAt);
  const shown=sortLibraryBooks(recent.filter(b=>{
   if(!(b.title+' '+b.author).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')))return false;
   if(filter==='reading')return fraction(b)>0&&fraction(b)<1;
@@ -34,6 +37,14 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  const remaining=shown.filter(b=>b.id!==featured?.id);
  const sortLabel=order==='recent'?'Недавно добавленные':order==='title'?'По названию':order==='author'?'По автору':'По прогрессу';
  const open=(b:StoredBook,p?:ReaderPosition)=>{setMenu(null);onOpen(b,p)};
+ const deleteQuote=async(book:StoredBook,id:string)=>{
+  try{await removeQuote(book.id,id);await onBackupImported();setQuoteMessage('Цитата удалена')}
+  catch(e){setQuoteMessage('Не удалось удалить цитату: '+String(e))}
+ };
+ const copyQuote=async(text:string)=>{
+  try{await navigator.clipboard.writeText(text);setQuoteMessage('Цитата скопирована')}
+  catch{setQuoteMessage('Не удалось скопировать цитату')}
+ };
  const actions=(b:StoredBook,key:string)=>menu===key&&<div className="book-actions" role="group" aria-label={'Действия с книгой '+b.title}>
   <button type="button" onClick={()=>{onFavorite(b);setMenu(null)}}>{b.isFavorite?'Убрать из избранного':'В избранное'}</button>
   <button type="button" onClick={()=>{setMenu(null);onDelete(b)}}>Удалить книгу</button>
@@ -85,7 +96,20 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
    {places.length?places.map(({book,position,index})=><button className="bookmark-item" key={book.id+':'+index} onClick={()=>open(book,position)}><BookCover book={book}/><span><strong>{book.title}</strong><small>{bookmarkLocationLabel(position,book.format)}</small></span></button>):
     <div className="empty-library"><Icon name="bookmark" size={40}/><strong>Пока нет закладок</strong><p>Отмечайте важные места во время чтения.</p></div>}
   </main>}
-  {tab==='settings'&&<main className="library-main library-secondary-page"><h1>Настройки</h1>
+  {tab==='quotes'&&<main className="library-main library-secondary-page"><h1>Цитаты</h1>
+    {quoteMessage&&<p className="setting-hint" role="status">{quoteMessage}</p>}
+    {quotes.length?<section className="saved-quotes">{quotes.map(({book,quote})=><article className="saved-quote" key={book.id+':'+quote.id}>
+      <blockquote>«{quote.text}»</blockquote>
+      <div className="saved-quote-meta">{book.title} · {bookmarkLocationLabel(quote.position,book.format)}</div>
+      <div className="saved-quote-actions">
+       <button type="button" onClick={()=>open(book,quote.position)}>Перейти к тексту</button>
+       <button type="button" onClick={()=>void copyQuote(quote.text)}>Копировать</button>
+       <button type="button" onClick={()=>void deleteQuote(book,quote.id)}>Удалить</button>
+      </div>
+     </article>)}</section>:
+     <div className="empty-library"><Icon name="quote" size={40}/><strong>Пока нет цитат</strong><p>Откройте книгу, нажмите «Цитата» и выделите текст.</p></div>}
+   </main>}
+   {tab==='settings'&&<main className="library-main library-secondary-page"><h1>Настройки</h1>
    <div className="section-heading"><h2>Импорт книг</h2></div>
    <button className="backup-action" type="button" onClick={()=>input.current?.click()}>Добавить книгу (FB2, EPUB)</button>
    <div className="section-heading" style={{marginTop:30}}><h2>Тема чтения</h2></div><p className="setting-hint">Выберите оформление страниц книги. Библиотека остаётся тёмной.</p>
@@ -96,7 +120,8 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
   <nav className="app-tabbar" aria-label="Разделы приложения">
    <button type="button" className={tab==='library'?'active':''} aria-current={tab==='library'?'page':undefined} onClick={()=>{setTab('library');setMenu(null)}}><Icon name="book" size={25}/>Библиотека</button>
    <button type="button" className={tab==='bookmarks'?'active':''} aria-current={tab==='bookmarks'?'page':undefined} onClick={()=>{setTab('bookmarks');setMenu(null)}}><Icon name="bookmark" size={25}/>Закладки</button>
-   <button type="button" className={tab==='settings'?'active':''} aria-current={tab==='settings'?'page':undefined} onClick={()=>{setTab('settings');setMenu(null)}}><Icon name="settings" size={25}/>Настройки</button>
+   <button type="button" className={tab==='quotes'?'active':''} aria-current={tab==='quotes'?'page':undefined} onClick={()=>{setTab('quotes');setMenu(null)}}><Icon name="quote" size={25}/>Цитаты</button>
+    <button type="button" className={tab==='settings'?'active':''} aria-current={tab==='settings'?'page':undefined} onClick={()=>{setTab('settings');setMenu(null)}}><Icon name="settings" size={25}/>Настройки</button>
   </nav>
  </div>;
 }
