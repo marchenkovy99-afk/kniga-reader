@@ -5,8 +5,16 @@ on:
     paths:
       - '.github/workflows/libra-live-smoke.yml'
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'LIBRA public or isolated Vercel deployment URL'
+        type: string
+        required: false
+        default: 'https://libra-standalone-preview.vercel.app/'
 permissions:
   contents: read
+env:
+  LIBRA_SMOKE_URL: ${{ inputs.base_url || 'https://libra-standalone-preview.vercel.app/' }}
 jobs:
   live-smoke:
     runs-on: ubuntu-latest
@@ -22,7 +30,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base="https://libra-standalone-preview.vercel.app"
+          base="${LIBRA_SMOKE_URL%/}"
+          # Never allow a workflow_dispatch input to request arbitrary hosts.
+          case "$base" in
+            https://libra-standalone-preview.vercel.app|https://libra-standalone-preview-*-marchenkovy99-3693.vercel.app) ;;
+            *) echo "Unapproved smoke target" >&2; exit 2 ;;
+          esac
           curl --fail --silent --show-error --location --retry 3 "$base/" -o /tmp/libra-public.html
           echo "CHECK_HTML"; head -c 130 /tmp/libra-public.html; echo
           grep -q 'LIBRA · Библиотека' /tmp/libra-public.html
@@ -59,7 +72,10 @@ jobs:
             });
             const page=await context.newPage(),errors=[];
             page.on('pageerror',error=>errors.push(error.message));
-            const url='https://libra-standalone-preview.vercel.app/';
+            const url=(process.env.LIBRA_SMOKE_URL||'https://libra-standalone-preview.vercel.app/').replace(/\\/?$/,'/');
+            const hostname=new URL(url).hostname;
+            if(!/^libra-standalone-preview(?:-[a-z0-9]+-marchenkovy99-3693)?\\.vercel\\.app$/.test(hostname)
+              || !url.startsWith('https://')) throw new Error('Unapproved LIBRA public URL');
             const response=await page.goto(url,{waitUntil:'networkidle',timeout:30000});
             if(response?.status()!==200)throw new Error('Public page HTTP '+response?.status());
             await page.locator('.library-header h1').waitFor({state:'visible',timeout:15000});
