@@ -1,8 +1,10 @@
 import type {ReaderPosition} from './domain';
+import type {FB2Anchor} from './anchors';
 
 export type QuoteCapture = {
  text:string;
  position:ReaderPosition;
+ endAnchor?:FB2Anchor;
  rect:{left:number;right:number;top:number;bottom:number};
 };
 function selectedText(selection:Selection|null):{text:string;range:Range}|null{
@@ -37,8 +39,21 @@ export function captureFB2Quote(flow:HTMLElement|null,position:ReaderPosition):Q
   count++;
  }
  if(!found)return null;
+ const endParent=range.endContainer.nodeType===Node.TEXT_NODE?range.endContainer.parentElement:range.endContainer as Element;
+ const endBlock=endParent?.closest<HTMLElement>('[data-block-index]');
+ let endAnchor:FB2Anchor|undefined;
+ if(endBlock&&range.endContainer.nodeType===Node.TEXT_NODE){
+  const endWalker=document.createTreeWalker(endBlock,NodeFilter.SHOW_TEXT);
+  let endNode:Node|null,endIndex=0;
+  while((endNode=endWalker.nextNode())){
+   if(endNode===range.endContainer){
+    endAnchor={block:Number(endBlock.dataset.blockIndex),textNode:endIndex,offset:range.endOffset};break;
+   }
+   endIndex++;
+  }
+ }
  const rect=visibleRect(range.getBoundingClientRect());if(!rect)return null;
- return {text,position:{...position,anchor:{block:index,textNode:count,offset:anchorOffset},updatedAt:Date.now()},rect};
+ return {text,position:{...position,anchor:{block:index,textNode:count,offset:anchorOffset},updatedAt:Date.now()},endAnchor,rect};
 }
 /** EPUB ranges are converted into stable CFIs when the rendition provides them. */
 export function captureEpubQuote(contents:readonly any[],position:ReaderPosition):QuoteCapture|null{
