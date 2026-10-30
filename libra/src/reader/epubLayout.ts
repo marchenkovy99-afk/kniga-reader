@@ -7,6 +7,16 @@ export const epubTypographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.
  */
 export function enforceEpubUniformSpacing(doc:Document):void{
  if(!doc.head||!doc.body)return;
+ // EPUB chapters often declare lang=en (or omit it) despite containing
+ // Russian text. Hyphenation dictionaries need the actual language.
+ const sample=(doc.body.textContent||'').slice(0,12000);
+ const russian=(sample.match(/[А-Яа-яЁё]/g)||[]).length;
+ const latin=(sample.match(/[A-Za-z]/g)||[]).length;
+ if(russian>=24&&russian>latin*1.5){
+  doc.documentElement.lang='ru';
+  doc.body.lang='ru';
+ }
+
  let lock=doc.getElementById('libra-uniform-spaces') as HTMLStyleElement|null;
  if(!lock){
   lock=doc.createElement('style');
@@ -17,14 +27,21 @@ export function enforceEpubUniformSpacing(doc:Document):void{
   html body, html body :is(p,div,section,article,blockquote,li,dd,dt) {
     text-align:var(--libra-text-align,justify)!important;
     text-align-last:left!important;
-    text-justify:inter-word!important;
+    text-justify:inter-character!important;
     hyphens:var(--libra-hyphens,auto)!important;
     -webkit-hyphens:var(--libra-hyphens,auto)!important;
+    -webkit-hyphenate-limit-before:2;
+    -webkit-hyphenate-limit-after:2;
+    hyphenate-limit-chars:5 2 2;
+    word-break:normal!important;
+    overflow-wrap:break-word!important;
     word-spacing:var(--libra-word-spacing,0px)!important;
   }
   html body :is(h1,h2,h3,h4,h5,h6,pre,code,poem,verse) {
     text-align:left!important;
     text-align-last:left!important;
+    hyphens:none!important;
+    -webkit-hyphens:none!important;
   }
   html body :is(p,div,section,article,blockquote,li,dd,dt) :is(span,em,strong,b,i,a,small) {
     word-spacing:inherit!important;

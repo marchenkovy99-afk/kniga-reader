@@ -72,4 +72,28 @@ describe('publisher spacing normalization',()=>{
   expect(doc.getElementById('libra-uniform-spaces')).not.toBeNull();
   expect(overrides['--libra-word-spacing']).toBe('0px');
  });
+ it('detects Russian narrative for hyphenation without altering EPUB text or CFI offsets',()=>{
+  const doc=document.implementation.createHTMLDocument('wrong metadata');
+  doc.documentElement.lang='en';
+  doc.body.innerHTML='<p>Примечательно, что противоположное впечатление возникало исключительно в многочисленных обстоятельствах.</p>';
+  const original=doc.body.textContent;
+  const text=doc.querySelector('p')!.firstChild;
+  enforceEpubUniformSpacing(doc);
+  expect(doc.documentElement.lang).toBe('ru');
+  expect(doc.body.lang).toBe('ru');
+  expect(doc.body.textContent).toBe(original);
+  expect(doc.querySelector('p')!.firstChild).toBe(text);
+  const styles=doc.getElementById('libra-uniform-spaces')!.textContent;
+  expect(styles).toContain('text-justify:inter-character!important');
+  expect(styles).toContain('overflow-wrap:break-word!important');
+  expect(styles).toContain('hyphenate-limit-chars:5 2 2');
+ });
+ it('does not force Russian hyphenation on English-only EPUBs',()=>{
+  const doc=document.implementation.createHTMLDocument('English');
+  doc.documentElement.lang='en';
+  doc.body.textContent='A longer English story about the quick brown fox jumping over the lazy dog in the forest.';
+  enforceEpubUniformSpacing(doc);
+  expect(doc.documentElement.lang).toBe('en');
+ });
+
 });

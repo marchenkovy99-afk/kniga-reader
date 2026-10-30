@@ -723,3 +723,30 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
 .library-shell .book-tile-open .book-cover-generated{padding:11% 7%}
 .library-shell .book-tile-open .book-cover-generated .book-cover-title{font-size:clamp(9px,2vw,13px);-webkit-line-clamp:5}
 .library-shell .book-tile-open .book-cover-generated .book-cover-author{font-size:clamp(7px,1.45vw,9px)}
+
+/* Narrative book typography, shared by displayed and measuring columns.
+   Automatic hyphens use lang="ru". Never insert SHY into source text:
+   FB2 bookmarks and EPUB CFIs must remain stable.  */
+:is(.book-flow,.book-measure-flow) .book-paragraph[lang],
+:is(.book-flow,.book-measure-flow) .book-paragraph{
+ text-align:justify!important;
+ text-align-last:left!important;
+ text-justify:inter-character!important;
+ -webkit-hyphens:auto!important;
+ hyphens:auto!important;
+ -webkit-hyphenate-limit-before:2;
+ -webkit-hyphenate-limit-after:2;
+ hyphenate-limit-chars:5 2 2;
+ overflow-wrap:break-word!important;
+ word-break:normal!important;
+ word-spacing:var(--word-spacing,0px)!important;
+}
+:is(.book-flow,.book-measure-flow) .book-verse,
+:is(.book-flow,.book-measure-flow) .book-heading{
+ text-align:left!important;
+ text-align-last:left!important;
+ hyphens:none!important;
+ -webkit-hyphens:none!important;
+}
+/* Browser with no native inter-character justification can still use
+   Russian hyphenation rather than arbitrary mid-word breaks. */
