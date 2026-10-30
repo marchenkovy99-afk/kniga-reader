@@ -6,6 +6,7 @@ import { loadParsedFB2 } from './parsedFB2Cache';
 import { clampPage, measureColumns, measureColumnStride, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
+import { fontStack } from '../readerSettings';
 
 const GAP=24;
 function BookBlock({block,index,onMediaLoaded,onOpenTable}:{block:Block;index:number;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
@@ -59,9 +60,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const layoutKey=useMemo(()=>[
   chapter,geometry.width,geometry.height,settings.fontSize,
   settings.lineHeight,settings.margin,settings.fontFamily,
-  settings.align,settings.paragraphIndent
+  settings.align,settings.paragraphIndent,settings.wordSpacing,settings.letterSpacing,
+  settings.paragraphSpacing,settings.verticalMargin
  ].join(':'),[chapter,geometry.width,geometry.height,settings.fontSize,settings.lineHeight,
-  settings.margin,settings.fontFamily,settings.align,settings.paragraphIndent]);
+  settings.margin,settings.fontFamily,settings.align,settings.paragraphIndent,
+  settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.verticalMargin]);
  useLayoutEffect(()=>{
   if(!flow.current||!geometry.width||!geometry.height)return;
   let active=true;
@@ -133,10 +136,13 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const style={
   '--font-size':settings.fontSize+'px',
   '--line-height':String(settings.lineHeight),
-  '--reading-font':settings.fontFamily==='serif'?'"Iowan Old Style", "Palatino Linotype", Georgia, serif':'-apple-system, BlinkMacSystemFont, sans-serif',
+  '--reading-font':fontStack(settings.fontFamily),
   '--indent':settings.paragraphIndent+'em',
   '--page-height':geometry.height+'px',
-  '--align':settings.align
+  '--align':'left',
+  '--word-spacing':settings.wordSpacing+'px',
+  '--letter-spacing':settings.letterSpacing+'px',
+  '--paragraph-spacing':settings.paragraphSpacing+'px'
  } as React.CSSProperties;
  const actualChapter=chapters[chapter];
  const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
@@ -145,7 +151,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   position={position} progress={progressOf(chapter,page,pages,chapters.length)}
   caption={ready?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
-  {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
+  {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin,
+   top:`calc(env(safe-area-inset-top) + ${settings.verticalMargin}px)`,
+   bottom:`calc(env(safe-area-inset-bottom) + ${settings.verticalMargin}px)`}}>
    <div className="page-viewport" ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,

@@ -71,12 +71,33 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
        <div className="sheet-heading"><strong>{sheet==='settings'?'Настройки чтения':'Оглавление'}</strong><button aria-label="Закрыть" onClick={()=>setSheet(null)}><Icon name="close"/></button></div>
        {sheet==='chapters'?<div className="chapter-menu">{chapters?.map((c,i)=><button className={currentChapter===i?'active':''} key={i} onClick={()=>{onChapter?.(i);setSheet(null);setPanels(false)}}>{c.title}</button>)}</div>:
        <div className="sheet-settings">
-         <div className="font-buttons"><button className={settings.fontFamily==='serif'?'selected':''} onClick={()=>update('fontFamily','serif')}>Aa <small>С засечками</small></button><button className={settings.fontFamily==='sans'?'selected':''} onClick={()=>update('fontFamily','sans')}>Aa <small>Без засечек</small></button></div>
-         <label>Размер текста <strong>{settings.fontSize} px</strong><input type="range" min="14" max="28" step="1" value={settings.fontSize} onChange={e=>update('fontSize',Number(e.target.value))}/></label>
-         <label>Интервал строк <strong>{settings.lineHeight.toFixed(2)}</strong><input type="range" min="1.15" max="1.85" step=".05" value={settings.lineHeight} onChange={e=>update('lineHeight',Number(e.target.value))}/></label>
-         <label>Поля <strong>{settings.margin} px</strong><input type="range" min="12" max="36" step="2" value={settings.margin} onChange={e=>update('margin',Number(e.target.value))}/></label>
+         <div className="settings-section-title">Шрифт</div>
+         <div className="font-buttons font-choices">
+           {([
+            {id:'serif',name:'Georgia',sample:'Aa'},
+            {id:'book',name:'Книжный',sample:'Аа'},
+            {id:'sans',name:'Системный',sample:'Aa'},
+            {id:'screen',name:'Verdana',sample:'Aa'}
+           ] as const).map(item=>
+             <button type="button" key={item.id} className={settings.fontFamily===item.id?'selected':''}
+               onClick={()=>update('fontFamily',item.id)} aria-pressed={settings.fontFamily===item.id}>
+               <span>{item.sample}</span><small>{item.name}</small>
+             </button>
+           )}
+         </div>
+         <div className="settings-section-title">Размер и интервалы</div>
+         <label>Размер текста <strong>{settings.fontSize} px</strong><input type="range" min="14" max="32" step="1" value={settings.fontSize} onChange={e=>update('fontSize',Number(e.target.value))}/></label>
+         <label>Интервал строк <strong>{settings.lineHeight.toFixed(2)}</strong><input type="range" min="1.15" max="2" step=".05" value={settings.lineHeight} onChange={e=>update('lineHeight',Number(e.target.value))}/></label>
+         <label>Поля по бокам <strong>{settings.margin} px</strong><input type="range" min="10" max="40" step="2" value={settings.margin} onChange={e=>update('margin',Number(e.target.value))}/></label>
+         <label>Между словами <strong>{settings.wordSpacing.toFixed(1)} px</strong><input type="range" min="0" max="5" step=".5" value={settings.wordSpacing} onChange={e=>update('wordSpacing',Number(e.target.value))}/></label>
+         <label>Между буквами <strong>{settings.letterSpacing.toFixed(1)} px</strong><input type="range" min="-.5" max="1.5" step=".1" value={settings.letterSpacing} onChange={e=>update('letterSpacing',Number(e.target.value))}/></label>
+         <div className="settings-section-title">Абзацы и страница</div>
+         <label>Красная строка <strong>{settings.paragraphIndent.toFixed(1)} em</strong><input type="range" min="0" max="2.5" step=".1" value={settings.paragraphIndent} onChange={e=>update('paragraphIndent',Number(e.target.value))}/></label>
+         <label>Между абзацами <strong>{settings.paragraphSpacing} px</strong><input type="range" min="0" max="20" step="1" value={settings.paragraphSpacing} onChange={e=>update('paragraphSpacing',Number(e.target.value))}/></label>
+         <label>Отступы сверху и снизу <strong>{settings.verticalMargin} px</strong><input type="range" min="0" max="32" step="2" value={settings.verticalMargin} onChange={e=>update('verticalMargin',Number(e.target.value))}/></label>
+         <div className="settings-hint">Ровные расстояния между словами. Выравнивание по левому краю не растягивает пробелы.</div>
          <div className="theme-options">{(['paper','white','night','oled'] as const).map(name=><button key={name} className={'theme-swatch '+(settings.theme===name?'chosen':'')} data-option={name} title={name} onClick={()=>update('theme',name)}><span>{name==='paper'?'Бумага':name==='white'?'Белая':name==='night'?'Ночь':'OLED'}</span></button>)}</div>
-         <div className="setting-row"><span>Выравнивание</span><button onClick={()=>update('align',settings.align==='justify'?'left':'justify')}>{settings.align==='justify'?'По ширине':'По левому краю'}</button></div>
+         
          <div className="setting-row"><span>Перелистывание</span><button onClick={()=>update('animation',settings.animation==='none'?'slide':'none')}>{settings.animation==='slide'?'Плавное':'Мгновенное'}</button></div>
        </div>}
       </div>

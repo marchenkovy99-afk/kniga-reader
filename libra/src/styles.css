@@ -195,3 +195,22 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 }
 .book-paragraph{overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}
 .book-heading,.book-verse{overflow-wrap:anywhere}
+
+/* Controlled typography. Avoid justified text on narrow phones: Safari
+   stretches whole-word spaces wildly when the last word cannot be hyphenated.
+   Spaces are uniform and adjustable; line ends stay naturally ragged. */
+.book-flow{ text-align:left;word-spacing:var(--word-spacing,0px);
+  letter-spacing:var(--letter-spacing,0px);text-justify:auto; }
+.book-paragraph{margin:0 0 var(--paragraph-spacing,0px);text-align:left;
+  word-spacing:inherit;letter-spacing:inherit; }
+.font-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.font-choices button{min-width:0;min-height:70px;font:25px Georgia,serif;border-radius:10px}
+.font-choices button:nth-child(2){font-family:Palatino,Georgia,serif}
+.font-choices button:nth-child(3){font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
+.font-choices button:nth-child(4){font-family:Verdana,Geneva,sans-serif}
+.font-choices button small{font-size:10px;white-space:nowrap}
+.settings-section-title{font:600 12px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;
+  letter-spacing:.01em;color:var(--fg);margin-top:4px}
+.settings-hint{font:12px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;
+  color:var(--muted);padding:0 1px}
+.sheet-settings{gap:16px}

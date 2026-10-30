@@ -25,7 +25,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
        rend=epub.renderTo(host.current,{width:'100%',height:'100%',flow:'paginated',spread:'none'});
        rendition.current=rend;
        // The default stylesheet is injected into future chapters as they load.
-       rend.themes.default({body:{margin:'0',padding:'0'}});
+       rend.themes.default({body:{margin:'0',padding:'0'},p:{'margin-bottom':'var(--libra-paragraph-gap, 0px)','text-indent':'var(--libra-paragraph-indent, 1em)'}});
        applyEpubAppearance(rend.themes,currentAppearance.current);
        rend.on('relocated',(loc:any)=>{
          if(cancelled)return;
@@ -51,7 +51,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  },[book.id,book.file]);
  useEffect(()=>{
    if(rendition.current)applyEpubAppearance(rendition.current.themes,settings);
- },[settings.theme,settings.fontSize,settings.lineHeight,settings.fontFamily,settings.margin,settings.align]);
+ },[settings.theme,settings.fontSize,settings.lineHeight,settings.fontFamily,settings.margin,settings.align,settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.paragraphIndent,settings.verticalMargin]);
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack}
   onNext={()=>void rendition.current?.next()} onPrevious={()=>void rendition.current?.prev()}
   position={{chapter:0,page:0,fraction:progress/100,cfi:location,updatedAt:Date.now()}}

@@ -5,6 +5,7 @@ import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
 import { setTheme } from './theme';
+import { normalizeSettings } from './readerSettings';
 import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
@@ -23,7 +24,7 @@ export default function App(){
  useEffect(()=>{
   let live=true;
   Promise.all([listBooks(),loadSettings()]).then(([stored,preferences])=>{
-   if(!live)return;setBooks(stored);if(preferences)setSettings({...DEFAULT_SETTINGS,...preferences});setHydrated(true);
+   if(!live)return;setBooks(stored);if(preferences)setSettings(normalizeSettings(preferences));setHydrated(true);
   }).catch(e=>{if(live)setError('Не удалось открыть локальную библиотеку: '+String(e))});
   return ()=>{live=false};
  },[]);
@@ -64,7 +65,7 @@ export default function App(){
   try{await deleteBook(book.id);forgetParsedFB2(book.id);await refresh()}catch(e){setError(String(e))}
  }
  function back(){setOpened(null);void refresh()}
- function update(s:ReaderSettings){setSettings(s)}
+ function update(s:ReaderSettings){setSettings(normalizeSettings(s))}
  return <>
   {opened?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    opened.format==='epub'?<EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>:
