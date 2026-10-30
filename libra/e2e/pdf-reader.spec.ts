@@ -64,3 +64,51 @@ test('PDF page rendering remains valid on repeated flips, resize and reopen',asy
  await expect.poll(async()=>(await canvasDigest(page)).ink).toBeGreaterThan(10);
  await expect(page.locator('.app-error')).toHaveCount(0);
 });
+
+
+/** Oversized MediaBox: the browser must scale below 0.1, not crop the page. */
+function oversizedPdfFixture():Buffer {
+ const stream='0 0 0 RG 100 w 50 50 9900 9900 re S BT /F1 700 Tf 650 4500 Td (CENTER PAGE) Tj ET';
+ const parts=[
+  '<< /Type /Catalog /Pages 2 0 R >>',
+  '<< /Type /Pages /Kids [4 0 R] /Count 1 >>',
+  '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10000 10000] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>',
+  '<< /Length '+Buffer.byteLength(stream,'ascii')+' >>\\nstream\\n'+stream+'\\nendstream'
+ ];
+ let data='%PDF-1.4\\n';
+ const offsets=[0];
+ for(let i=0;i<parts.length;i++){
+  offsets[i+1]=Buffer.byteLength(data,'ascii');
+  data+=(i+1)+' 0 obj\\n'+parts[i]+'\\nendobj\\n';
+ }
+ const start=Buffer.byteLength(data,'ascii');
+ data+='xref\\n0 6\\n0000000000 65535 f \\n';
+ for(let i=1;i<=5;i++)data+=String(offsets[i]).padStart(10,'0')+' 00000 n \\n';
+ data+='trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n'+start+'\\n%%EOF\\n';
+ return Buffer.from(data,'ascii');
+}
+
+test('a PDF with a very large MediaBox is completely fitted, never cropped to a minimum scale',async({page})=>{
+ await page.setViewportSize({width:320,height:568});
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'huge-layout.pdf',mimeType:'application/pdf',buffer:oversizedPdfFixture()
+ });
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.pdf-page canvas')).toBeVisible({timeout:15000});
+ await expect.poll(async()=>(await canvasDigest(page)).ink).toBeGreaterThan(10);
+ for(const size of [{width:320,height:568},{width:390,height:844},{width:768,height:1024}]){
+  await page.setViewportSize(size);
+  await expect.poll(()=>page.locator('.pdf-page canvas').evaluate(canvas=>{
+   const parent=canvas.parentElement!.getBoundingClientRect();
+   const rect=canvas.getBoundingClientRect();
+   return rect.width<=parent.width-12&&rect.height<=parent.height-12 &&
+    rect.left>=parent.left-3&&rect.right<=parent.right+3&&
+    rect.top>=parent.top-3&&rect.bottom<=parent.bottom+3;
+  })).toBe(true);
+  expect(await canvasDigest(page)).toMatchObject({ink:expect.any(Number)});
+  expect((await canvasDigest(page)).ink).toBeGreaterThan(10);
+ }
+ await expect(page.locator('.app-error')).toHaveCount(0);
+});
