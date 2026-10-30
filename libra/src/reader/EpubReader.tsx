@@ -4,7 +4,7 @@ import {savePosition} from '../storage';
 import {ReadingControls} from '../components/ReadingControls';
 import {ClippingAlert} from '../components/ClippingAlert';
 import {inspectTextColumns,invalidateTextColumnAudit,observeTextColumnChanges,type ClipIssue} from '../clippingGuard';
-import {applyEpubAppearance} from './epubAppearance';
+import {applyEpubAppearance,applyEpubInk} from './epubAppearance';
 import {chapterForHref,flattenEpubToc,type EpubChapter} from './epubNavigation';
 import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub} from './epubLayout';
 
@@ -106,6 +106,9 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   void mount();
   return()=>{cancelled=true;live.current=false;observers.forEach(stop=>stop());rendition.current=null;epub.current=null;try{ownRend?.destroy()}catch{}try{ownBook?.destroy()}catch{}};
  },[book.id,book.file]);
+ useEffect(()=>{
+  if(loaded&&rendition.current)applyEpubInk(rendition.current.themes,settings);
+ },[loaded,settings.theme,settings.textContrast]);
  useEffect(()=>{
   const rend=rendition.current;if(!rend||!loaded||geometry.width<1||geometry.height<1)return;
   const restore=lastCfi.current;settledKey.current='';const measuringKey=layoutKey;

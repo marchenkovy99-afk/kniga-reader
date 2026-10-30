@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
 import {DEFAULT_SETTINGS} from '../domain';
-import {normalizeSettings,fontStack,resetTypography} from '../readerSettings';
+import {normalizeSettings,fontStack,resetTypography,readingInk,maximumTextPreset,balancePageMargins} from '../readerSettings';
 describe('reader typography normalization',()=>{
  it('retains zero page margins and spacing',()=>{
   const s=normalizeSettings({...DEFAULT_SETTINGS,margin:0,marginRight:0,verticalMargin:0,bottomMargin:0,paragraphSpacing:0,wordSpacing:0});
@@ -43,5 +43,24 @@ describe('reader typography normalization',()=>{
   expect(reset.marginRight).toBe(DEFAULT_SETTINGS.marginRight);
   expect(reset.theme).toBe('oled');
   expect(reset.animation).toBe('none');
+ });
+ it('softens dark ink without reducing light-theme contrast',()=>{
+  expect(normalizeSettings({}).textContrast).toBe(84);
+  expect(normalizeSettings({textContrast:Infinity} as any).textContrast).toBe(84);
+  expect(normalizeSettings({textContrast:2} as any).textContrast).toBe(60);
+  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled'})).toBe('#CBCBC9');
+  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled',textContrast:100})).toBe('#F2F2EF');
+  expect(readingInk({...DEFAULT_SETTINGS,theme:'paper',textContrast:60})).toBe('#262522');
+ });
+ it('offers zero inset density and balanced gutters without destroying preferences',()=>{
+  const original={...DEFAULT_SETTINGS,theme:'night' as const,textContrast:70,margin:36,marginRight:8,verticalMargin:30,bottomMargin:6};
+  const maximum=maximumTextPreset(original);
+  expect([maximum.margin,maximum.marginRight,maximum.verticalMargin,maximum.bottomMargin]).toEqual([0,0,0,0]);
+  expect(maximum.lineHeight).toBe(1.2);
+  expect(maximum.textContrast).toBe(70);
+  expect(maximum.theme).toBe('night');
+  const balanced=balancePageMargins(original);
+  expect([balanced.margin,balanced.marginRight,balanced.verticalMargin,balanced.bottomMargin]).toEqual([8,8,6,6]);
+  expect(original.margin).toBe(36);
  });
 });

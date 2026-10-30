@@ -15,6 +15,8 @@ export type ReaderSettings = {
   bottomMargin: number;
   fontWeight: number;
   hyphenation: 'auto' | 'none';
+  /** Brightness of page glyphs in night and OLED themes, from 60 to 100 percent. */
+  textContrast: number;
   align: 'justify' | 'left';
   animation: 'none' | 'slide';
 };
@@ -23,7 +25,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   margin: 16, paragraphIndent: 1.2,
   fontFamily: 'serif', align: 'left', animation: 'slide',
   wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 6,
-  marginRight: 16, bottomMargin: 2, fontWeight: 400, hyphenation: 'auto'
+  marginRight: 16, bottomMargin: 2, fontWeight: 400, hyphenation: 'auto', textContrast: 84
 };
 export type ReaderPosition = {
   chapter: number;

@@ -3,7 +3,7 @@ import { Icon } from './Icons';
 import type { ReaderSettings, ReaderPosition, StoredBook } from '../domain';
 import { toggleBookmark } from '../storage';
 import { sameBookmark } from '../bookmarks';
-import { fontStack,resetTypography } from '../readerSettings';
+import { fontStack,resetTypography,readingInk,maximumTextPreset,balancePageMargins } from '../readerSettings';
 
 type Props={
   book:StoredBook; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
@@ -123,6 +123,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
        <div className="sheet-settings">
          <div className="reading-presets" aria-label="Готовые настройки текста">
           <button onClick={()=>onSettings({...settings,fontSize:18,lineHeight:1.3,margin:12,marginRight:12,verticalMargin:4,bottomMargin:0,paragraphSpacing:0,wordSpacing:0,letterSpacing:0})}>Компактно</button>
+          <button type="button" onClick={()=>onSettings(maximumTextPreset(settings))}>Максимум текста</button>
           <button onClick={()=>onSettings(resetTypography(settings))}>Обычно</button>
           <button onClick={()=>onSettings({...settings,fontSize:24,lineHeight:1.5,margin:20,marginRight:20,verticalMargin:8,bottomMargin:4})}>Крупно</button>
          </div>
@@ -130,7 +131,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
           fontFamily:fontStack(settings.fontFamily),fontSize:Math.min(settings.fontSize,27),
           fontWeight:settings.fontWeight,lineHeight:settings.lineHeight,
           wordSpacing:settings.wordSpacing,letterSpacing:settings.letterSpacing,
-          hyphens:settings.hyphenation,textAlign:'left'
+          hyphens:settings.hyphenation,textAlign:'left',color:readingInk(settings)
          }}>За окном медленно гас день. В комнате было тихо, и можно было наконец открыть книгу.</div>
          <div className="settings-section-title">Шрифт</div>
          <div className="font-buttons font-choices">
@@ -159,11 +160,13 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          <label>Поле справа <strong>{settings.marginRight} px</strong><input type="range" min="0" max="52" step="2" value={settings.marginRight} onChange={e=>update('marginRight',Number(e.target.value))}/></label>
          <label>Поле снизу <strong>{settings.bottomMargin} px</strong><input type="range" min="0" max="52" step="2" value={settings.bottomMargin} onChange={e=>update('bottomMargin',Number(e.target.value))}/></label>
          <label>Насыщенность текста <strong>{settings.fontWeight}</strong><input type="range" min="400" max="600" step="100" value={settings.fontWeight} onChange={e=>update('fontWeight',Number(e.target.value))}/></label>
+         <div className="setting-row"><span>Поля без перекосов</span><button type="button" onClick={()=>onSettings(balancePageMargins(settings))}>Уравнять поля</button></div>
          <div className="setting-row"><span>Перенос слов</span><button type="button" aria-label="Перенос слов" onClick={()=>update('hyphenation',settings.hyphenation==='auto'?'none':'auto')}>{settings.hyphenation==='auto'?'Автоматический':'Выключен'}</button></div>
          <div className="settings-hint">Равные пробелы между словами. Поля и интервалы применяются ко всей книге.</div>
          <button type="button" className="typography-reset" onClick={()=>onSettings(resetTypography(settings))}>Сбросить настройки текста</button>
          <div className="theme-options">{(['paper','white','night','oled'] as const).map(name=><button key={name} className={'theme-swatch '+(settings.theme===name?'chosen':'')} data-option={name} title={name} onClick={()=>update('theme',name)}><span>{name==='paper'?'Бумага':name==='white'?'Белая':name==='night'?'Ночь':'OLED'}</span></button>)}</div>
          
+         {(settings.theme==='night'||settings.theme==='oled')&&<label>Яркость текста <strong>{settings.textContrast}%</strong><input aria-label="Яркость текста" type="range" min="60" max="100" step="2" value={settings.textContrast} onChange={e=>update('textContrast',Number(e.target.value))}/></label>}
          <div className="setting-row"><span>Перелистывание</span><button onClick={()=>update('animation',settings.animation==='none'?'slide':'none')}>{settings.animation==='slide'?'Плавное':'Мгновенное'}</button></div>
        </div>}
       </div>

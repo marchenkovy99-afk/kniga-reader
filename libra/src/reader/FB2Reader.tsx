@@ -6,7 +6,7 @@ import { loadParsedFB2 } from './parsedFB2Cache';
 import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
-import { fontStack } from '../readerSettings';
+import { fontStack,readingInk } from '../readerSettings';
 import { bookPageLocation,bookPageNumber } from '../bookPagination';
 import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
 import { ClippingAlert } from '../components/ClippingAlert';
@@ -268,7 +268,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   '--letter-spacing':settings.letterSpacing+'px',
   '--paragraph-spacing':settings.paragraphSpacing+'px',
   '--font-weight':String(settings.fontWeight),
-  '--hyphenation':settings.hyphenation
+  '--hyphenation':settings.hyphenation,
+  '--reading-ink':readingInk(settings)
  } as React.CSSProperties;
  const actualChapter=chapters[chapter];
  const indexKey=layoutKey.slice(layoutKey.indexOf(':')+1);
