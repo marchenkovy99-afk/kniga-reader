@@ -780,3 +780,19 @@ body:not(.reading) .book-open:focus-visible {
   .appearance-sheet .appearance-presets { gap:4px; }
   .appearance-sheet .appearance-presets button { font-size:11px;padding-inline:3px; }
 }
+
+
+/* Stable prose rhythm: no forced inter-word expansion or extra visual gaps.
+   Line fragments keep their own source lengths; pagination still measures them. */
+body.reading .book-text .book-line {
+  text-align: left !important;
+  text-align-last: left !important;
+  word-spacing: normal !important;
+}
+body.reading .book-text .paragraph {
+  word-spacing: normal !important;
+  margin-top: 0;
+}
+body.reading .book-text .paragraph:not(.book-verse):not(.book-preformatted) {
+  overflow-wrap: break-word;
+}
