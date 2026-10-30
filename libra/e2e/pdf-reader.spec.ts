@@ -74,18 +74,18 @@ function oversizedPdfFixture():Buffer {
   '<< /Type /Pages /Kids [4 0 R] /Count 1 >>',
   '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
   '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10000 10000] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>',
-  '<< /Length '+Buffer.byteLength(stream,'ascii')+' >>\\nstream\\n'+stream+'\\nendstream'
+  '<< /Length '+Buffer.byteLength(stream,'ascii')+' >>\nstream\n'+stream+'\nendstream'
  ];
- let data='%PDF-1.4\\n';
+ let data='%PDF-1.4\n';
  const offsets=[0];
  for(let i=0;i<parts.length;i++){
   offsets[i+1]=Buffer.byteLength(data,'ascii');
-  data+=(i+1)+' 0 obj\\n'+parts[i]+'\\nendobj\\n';
+  data+=(i+1)+' 0 obj\n'+parts[i]+'\nendobj\n';
  }
  const start=Buffer.byteLength(data,'ascii');
- data+='xref\\n0 6\\n0000000000 65535 f \\n';
- for(let i=1;i<=5;i++)data+=String(offsets[i]).padStart(10,'0')+' 00000 n \\n';
- data+='trailer\\n<< /Size 6 /Root 1 0 R >>\\nstartxref\\n'+start+'\\n%%EOF\\n';
+ data+='xref\n0 6\n0000000000 65535 f \n';
+ for(let i=1;i<=5;i++)data+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+ data+='trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+start+'\n%%EOF\n';
  return Buffer.from(data,'ascii');
 }
 
