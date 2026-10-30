@@ -3,7 +3,7 @@ import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from 
 import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
 import { loadParsedFB2 } from './parsedFB2Cache';
-import { clampPage, measureColumns, measureColumnStride, progressOf } from '../pagination';
+import { clampPage, measureRenderedPages, measureColumnStride, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack } from '../readerSettings';
@@ -80,7 +80,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    const current=flow.current;
    const actualStride=measureColumnStride(current,geometry.width,GAP);
    const geo={width:geometry.width,gap:GAP,stride:actualStride};
-   const count=measureColumns(current.scrollWidth,geometry.width,GAP,actualStride);
+   const count=measureRenderedPages(current,geometry.width,GAP,actualStride);
    setStride(old=>Math.abs(old-actualStride)<.01?old:actualStride);
    const anchored=anchorRef.current?getAnchorPage(current,anchorRef.current,geo):null;
    // Re-running measurements (fonts.ready, image loads, viewport changes)

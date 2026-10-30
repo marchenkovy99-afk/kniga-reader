@@ -32,6 +32,31 @@ export function measureColumnStride(flow:HTMLElement,width:number,gap:number):nu
  }
  return measured;
 }
+/**
+ * Keep the final page even when scrollWidth rounds down a fractional CSS
+ * column. Cross-check the last content fragments against the CSS width.
+ * All fragments stay in the DOM; no text is truncated to fit a page.
+ */
+export function measureRenderedPages(flow:HTMLElement,width:number,gap:number,stride:number):number{
+ const byScroll=measureColumns(flow.scrollWidth,width,gap,stride);
+ if(width<=0||stride<=0)return byScroll;
+ const start=flow.getBoundingClientRect().left;
+ let last=byScroll-1;
+ const trailing=Array.from(flow.children).slice(-32);
+ for(const child of trailing){
+  for(const rect of Array.from(child.getClientRects())){
+   if(rect.width<.5||rect.height<.5||!Number.isFinite(rect.left))continue;
+   const x=Math.max(0,rect.left-start);
+   const approx=Math.floor(x/stride);
+   const within=x-approx*stride;
+   // Fractionally rounded starts near the end of a gap belong to the
+   // following column. Do not assign a content fragment to a blank page.
+   const page=approx+(within>width+gap*.35?1:0);
+   last=Math.max(last,page);
+  }
+ }
+ return Math.max(1,last+1);
+}
 export function measureColumns(scrollWidth:number,viewportWidth:number,gap:number,stride=viewportWidth+gap):number {
   if(viewportWidth<=0)return 1;
   return Math.max(1,Math.round((Math.max(scrollWidth,viewportWidth)+gap)/stride));

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe,it,expect } from 'vitest';
-import { measureColumns,measureColumnStride,clampPage,restoreFraction,progressOf } from '../pagination';
+import { measureColumns,measureColumnStride,measureRenderedPages,clampPage,restoreFraction,progressOf } from '../pagination';
 describe('pagination math',()=>{
  it('measures one and multiple columns',()=>{
    expect(measureColumns(320,320,24)).toBe(1);
@@ -18,6 +18,18 @@ describe('pagination math',()=>{
    expect(measureColumnStride(flow,366,24)).toBeCloseTo(388.8,3);
    expect(measureColumnStride(flow,300,24)).toBe(324);
    expect(measureColumns(3*388.8-24,366,24,388.8)).toBe(3);
+ });
+ it('keeps final content page when WebKit rounds scrollWidth down',()=>{
+   const flow=document.createElement('div');
+   Object.defineProperty(flow,'scrollWidth',{value:1000,configurable:true});
+   Object.defineProperty(flow,'getBoundingClientRect',{value:()=>({left:20})});
+   const child=document.createElement('p');
+   Object.defineProperty(child,'getClientRects',{value:()=>[
+     {left:20+4*344.3+.2,width:160,height:30}
+   ]});
+   flow.appendChild(child);
+   expect(measureColumns(1000,320,24,344.3)).toBe(3);
+   expect(measureRenderedPages(flow,320,24,344.3)).toBe(5);
  });
  it('never selects an invalid page',()=>{
    expect(clampPage(-10,5)).toBe(0);
