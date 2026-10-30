@@ -27,6 +27,9 @@ test('switching between chapters preserves last page and all body content',async
  await page.getByRole('button',{name:'Оглавление'}).click();
  await page.getByRole('button',{name:'Вторая глава',exact:true}).click();
  await expect(flow).toContainText('КОНЕЦ_ВТОРОЙ_ГЛАВЫ');
+ await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
+ await expect(page.locator('.chapter-page-freeze')).toHaveCount(0);
+ await expect(flow).toBeVisible();
  for(let i=0;i<30;i++)expect(await flow.innerText()).toContain('Вторая глава: строка '+i+'.');
  await expect(flow).not.toContainText('КОНЕЦ_ПЕРВОЙ_ГЛАВЫ');
  // Back from the first page of chapter two should land at the LAST page

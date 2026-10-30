@@ -65,7 +65,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .reading-content{position:absolute;inset:0}
 .reading-zones{position:absolute;inset:0;z-index:5;touch-action:pan-y}
 .page-region{position:absolute;top:calc(var(--reader-safe-top) + 12px);bottom:calc(var(--reader-safe-bottom) + 14px);left:0;right:0}
-.page-viewport{position:relative;width:100%;height:100%;overflow:hidden;contain:layout paint}
+.page-viewport{position:relative;width:100%;height:100%;overflow:hidden;contain:layout paint;overflow-anchor:none}
 :is(.book-flow,.book-measure-flow){position:relative;column-fill:auto;overflow-wrap:anywhere;word-break:normal;hyphens:auto;color:var(--fg);font-family:var(--reading-font);font-size:var(--font-size);line-height:var(--line-height);text-align:var(--align);transition:transform .22s cubic-bezier(.2,.8,.2,1);font-kerning:normal;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
 :is(.book-flow,.book-measure-flow).no-animation{transition:none}
 .book-paragraph{margin:0;text-indent:var(--indent);orphans:2;widows:2}

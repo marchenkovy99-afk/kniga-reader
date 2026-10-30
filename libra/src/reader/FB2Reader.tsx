@@ -243,7 +243,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   // Keep the saved precise source anchor. Scroll mode is not a one-page book.
   const block=anchorRef.current?.block;
   const target=block===undefined?null:flow.current.querySelector<HTMLElement>(`[data-block-index="${block}"]`);
-  viewport.current.scrollTop=target?target.offsetTop:(previous.current?viewport.current.scrollHeight:0);
+  // The first item can have a few pixels of heading line-box offset.
+  // Keep a chapter-start navigation at exactly scrollTop=0 rather than
+  // exposing a small jump after releasing the outgoing page snapshot.
+  const offset=target?.offsetTop||0;
+  viewport.current.scrollTop=target?(offset<8?0:offset):(previous.current?viewport.current.scrollHeight:0);
  },[clipIssue,chapter]);
  useEffect(()=>{
   if(!ready||clipIssue||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
