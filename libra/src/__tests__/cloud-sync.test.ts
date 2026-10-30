@@ -8,7 +8,7 @@ function device(){
  ack:async(e,revision)=>{const current=entries.get(e.key)!;entries.set(e.key,{...current,revision,pending:current.generation!==e.generation})},
  archive:async(_o,id,revision)=>{books.delete(id);entries.set('book:'+id,{id:'u|book:'+id,key:'book:'+id,owner:'u',revision,pending:false,generation:0,deleted:true})},
  apply:async(o,key,revision,book,next,generation)=>{const current=entries.get(key);if(current?.pending&&current.generation!==generation)return false;if(book)books.set(book.id,book);if(next)settings=next;entries.set(key,{id:o+'|'+key,key,owner:o,revision,pending:false,generation:0});return true}};
- return {port,entries,books};
+ return {port,entries,books,setSettings:(next:typeof DEFAULT_SETTINGS)=>{settings=next},getSettings:()=>settings};
 }
 function server(){const rows=new Map<string,RemoteRecord>(),files=new Map<string,Blob>();
  const transport:CloudTransport={list:async()=>[...rows.values()],upload:async(path,file)=>{files.set(path,file)},download:async path=>files.get(path)!,
@@ -19,10 +19,18 @@ it('carries a book, bookmarks and settings to a second device, detects stale edi
  const a=device(),b=device(),s=server();
  a.books.set('one',{id:'one',title:'Book',filename:'book.fb2',author:'Author',format:'fb2',file:new Blob(['checked bytes']),importedAt:1,bookmarks:[{chapter:1,page:2,fraction:.2,updatedAt:1}]});
  a.entries.set('book:one',{id:'u|book:one',owner:'u',key:'book:one',revision:0,pending:true,generation:1});
+ const custom={...DEFAULT_SETTINGS,theme:'oled' as const,fontSize:27,lineHeight:1.75,wordSpacing:1.5,marginRight:8,bottomMargin:0,textContrast:68};
+ a.setSettings(custom);
  a.entries.set('settings',{id:'u|settings',owner:'u',key:'settings',revision:0,pending:true,generation:1});
  expect((await runCloudSync('u',s.transport,a.port)).conflicts).toEqual([]);
  await runCloudSync('u',s.transport,b.port);
  expect(await b.books.get('one')!.file.text()).toBe('checked bytes');expect(b.books.get('one')!.bookmarks).toHaveLength(1);
+ expect(b.getSettings()).toEqual(custom);
+ b.setSettings({...custom,fontSize:30});
+ const preference=b.entries.get('settings')!;b.entries.set('settings',{...preference,pending:true,generation:2});
+ expect((await runCloudSync('u',s.transport,b.port)).conflicts).toHaveLength(0);
+ await runCloudSync('u',s.transport,a.port);
+ expect(a.getSettings().fontSize).toBe(30);
  for(const d of [a,b]){const e=d.entries.get('book:one')!;d.entries.set(e.key,{...e,pending:true,generation:2})}
  a.books.get('one')!.position={chapter:4,page:0,fraction:.5,updatedAt:5};
  await runCloudSync('u',s.transport,a.port);
