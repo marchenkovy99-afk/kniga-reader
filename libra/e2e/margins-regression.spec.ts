@@ -40,7 +40,11 @@ async function geometry(page:import('@playwright/test').Page):Promise<Stats>{
    for(const r of Array.from(range.getClientRects())){
     if(r.width<1||r.height<1)continue;
     const x=r.left-rect.left;
-    const column=Math.max(0,Math.floor((x+1)/stride));
+    const base=Math.max(0,Math.floor(x/stride));
+    const remainder=x-base*stride;
+    // A fractional WebKit column origin can fall just BEFORE the next
+    // stride. The gap belongs to the next page, not the clipped right edge.
+    const column=base+(remainder>width+gap*.35?1:0);
     const localX=x-column*stride;
     if(column===selected)visible++;
     if(localX< -3||localX+r.width>width+3||r.top-rect.top< -3||r.bottom-rect.top>height+3){

@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
-import {collectTextUnits,getPageAnchor,getAnchorPage} from '../anchors';
+import {collectTextUnits,getPageAnchor,getAnchorPage,columnAtOffset} from '../anchors';
 
 describe('content-based FB2 anchors',()=>{
+ it('never assigns a fractional Safari column start to the previous page',()=>{
+  const geo={width:366,gap:24,stride:388.8};
+  expect(columnAtOffset(0,geo)).toBe(0);
+  expect(columnAtOffset(364,geo)).toBe(0);
+  expect(columnAtOffset(388.7,geo)).toBe(1);
+  expect(columnAtOffset(3*388.8-.8,geo)).toBe(3);
+  expect(columnAtOffset(3*388.8+250,geo)).toBe(3);
+ });
  it('collects stable block/text offsets without changing DOM content',()=>{
   const flow=document.createElement('div');
   flow.innerHTML='<p data-block-index="0">Начало 🦔</p><div data-block-index="1">Последняя строка</div>';

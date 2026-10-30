@@ -8,6 +8,21 @@
 export type FB2Anchor={block:number;textNode:number;offset:number};
 type Unit={node:Text;block:number;textNode:number;length:number};
 export type PageGeometry={width:number;gap:number;stride?:number};
+/**
+ * In Safari fractional column origins may be reported a fraction of a pixel
+ * BEFORE the expected stride. Pixels in the inter-column gap belong to the
+ * following column, not the preceding page. This correction is important
+ * both for restoring anchors and for swiping between pages after a reflow.
+ */
+export function columnAtOffset(offset:number,geo:PageGeometry):number{
+ const stride=geo.stride||geo.width+geo.gap;
+ if(stride<=0||!Number.isFinite(offset))return 0;
+ const x=Math.max(0,offset);
+ const page=Math.floor(x/stride);
+ const inPage=x-page*stride;
+ return page+(inPage>geo.width+geo.gap*.35?1:0);
+}
+
 type AnchorIndex={
  first:Element|null;last:Element|null;count:number;
  units:Unit[];blocks:Map<number,HTMLElement>;nonText:HTMLElement[];
@@ -50,7 +65,7 @@ function positionPage(flow:Element,node:Text,index:number,geo:PageGeometry):numb
  range.setStart(node,start);range.setEnd(node,start+1);
  const rect=range.getClientRects().item(0);
  if(!rect||!Number.isFinite(rect.left))return null;
- return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+0.5)/(geo.stride||geo.width+geo.gap)));
+ return columnAtOffset(rect.left-flow.getBoundingClientRect().left,geo);
 }
 
 /** Pages without text may still contain a table or missing illustration. */
@@ -59,7 +74,7 @@ function nonTextAnchor(flow:Element,page:number,geo:PageGeometry):FB2Anchor|null
  for(const block of indexFor(flow).nonText){
   const rect=block.getBoundingClientRect();
   if(!rect.width||!rect.height)continue;
-  const column=Math.max(0,Math.floor((rect.left-left+1)/(geo.stride||geo.width+geo.gap)));
+  const column=columnAtOffset(rect.left-left,geo);
   if(column===page)return {block:Number(block.dataset.blockIndex),textNode:-1,offset:0};
  }
  return null;
@@ -99,7 +114,7 @@ export function getAnchorPage(flow:Element,anchor:FB2Anchor,geo:PageGeometry):nu
  if(anchor.textNode===-1){
   const rect=block.getBoundingClientRect();
   if(!rect.width||!rect.height)return null;
-  return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+1)/(geo.stride||geo.width+geo.gap)));
+  return columnAtOffset(rect.left-flow.getBoundingClientRect().left,geo);
  }
  const walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
  let node:Node|null,number=0;
