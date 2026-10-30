@@ -614,3 +614,47 @@ html:root[data-theme]{background-color:var(--paper)!important}
 html:root[data-theme] body{background-color:var(--paper)!important}
 html:root[data-theme] .reader{background-color:var(--paper)!important}
 html:root[data-theme] .reader::before{background-color:var(--paper)!important}
+
+
+/* LIBRA reading clarity invariant.
+   Never animate or composite the reading surface: iOS WebKit may rasterize
+   transformed flipbook text on a fractional pixel and soften its first row.
+   Navigation controls and the library may still animate independently. */
+body.reading .reader,
+body.reading .reader-enter,
+body.reading .book-stage,
+body.reading .book-page,
+body.reading .book-text {
+  animation: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  text-shadow: none !important;
+}
+body.reading .reader {
+  transform: none !important;
+  opacity: 1 !important;
+}
+body.reading .book-text {
+  opacity: 1 !important;
+  -webkit-font-smoothing: auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* An opaque, theme-matched status area cannot produce a translucent blur
+   over the top glyph row. It lives outside the paginated stage. */
+body.reading .reader::before {
+  display: block;
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: env(safe-area-inset-top,0px);
+  background: var(--paper);
+  pointer-events: none;
+  z-index: 121;
+}
