@@ -39,14 +39,23 @@ test('two isolated devices synchronize exact book bytes, bookmarks, preferences 
  const first=await a.newPage(),second=await b.newPage();
  try{
   await first.goto('/');await first.locator('input[type=file]').first().setInputFiles({name:'cloud.fb2',mimeType:'text/xml',buffer:bytes});
-  await login(first);await first.getByRole('button',{name:'Подключить и объединить библиотеку'}).click();await expect.poll(()=>server.rows.size).toBe(2);
+  await login(first);await first.getByRole('button',{name:'Подключить и объединить библиотеку'}).click();await expect.poll(()=>server.rows.size).toBe(1); // Fresh accounts must not upload default preferences.
   await second.goto('/');await login(second);await second.getByRole('button',{name:'Подключить и объединить библиотеку'}).click();
-  await expect(second.locator('.cloud-conflict')).toHaveCount(1);await second.getByRole('button',{name:'Версию облака'}).click();
+  await expect(second.locator('.cloud-conflict')).toHaveCount(0); // No phantom settings conflict on a fresh device.
   await second.getByRole('button',{name:'Библиотека',exact:true}).click();await expect(second.locator('.book-tile')).toHaveCount(1);await second.locator('.continue-card').click();await expect(second.locator('.book-flow')).toContainText('Проверка книги между двумя устройствами');
   await second.locator('.reading-zones').click({position:{x:190,y:230}});await second.getByRole('button',{name:'Закладка',exact:true}).click();await second.getByRole('button',{name:'В библиотеку'}).click();
   await settings(second);await second.getByRole('button',{name:'Синхронизировать',exact:true}).click();await expect.poll(()=>[...server.rows.values()].find(r=>r.key.startsWith('book:'))?.payload.bookmarks).toHaveLength(1);
+  await first.getByRole('button',{name:'Библиотека',exact:true}).click();
+  await first.locator('.continue-card').click();
+  await first.locator('.reading-zones').click({position:{x:190,y:230}});
+  await first.getByRole('button',{name:'Текст',exact:true}).click();
+  await first.getByRole('slider',{name:/Размер текста/}).fill('27');
+  await first.getByRole('slider',{name:/Между словами/}).fill('1.5');
+  await first.getByRole('button',{name:'Закрыть',exact:true}).click();
+  await first.getByRole('button',{name:'В библиотеку'}).click();
+  await settings(first);
   await a.setOffline(true);await first.getByRole('button',{name:'OLED',exact:true}).click();await expect(first.locator('.cloud-panel')).toContainText('Нет сети');
-  await a.setOffline(false);await first.getByRole('button',{name:'Синхронизировать',exact:true}).click();await expect.poll(()=>server.rows.get('settings')?.payload.settings).toMatchObject({theme:'oled'});
+  await a.setOffline(false);await first.getByRole('button',{name:'Синхронизировать',exact:true}).click();await expect.poll(()=>server.rows.get('settings')?.payload.settings).toMatchObject({theme:'oled',fontSize:27,wordSpacing:1.5});
   await second.getByRole('button',{name:'Синхронизировать',exact:true}).click();await expect(second.getByRole('button',{name:'OLED',exact:true})).toHaveClass(/chosen/);
   await second.getByRole('button',{name:'Выйти',exact:true}).click();await second.getByRole('button',{name:'Библиотека',exact:true}).click();await expect(second.locator('.book-tile')).toHaveCount(0);await expect(second.getByText('Книги аккаунта сохранены на устройстве.',{exact:false})).toBeVisible();
  }finally{await a.close();await b.close()}
