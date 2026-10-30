@@ -214,3 +214,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .settings-hint{font:12px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;
   color:var(--muted);padding:0 1px}
 .sheet-settings{gap:16px}
+
+/* Library: practical metadata and sorting without decorative cards. */
+.library-filters{display:flex;align-items:end;gap:14px;margin-bottom:20px}
+.library-filters .search-wrap{flex:1;min-width:0;margin-bottom:0}
+.library-sort-label{display:flex;flex-direction:column;gap:5px;color:var(--muted);
+ font:11px/1.25 -apple-system,BlinkMacSystemFont,sans-serif;min-width:115px}
+.library-sort-label select{max-width:140px;min-height:34px;border:0;border-bottom:1px solid var(--border);
+ border-radius:0;background:var(--bg);color:var(--fg);font:13px -apple-system,BlinkMacSystemFont,sans-serif}
+.book-tile-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;
+ margin-top:10px;width:100%;color:var(--muted);font:10px -apple-system,BlinkMacSystemFont,sans-serif}
+.book-tile-meta>span:first-child{letter-spacing:.06em;font-weight:650}
+.book-cover-generated>span:empty{display:none}
+@media(max-width:350px){.library-filters{flex-direction:column;align-items:stretch}
+ .library-sort-label{flex-direction:row;justify-content:space-between;align-items:center}}
