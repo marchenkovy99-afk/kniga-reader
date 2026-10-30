@@ -20,8 +20,13 @@ async function geometry(page:import('@playwright/test').Page):Promise<Stats>{
   const rect=flow.getBoundingClientRect();
   const width=viewport.clientWidth,height=viewport.clientHeight;
   const gap=parseFloat(getComputedStyle(flow).columnGap)||24;
-  const stride=width+gap;
+  const stride=Number((flow as HTMLElement).dataset.columnStride)||width+gap;
   const errors:string[]=[];
+  // Independent measurement of the actual second-column start.
+  const origin=rect.left;
+  const candidates=Array.from(flow.children).slice(0,120).flatMap(el=>Array.from(el.getClientRects()).map(r=>r.left-origin));
+  const second=candidates.filter(x=>x>width+gap-8&&x<width+gap+12).sort((a,b)=>Math.abs(a-(width+gap))-Math.abs(b-(width+gap)))[0];
+  if(second!==undefined&&Math.abs(second-stride)>1)errors.push('stride mismatch: measured='+second+' expected='+stride);
   let visible=0;
   let selected=0;
   const value=(flow as HTMLElement).style.transform;

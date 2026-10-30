@@ -3,7 +3,7 @@ import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from 
 import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
 import { loadParsedFB2 } from './parsedFB2Cache';
-import { clampPage, measureColumns, progressOf } from '../pagination';
+import { clampPage, measureColumns, measureColumnStride, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 
@@ -26,6 +26,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapter,setChapter]=useState(book.position?.chapter||0);
  const [page,setPage]=useState(book.position?.page||0);
  const [pages,setPages]=useState(1);
+ const [stride,setStride]=useState(0);
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [measuredKey,setMeasuredKey]=useState('');
  const [mediaVersion,setMediaVersion]=useState(0);
@@ -66,8 +67,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const compute=()=>{
    if(!active||!flow.current)return;
    const current=flow.current;
-   const geo={width:geometry.width,gap:GAP};
-   const count=measureColumns(current.scrollWidth,geometry.width,GAP);
+   const actualStride=measureColumnStride(current,geometry.width,GAP);
+   const geo={width:geometry.width,gap:GAP,stride:actualStride};
+   const count=measureColumns(current.scrollWidth,geometry.width,GAP,actualStride);
+   setStride(old=>Math.abs(old-actualStride)<.01?old:actualStride);
    const anchored=anchorRef.current?getAnchorPage(current,anchorRef.current,geo):null;
    // Re-running measurements (fonts.ready, image loads, viewport changes)
    // must not undo an explicit chapter-boundary jump. Reuse the last page
@@ -89,7 +92,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
   if(!ready||!flow.current)return;
-  const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP});
+  const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
   const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
    anchor:anchorRef.current,updatedAt:Date.now()};
@@ -97,11 +100,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   // A small independent IndexedDB record is cheap enough to persist immediately.
   // Saving on each page flip avoids losing progress when iOS suspends the PWA.
   void savePosition(book.id,position).catch(console.error);
- },[ready,book.id,chapter,page,pages,geometry.width,layoutKey]);
+ },[ready,book.id,chapter,page,pages,geometry.width,layoutKey,stride]);
  const setReaderPage=(target:number)=>{
   if(!ready||!flow.current)return;
   const safe=clampPage(target,pages);
-  const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP});
+  const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
   setPage(safe);
  };
@@ -138,9 +141,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
    <div className="page-viewport" ref={viewport} style={style}>
-    {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
+    {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
-      transform:'translate3d(-'+(page*(geometry.width+GAP))+'px,0,0)'}}>
+      transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
      {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>

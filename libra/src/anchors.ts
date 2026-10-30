@@ -7,7 +7,7 @@
  */
 export type FB2Anchor={block:number;textNode:number;offset:number};
 type Unit={node:Text;block:number;textNode:number;length:number};
-export type PageGeometry={width:number;gap:number};
+export type PageGeometry={width:number;gap:number;stride?:number};
 type AnchorIndex={
  first:Element|null;last:Element|null;count:number;
  units:Unit[];blocks:Map<number,HTMLElement>;nonText:HTMLElement[];
@@ -50,7 +50,7 @@ function positionPage(flow:Element,node:Text,index:number,geo:PageGeometry):numb
  range.setStart(node,start);range.setEnd(node,start+1);
  const rect=range.getClientRects().item(0);
  if(!rect||!Number.isFinite(rect.left))return null;
- return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+0.5)/(geo.width+geo.gap)));
+ return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+0.5)/(geo.stride||geo.width+geo.gap)));
 }
 
 /** Pages without text may still contain a table or missing illustration. */
@@ -59,7 +59,7 @@ function nonTextAnchor(flow:Element,page:number,geo:PageGeometry):FB2Anchor|null
  for(const block of indexFor(flow).nonText){
   const rect=block.getBoundingClientRect();
   if(!rect.width||!rect.height)continue;
-  const column=Math.max(0,Math.floor((rect.left-left+1)/(geo.width+geo.gap)));
+  const column=Math.max(0,Math.floor((rect.left-left+1)/(geo.stride||geo.width+geo.gap)));
   if(column===page)return {block:Number(block.dataset.blockIndex),textNode:-1,offset:0};
  }
  return null;
@@ -99,7 +99,7 @@ export function getAnchorPage(flow:Element,anchor:FB2Anchor,geo:PageGeometry):nu
  if(anchor.textNode===-1){
   const rect=block.getBoundingClientRect();
   if(!rect.width||!rect.height)return null;
-  return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+1)/(geo.width+geo.gap)));
+  return Math.max(0,Math.floor((rect.left-flow.getBoundingClientRect().left+1)/(geo.stride||geo.width+geo.gap)));
  }
  const walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
  let node:Node|null,number=0;
