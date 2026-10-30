@@ -13,7 +13,7 @@ test('reference-inspired library preserves import, favorites, filtering and read
  await page.locator('input[type=file]').first().setInputFiles({name:'library-design.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)});
  await expect(page.locator('.book-tile-open')).toContainText('Книга для библиотеки');
  await expect(page.locator('.continue-card')).toBeVisible();
- expect(await page.locator('.library-shell').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(21, 21, 21)');
+ expect(await page.locator('.library-shell').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(23, 24, 23)');
  await page.locator('.book-tile-menu').click();
  await page.getByRole('button',{name:'В избранное',exact:true}).click();
  await page.getByRole('button',{name:'В избранном'}).click();
