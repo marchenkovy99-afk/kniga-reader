@@ -29,7 +29,7 @@ test('legacy book remains readable with even spaces and extended persistent typo
  const style=await page.locator('.book-flow').evaluate(el=>{
   const s=getComputedStyle(el),p=getComputedStyle(el.querySelector('.book-paragraph')!);
   const region=getComputedStyle(el.closest('.page-region')!);
-  return {alignment:s.textAlign,wordSpacing:s.wordSpacing,letterSpacing:s.letterSpacing,
+  return {alignment:p.textAlign,wordSpacing:s.wordSpacing,letterSpacing:s.letterSpacing,
    indent:p.textIndent,paragraphSpace:p.marginBottom,top:region.top,font:s.fontFamily};
  });
  expect(style.alignment).toBe('justify');

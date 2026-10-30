@@ -24,6 +24,7 @@ test('reference-inspired library preserves import, favorites, filtering and read
  await page.locator('.continue-card').click();
  await expect(page.locator('.book-flow')).toContainText('Первая страница книги.');
  await expect(page.locator('.reading-root')).toBeVisible();
+ await page.locator('.reading-zones').click({position:{x:195,y:230}});
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await expect(page.getByRole('heading',{name:'Библиотека'})).toBeVisible();
  await page.locator('.app-tabbar').getByRole('button',{name:'Настройки'}).click();
@@ -38,10 +39,11 @@ test('library keeps narrow iPhone controls inside viewport',async({page})=>{
  const x=await page.locator('.library-shell').evaluate(el=>({
   documentWidth:el.scrollWidth,
   viewportWidth:el.clientWidth,
-  buttonHeight:el.querySelector('.round-action')!.getBoundingClientRect().height
+  buttonHeight:el.querySelector('.app-tabbar button')!.getBoundingClientRect().height
  }));
  expect(x.documentWidth).toBeLessThanOrEqual(x.viewportWidth+1);
  expect(x.buttonHeight).toBeGreaterThanOrEqual(44);
  await expect(page.locator('.library-state-tabs')).toBeVisible();
- await expect(page.getByRole('button',{name:'Добавить книгу'})).toBeVisible();
+ await page.locator('.app-tabbar').getByRole('button',{name:'Настройки'}).click();
+ await expect(page.getByRole('button',{name:'Добавить книгу (FB2, EPUB)'})).toBeVisible();
 });

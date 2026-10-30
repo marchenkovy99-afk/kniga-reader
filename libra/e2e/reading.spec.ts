@@ -30,10 +30,15 @@ test('OLED background is consistent across page shell and metadata',async({page}
  await page.goto('/');
  await page.getByRole('button',{name:'Настройки'}).click();
  await page.getByRole('button',{name:'OLED'}).click();
+ // Library is intentionally graphite regardless of the reading theme.
+ expect(await page.locator('.library-shell').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(21, 21, 21)');
+ await page.locator('input[type=file]').first().setInputFiles({name:'oled.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)});
+ await page.locator('.app-tabbar').getByRole('button',{name:'Библиотека'}).click();
+ await page.locator('.continue-card').click();
  const values=await page.evaluate(()=>({
   html:getComputedStyle(document.documentElement).backgroundColor,
   body:getComputedStyle(document.body).backgroundColor,
-  shell:getComputedStyle(document.querySelector('.library-shell')!).backgroundColor,
+  shell:getComputedStyle(document.querySelector('.reading-root')!).backgroundColor,
   meta:document.querySelector('meta[name="theme-color"]')?.getAttribute('content')
  }));
  expect(values.body).toBe('rgb(0, 0, 0)');
