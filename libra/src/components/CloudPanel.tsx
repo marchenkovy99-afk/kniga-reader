@@ -4,7 +4,7 @@ import './cloud.css';
 export function CloudPanel({cloud}:{cloud:CloudController}){
  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[signup,setSignup]=useState(false);
  return <section className="cloud-panel" aria-labelledby="cloud-title">
-  <h3 id="cloud-title">Облако</h3><p>Книги, место чтения, закладки и оформление — на ваших устройствах. Читать можно без сети.</p>
+  <h3 id="cloud-title">Синхронизация Supabase</h3><p>Книги, место чтения, закладки и оформление синхронизируются между устройствами после подключения аккаунта. Читать можно без сети, изменения отправляются при возвращении в приложение.</p>
   {cloud.session?<>
    <p className="cloud-account">{cloud.session.user.email}</p>
    <p>{cloud.enabled?<>В очереди: {cloud.pending}. Удаление книги передаётся на другие устройства; скачанные там файлы сохраняются в локальном архиве.</>:'Подключите эту библиотеку к аккаунту. Книги другого аккаунта не переносятся.'}</p>

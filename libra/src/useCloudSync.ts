@@ -36,8 +36,8 @@ export function useCloudSync(onChange:()=>Promise<void>,onAccountChange:()=>void
   });
   void updateState();const interval=setInterval(()=>{if(document.visibilityState==='visible')void sync()},30000);
   const signedOut=(event:StorageEvent)=>{if(event.key==='libra-cloud-signout'){epoch.current++;current.current=null;setSession(null);setConflicts([]);void setCloudAccount(null).then(()=>{callbacks.current.onAccountChange();return callbacks.current.onChange()}).then(updateState).catch(e=>setError(String(e)))}};
-  window.addEventListener('storage',signedOut);window.addEventListener('online',schedule);window.addEventListener('offline',schedule);document.addEventListener('visibilitychange',schedule);
-  return ()=>{mounted.current=false;clearTimeout(timer);clearInterval(interval);unsubscribe();subscription.data.subscription.unsubscribe();window.removeEventListener('storage',signedOut);window.removeEventListener('online',schedule);window.removeEventListener('offline',schedule);document.removeEventListener('visibilitychange',schedule)};
+  window.addEventListener('storage',signedOut);window.addEventListener('online',schedule);window.addEventListener('offline',schedule);window.addEventListener('focus',schedule);document.addEventListener('visibilitychange',schedule);
+  return ()=>{mounted.current=false;clearTimeout(timer);clearInterval(interval);unsubscribe();subscription.data.subscription.unsubscribe();window.removeEventListener('storage',signedOut);window.removeEventListener('online',schedule);window.removeEventListener('offline',schedule);window.removeEventListener('focus',schedule);document.removeEventListener('visibilitychange',schedule)};
  },[sync,updateState]);
  async function auth(email:string,password:string,signup:boolean){
   setError('');setMessage('');setBusy(true);

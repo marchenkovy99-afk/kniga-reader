@@ -44,6 +44,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
      {([{id:'all',label:'Все книги'},{id:'reading',label:'Читаю'},{id:'finished',label:'Прочитано'},{id:'favorite',label:'В избранном'}] as const).map(x=><button key={x.id} type="button" aria-pressed={filter===x.id} onClick={()=>{setFilter(x.id);setMenu(null)}}>{x.label}</button>)}
     </div>
     {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги облачного аккаунта доступны после входа в настройках.</p>}
+    {cloud.enabled&&cloud.session&&<p className="library-sync-status" role="status">{cloud.busy?'Синхронизация Supabase…':cloud.pending?'Ожидает синхронизации: '+cloud.pending:'Синхронизация Supabase подключена'}</p>}
     {continueBook&&<section className="continue-section" aria-label="Продолжить чтение"><div className="continue-wrapper">
      <button type="button" className="continue-card" onClick={()=>open(continueBook)}>
       <BookCover book={continueBook} large/>

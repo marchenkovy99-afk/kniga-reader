@@ -48,13 +48,14 @@ export default function App(){
   const book=books.find(b=>b.format==='epub'&&!b.cover&&!coverAttempts.current.has(b.id));
   if(!book)return;
   coverAttempts.current.add(book.id);
-  let cancelled=false;
+  let cancelled=false,finished=false;
   void extractEpubCover(book.file).then(async cover=>{
    if(cancelled||!cover)return;
    await updateBookCover(book.id,cover);
    if(!cancelled)await refresh();
-  }).catch(e=>console.warn('Не удалось восстановить обложку EPUB',e));
-  return ()=>{cancelled=true;coverAttempts.current.delete(book.id)};
+  }).catch(e=>console.warn('Не удалось восстановить обложку EPUB',e))
+   .finally(()=>{finished=true});
+  return ()=>{cancelled=true;if(!finished)coverAttempts.current.delete(book.id)};
  },[hydrated,books]);
 
  async function importFiles(list:FileList){
