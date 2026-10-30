@@ -209,6 +209,42 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   assert.ok(Math.abs(shortenedFooter.y+shortenedFooter.height-(footer.y+footer.height))<=1,
    'shrinking the reading container must not pull the floating toolbar upward');
   await page.evaluate(()=>document.body.style.removeProperty('height'));
+  // Compact typography is an actual rendered-page regression, not merely a
+  // preference round-trip. It must preserve source and the last glyph.
+  if(width===393&&!visualShrink&&!innerShrink&&!documentShrink){
+   await page.locator('#appearance').click();
+   await page.locator('[data-tab="page"]').click();
+   for(const key of ['margin','topInset','bottomInset']){
+    const field=page.locator('#number-'+key);
+    await field.fill('0');
+    await field.dispatchEvent('change');
+   }
+   await page.locator('#close-sheet').click();
+   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true',{timeout:40000});
+   const compact=await page.evaluate(()=>{
+    const stage=document.querySelector('#book-stage'),visible=document.querySelector('.book-page[aria-hidden="false"] .book-text');
+    if(!stage||!visible)return null;
+    const range=document.createRange();range.selectNodeContents(visible);
+    const bounds=stage.getBoundingClientRect();
+    const glyphs=[...range.getClientRects()].filter(r=>r.height>2&&r.width>1);
+    const style=getComputedStyle(visible);
+    const nodes=[...document.querySelectorAll('.book-page .book-text')];
+    const segments=nodes.flatMap(n=>[...n.querySelectorAll('[data-block]')].map(x=>({block:+x.dataset.block,from:+x.dataset.from,to:+x.dataset.to})));
+    return {margin:parseFloat(style.paddingLeft),top:parseFloat(style.paddingTop),bottom:parseFloat(style.paddingBottom),fits:glyphs.length>0&&glyphs.every(r=>r.left>=bounds.left-.1&&r.right<=bounds.right+.1&&r.top>=bounds.top-.1&&r.bottom<=bounds.bottom+.1),segments,ready:stage.dataset.layoutState};
+   });
+   assert.ok(compact,'compact reading page must exist');
+   assert.equal(compact.ready,'ready','compact pages must render without a clipping error');
+   assert.equal(compact.margin,0,'zero side margins must affect the real page');
+   assert.ok(compact.top>=2&&compact.bottom>=3,'glyph overhang safety remains in compact mode');
+   assert.equal(compact.fits,true,'compact first and last glyphs must fit in the stage');
+   assert.ok(compact.segments.length>0,'source segments must remain available');
+   for(let i=1;i<compact.segments.length;i++){
+    const a=compact.segments[i-1],b=compact.segments[i];
+    assert.ok(b.block===a.block?b.from===a.to:b.block===a.block+1&&b.from===0,
+     'compact pagination must not omit or duplicate text at a page boundary');
+   }
+   await page.screenshot({path:path.join(output,'webkit-393x852-zero-margins.png')});
+  }
   await page.reload();
   await page.locator('[data-book="pwa-fixture"]').click();
   await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true',{timeout:40000});
