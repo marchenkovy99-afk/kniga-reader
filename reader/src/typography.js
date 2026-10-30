@@ -1,5 +1,5 @@
 export function applyTypography(element,s,width){
- const margin=Math.min(s.margin,Math.max(8,(width-150)/2));
+ const margin=Math.min(s.margin,Math.max(0,(width-150)/2));
  // A first-line indent must leave room for actual letters at the chosen
  // font size. Extreme combinations of margin, font and indent used to push
  // the very first glyph outside the page and make pagination fail entirely.
@@ -13,8 +13,8 @@ export function applyTypography(element,s,width){
  // even a single character. Reserve only the measured-size safety allowance;
  // ordinary reading settings keep their existing compact 2px top inset.
  const glyphOverhang=Math.max(0,((1.15-Number(s.lineHeight))*s.fontSize)/2);
- const topClearance=Math.max(2,Math.ceil(glyphOverhang+2));
- const bottomClearance=Math.max(4,Math.ceil(glyphOverhang+3));
+ const topClearance=Math.max(Math.ceil(glyphOverhang+2),Number(s.topInset)||0);
+ const bottomClearance=Math.max(Math.ceil(glyphOverhang+3),Number(s.bottomInset)||0);
  const variables={'--font-size':`${s.fontSize}px`,'--line-height':s.lineHeight,'--page-margin':`${margin}px`,'--paragraph-gap':`${s.paragraphGap}em`,'--indent':`${indentPx}px`,'--letter-spacing':`${s.letterSpacing}px`,'--text-align':s.align,'--hyphens':s.hyphens?'auto':'none'};
  element.style.setProperty('padding-top',`${topClearance}px`);
  element.style.setProperty('padding-bottom',`${bottomClearance}px`);
