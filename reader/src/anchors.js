@@ -1,7 +1,7 @@
-export const defaults = Object.freeze({fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0,paragraphSpacingVersion:1,indent:1.3,letterSpacing:0,font:'serif',theme:'paper',align:'left',hyphens:true,animation:false});
+export const defaults = Object.freeze({fontSize:22,lineHeight:1.55,margin:24,topInset:2,bottomInset:4,paragraphGap:0,paragraphSpacingVersion:1,indent:1.3,letterSpacing:0,font:'serif',theme:'paper',align:'left',hyphens:true,animation:false});
 export function clampSettings(input={}) {
  const s={...defaults};
- for(const [key,min,max] of [['fontSize',12,48],['lineHeight',1,2.5],['margin',8,72],['paragraphGap',0,2],['indent',0,3],['letterSpacing',-0.5,3]]) {
+ for(const [key,min,max] of [['fontSize',12,48],['lineHeight',1,2.5],['margin',0,72],['topInset',0,40],['bottomInset',0,40],['paragraphGap',0,2],['indent',0,3],['letterSpacing',-0.5,3]]) {
   const n=Number(input[key]); if(Number.isFinite(n)) s[key]=Math.min(max,Math.max(min,n));
  }
  for(const [key,allowed] of [['font',['serif','literary','sans']],['theme',['paper','white','night','oled','auto']],['align',['left','justify']]]) if(allowed.includes(input[key]))s[key]=input[key];
