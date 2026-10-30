@@ -116,11 +116,12 @@ export async function parseBackup(file:Blob):Promise<RestoredArchive>{
   const bytes=decodeBase64(b.bytesBase64);
   total+=bytes.length;
   if(total>MAX_BACKUP_SOURCE_BYTES)throw Error('Архив содержит слишком много данных');
-  if(await sha256(bytes.buffer)!==b.sha256)throw Error('Проверка целостности не пройдена: '+title);
+  const verifiedBuffer=Uint8Array.from(bytes).buffer;
+  if(await sha256(verifiedBuffer)!==b.sha256)throw Error('Проверка целостности не пройдена: '+title);
   restored.push({id,filename,title,author,format,importedAt,lastOpenedAt,cover:b.cover,
    position:position(b.position),bookmarks:b.bookmarks.map(p=>{
     const checked=position(p);if(!checked)throw Error('Некорректная закладка');return checked;
-   }),file:new Blob([bytes],{type:b.mediaType||'application/octet-stream'})});
+   }),file:new Blob([verifiedBuffer],{type:b.mediaType||'application/octet-stream'})});
  }
  return {books:restored,settings:normalizeSettings(data.settings)};
 }
