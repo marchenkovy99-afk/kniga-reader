@@ -52,7 +52,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  return <div className="library-shell">
   <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<>
-   <header className="library-header reference-header"><div className="library-page-title"><span className="brand-eyebrow">LIBRA</span><h1>Библиотека</h1></div></header>
+   <header className="library-header reference-header"><div className="library-identity"><img className="library-logo" src="./icon-180.png" width="44" height="44" alt="Логотип LIBRA"/><div className="library-page-title"><span className="brand-eyebrow">LIBRA</span><h1>Библиотека</h1></div></div></header>
    <main className="library-main reference-main">
     <div className="reference-search" role="search">
      <label className="search-wrap"><Icon name="search" size={21}/><input aria-label="Поиск книг" placeholder="Название или автор" value={query} onChange={e=>setQuery(e.target.value)}/></label>
