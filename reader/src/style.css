@@ -506,12 +506,12 @@ body:not(.reading){--paper:#f6f3ec;--ink:#222321;--muted:#64645f;--line:#dedbd4;
  --accent:#f36a32;--accent-text:#201b17;color-scheme:light
 }
 :root[data-theme=night]{
- --paper:#1d1f1e;--ink:#f2f0e9;--reading-ink:#f2f0e9;--muted:#b6b5af;
+ --paper:#1d1f1e;--ink:#f2f0e9;--reading-ink:#b8b8b5;--muted:#b6b5af;
  --line:#41433f;--surface:#272926;--sheet:#242624;--soft:#30322f;
  --accent:#f36a32;--accent-text:#201b17;color-scheme:dark
 }
 :root[data-theme=oled]{
- --paper:#000000;--ink:#f2f2ef;--reading-ink:#f2f2ef;--muted:#aaaaaa;
+ --paper:#000000;--ink:#f2f2ef;--reading-ink:#b2b3b1;--muted:#aaaaaa;
  --line:#3b3b3b;--surface:#171717;--sheet:#171717;--soft:#252525;
  --accent:#f36a32;--accent-text:#201b17;color-scheme:dark
 }
@@ -658,3 +658,20 @@ body.reading .reader::before {
   pointer-events: none;
   z-index: 121;
 }
+
+/* Reading layer: no fading, smoothing filters or opaque overlays on glyphs.
+   Preserve page geometry and the explicit flipbook navigation transforms. */
+body.reading .book-stage,
+body.reading .book-page,
+body.reading .book-text {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  text-shadow: none !important;
+}
+body.reading .book-text { opacity: 1 !important; }
+:root[data-theme=night] body.reading .book-text { color: #b8b8b5; }
+:root[data-theme=oled] body.reading .book-text { color: #b2b3b1; }
