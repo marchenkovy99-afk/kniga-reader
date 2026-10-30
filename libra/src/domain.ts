@@ -27,7 +27,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 6,
   marginRight: 16, bottomMargin: 2, fontWeight: 400, hyphenation: 'auto', textContrast: 76
 };
-export type SavedQuote = { id:string; text:string; position:ReaderPosition; createdAt:number };
+export type SavedQuote = { id:string; text:string; position:ReaderPosition; createdAt:number; endAnchor?:import('./anchors').FB2Anchor };
 
 export type ReaderPosition = {
   chapter: number;
