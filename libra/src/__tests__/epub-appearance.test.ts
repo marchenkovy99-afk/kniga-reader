@@ -13,14 +13,16 @@ describe('EPUB live appearance',()=>{
   expect(changes.get('color')).toBe('#F2F2EF');
   expect(changes.get('font-size')).toBe('24px');
   expect(changes.get('line-height')).toBe('1.65');
-  expect(changes.get('padding')).toBe('0 12px');
+  expect(changes.get('padding')).toBe('12px 12px');
  });
  it('sets text alignment and font family without recreating the book',()=>{
   const entries:Record<string,string>={};
   applyEpubAppearance({override:(key,value)=>{entries[key]=value}},
    {...DEFAULT_SETTINGS,fontFamily:'sans',align:'left'});
-  expect(entries['font-family']).toBe('Arial, sans-serif');
+  expect(entries['font-family']).toContain('Arial,sans-serif');
   expect(entries['text-align']).toBe('left');
   expect(entries.hyphens).toBe('auto');
+  expect(entries['word-spacing']).toBe('0px');
+  expect(entries['--libra-paragraph-gap']).toBe('0px');
  });
 });

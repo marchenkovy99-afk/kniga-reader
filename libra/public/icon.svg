@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="110" fill="#1D1F1E"/>
-<path d="M145 112h53v243h178v45H145z" fill="#F6F3EC"/>
-<path d="M270 112h98v45h-98z" fill="#D8A77B"/>
+ <defs>
+  <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+   <stop stop-color="#303534"/><stop offset="1" stop-color="#161A1A"/>
+  </linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+   <stop stop-color="#FFF8E9"/><stop offset="1" stop-color="#E9D7BC"/>
+  </linearGradient>
+ </defs>
+ <rect width="512" height="512" rx="112" fill="url(#ink)"/>
+ <path d="M147 126h57v221c18-11 38-17 60-19v50c-42 3-81 20-117 38V126Z" fill="url(#paper)"/>
+ <path d="M221 313c47-39 95-49 145-35 14 4 28 10 43 20v71c-57-30-113-31-188 14v-70Z" fill="#D1AA7E"/>
+ <path d="M221 313c47-39 95-49 145-35 14 4 28 10 43 20v34c-61-32-120-25-188 20v-39Z" fill="#FFF8E9"/>
+ <path d="M222 388c63-36 127-45 187-18" stroke="#F5E8D2" stroke-width="9" fill="none" stroke-linecap="round"/>
+ <path d="M222 349c57-43 116-50 174-25" stroke="#89654B" stroke-opacity=".55" stroke-width="3" fill="none"/>
 </svg>
