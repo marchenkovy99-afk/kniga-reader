@@ -97,6 +97,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   frozenPage.current=overlay;
  };
  const previous=useRef(false);
+ const returnToChapterEnd=useRef(false);
  const chapterRequest=useRef(0);
  const pendingChapter=useRef<number|null>(null);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
@@ -236,19 +237,28 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   return ()=>{stop();cancelAnimationFrame(frame)};
  },[ready,clipIssue,page,stride,layoutKey]);
  useLayoutEffect(()=>{
-  if(!flow.current||!viewport.current)return;
-  // The viewport survives chapter changes and retains scrollTop even when its
-  // overflow switches back to hidden. Clear that offset before paginating.
-  if(!clipIssue){viewport.current.scrollTop=0;return;}
-  // Keep the saved precise source anchor. Scroll mode is not a one-page book.
+  const view=viewport.current,content=flow.current;
+  if(!view||!content)return;
+  if(!clipIssue){view.scrollTop=0;return}
+  // After a chapter switch to the preceding chapter, scrolling belongs to
+  // the new chapter's *final* layout, not the previous chapter's scrollHeight.
+  // A zero-time layout pass can still report the old height in WebKit.
+  const showEnd=returnToChapterEnd.current;
   const block=anchorRef.current?.block;
-  const target=block===undefined?null:flow.current.querySelector<HTMLElement>(`[data-block-index="${block}"]`);
-  // The first item can have a few pixels of heading line-box offset.
-  // Keep a chapter-start navigation at exactly scrollTop=0 rather than
-  // exposing a small jump after releasing the outgoing page snapshot.
-  const offset=target?.offsetTop||0;
-  viewport.current.scrollTop=target?(offset<8?0:offset):(previous.current?viewport.current.scrollHeight:0);
+  const target=block===undefined?null:content.querySelector<HTMLElement>(`[data-block-index="${block}"]`);
+  const setScroll=()=>{
+   if(viewport.current!==view||flow.current!==content)return;
+   if(showEnd)view.scrollTop=view.scrollHeight;
+   else if(target){
+    const offset=target.offsetTop;
+    view.scrollTop=offset<8?0:offset;
+   }else view.scrollTop=0;
+  };
+  setScroll();
+  const frame=requestAnimationFrame(setScroll);
+  return ()=>cancelAnimationFrame(frame);
  },[clipIssue,chapter]);
+
  useEffect(()=>{
   if(!ready||clipIssue||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
@@ -290,6 +300,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   if(request!==chapterRequest.current)return;
   lastPosition.current=pending;
   previous.current=toLast;
+  returnToChapterEnd.current=toLast;
   anchorRef.current=undefined;
   // Compute the provisional chapter page BEFORE rendering its columns.
   // Going backwards must never expose page one of the previous chapter
