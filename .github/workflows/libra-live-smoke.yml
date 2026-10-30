@@ -96,7 +96,12 @@ jobs:
               throw new Error('Margin geometry failure: '+JSON.stringify(geometry));
             if(!(await page.locator('.book-flow').innerText()).includes('ТЕКСТ КНИГИ ДОСТУПЕН'))
               throw new Error('Text missing after changing margins');
-            await page.locator('.reading-zones').click({position:{x:190,y:240}});
+            // The settings panel remains visible when its sheet closes.
+            // Tapping the centre again would *hide* it and make the click
+            // target inactive: open it only when actually hidden.
+            if(!await page.locator('.reading-bottom').evaluate(el=>el.classList.contains('visible'))){
+              await page.locator('.reading-zones').click({position:{x:190,y:240}});
+            }
             await page.getByRole('button',{name:'Текст'}).click();
             await page.locator('.sheet-settings input[type=range]').nth(3).fill('2');
             await page.getByRole('button',{name:'Закрыть'}).click();
