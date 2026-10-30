@@ -8,6 +8,9 @@ test('reference-inspired library preserves import, favorites, filtering and read
  await page.setViewportSize({width:390,height:844});
  await page.goto('/');
  await expect(page.getByRole('heading',{name:'Библиотека'})).toBeVisible();
+  const logo=page.getByRole('img',{name:'Логотип LIBRA'});
+  await expect(logo).toBeVisible();
+  await expect.poll(()=>logo.evaluate((node:HTMLImageElement)=>node.complete&&node.naturalWidth>0)).toBe(true);
  await expect(page.getByRole('button',{name:'Все книги'})).toBeVisible();
  await expect(page.getByRole('button',{name:'В избранном'})).toHaveCount(0);
  await expect(page.locator('.library-header button')).toHaveCount(0);
