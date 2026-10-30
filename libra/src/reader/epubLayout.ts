@@ -14,6 +14,11 @@ export function enforceEpubUniformSpacing(doc:Document):void{
  const latin=(sample.match(/[A-Za-z]/g)||[]).length;
  if(russian>=24&&russian>latin*1.5){
   doc.documentElement.lang='ru';
+  // EPUB XHTML may be served as XML: xml:lang is the authoritative label
+  // for its language-sensitive hyphenation and does not change CFI text.
+  if(doc.contentType==='application/xhtml+xml'||doc.documentElement.namespaceURI==='http://www.w3.org/1999/xhtml'){
+   doc.documentElement.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:lang','ru');
+  }
   doc.body.lang='ru';
  }
 

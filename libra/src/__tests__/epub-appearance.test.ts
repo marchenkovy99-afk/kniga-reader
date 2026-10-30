@@ -81,6 +81,7 @@ describe('publisher spacing normalization',()=>{
   enforceEpubUniformSpacing(doc);
   expect(doc.documentElement.lang).toBe('ru');
   expect(doc.body.lang).toBe('ru');
+  expect(doc.documentElement.getAttributeNS('http://www.w3.org/XML/1998/namespace','lang')).toBe('ru');
   expect(doc.body.textContent).toBe(original);
   expect(doc.querySelector('p')!.firstChild).toBe(text);
   const styles=doc.getElementById('libra-uniform-spaces')!.textContent;
