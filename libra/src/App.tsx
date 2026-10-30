@@ -9,11 +9,10 @@ import { normalizeSettings } from './readerSettings';
 import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
-import { PdfReader } from './reader/PdfReader';
 
 const supported=(name:string):Format|null=>{
  const ext=name.split('.').pop()?.toLowerCase();
- return ext==='fb2'||ext==='epub'||ext==='pdf'?ext:null;
+ return ext==='fb2'||ext==='epub'?ext:null;
 };
 export default function App(){
  const [books,setBooks]=useState<StoredBook[]>([]);
@@ -35,7 +34,7 @@ export default function App(){
    for(const file of Array.from(list)){
      try{
        const format=supported(file.name);
-       if(!format)throw new Error('Поддерживаются FB2, EPUB и PDF');
+       if(!format)throw new Error('Поддерживаются только FB2 и EPUB');
        const blob=new Blob([await file.arrayBuffer()],{type:file.type||'application/octet-stream'});
        let title=file.name.replace(/\.[^.]+$/,'').replace(/_/g,' '),author='Автор не указан',cover: string|undefined;
        const id=crypto.randomUUID();
@@ -67,10 +66,9 @@ export default function App(){
  function back(){setOpened(null);void refresh()}
  function update(s:ReaderSettings){setSettings(normalizeSettings(s))}
  return <>
-  {opened?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
-   opened.format==='epub'?<EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>:
-   <PdfReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
-   <Library books={books} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>setOpened(position?{...book,position}:book)} onImport={files=>void importFiles(files)}
+  {opened&&opened.format!=='pdf'?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
+   <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
+   <Library books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{if(book.format!=='pdf')setOpened(position?{...book,position}:book)}} onImport={files=>void importFiles(files)}
      onDelete={book=>void remove(book)} onBackupImported={refresh} loading={loading}/>}
   {error&&<div className="app-error" role="alert">{error}<button onClick={()=>setError('')}>Закрыть</button></div>}
  </>;
