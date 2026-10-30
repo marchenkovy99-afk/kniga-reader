@@ -22,7 +22,7 @@ test('an invalid saved chapter opens real content and preserves original bytes a
  });
  await page.reload();
  await page.locator('.continue-card').click();
- const flow=page.locator('.book-flow');
+ const flow=page.locator('.page-viewport > .book-flow');
  await expect(flow).toContainText('Начальный текст сохранён.');
  await expect(page.locator('.reading-progress strong')).toHaveText('50%');
  const restored=await page.evaluate(async()=>{
