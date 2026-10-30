@@ -675,3 +675,70 @@ body.reading .book-text {
 body.reading .book-text { opacity: 1 !important; }
 :root[data-theme=night] body.reading .book-text { color: #b8b8b5; }
 :root[data-theme=oled] body.reading .book-text { color: #b2b3b1; }
+
+
+/* LIBRA library refinement — editorial hierarchy without decorative cards.
+   Scoped to the shelf; pagination and reader geometry remain untouched. */
+body:not(.reading) .library {
+  --shelf-space: 20px;
+}
+body:not(.reading) .library-top {
+  border-bottom: 1px solid var(--line);
+}
+body:not(.reading) .library-heading {
+  padding-block: 24px 16px;
+}
+body:not(.reading) .library-heading h1 {
+  font-size: clamp(26px, 6vw, 34px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+body:not(.reading) .library-heading .import-button {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border-color: var(--line);
+  border-radius: 12px;
+}
+body:not(.reading) .continue {
+  gap: var(--shelf-space);
+  padding-bottom: 24px;
+  margin-bottom: 22px;
+}
+body:not(.reading) .continue-copy h2 {
+  line-height: 1.22;
+  letter-spacing: -.025em;
+}
+body:not(.reading) .continue-copy .button {
+  min-height: 46px;
+  border-radius: 10px;
+}
+body:not(.reading) .book-grid {
+  row-gap: 26px;
+}
+body:not(.reading) .book-card,
+body:not(.reading) .book-open {
+  min-width: 0;
+}
+body:not(.reading) .book-meta h3 {
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+body:not(.reading) .library-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+body:not(.reading) .book-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+@media(max-width:600px) {
+  body:not(.reading) .library-heading { padding-block: 18px 14px; }
+  body:not(.reading) .continue { gap: 16px; }
+  body:not(.reading) .book-grid { column-gap: 12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body:not(.reading) .library .book-card,
+  body:not(.reading) .library .book-open { animation: none !important; transition: none !important; }
+}
