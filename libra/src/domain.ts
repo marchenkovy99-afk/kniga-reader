@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 6,
   marginRight: 16, bottomMargin: 2, fontWeight: 400, hyphenation: 'auto', textContrast: 76
 };
+export type SavedQuote = { id:string; text:string; position:ReaderPosition; createdAt:number };
+
 export type ReaderPosition = {
   chapter: number;
   page: number;
@@ -44,5 +46,5 @@ export type ParsedFB2 = { title: string; author: string; cover?: string; chapter
 export type StoredBook = {
   id: string; filename: string; title: string; author: string; format: Format;
   file: Blob; cover?: string; importedAt: number; position?: ReaderPosition;
-  lastOpenedAt?: number; bookmarks: ReaderPosition[]; isFavorite?: boolean;
+  lastOpenedAt?: number; bookmarks: ReaderPosition[]; quotes?: SavedQuote[]; isFavorite?: boolean;
 };
