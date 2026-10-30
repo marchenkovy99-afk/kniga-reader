@@ -95,7 +95,11 @@ test('all source text and line fragments survive asymmetric margins, high font s
  }
  await page.reload();
  await page.locator('.continue-card').click();
- expect(await page.locator('.book-flow').innerText()).toBe(original);
+ // iOS WebKit can paint the reader shell before the file is parsed and
+ // the first chapter's measured columns are ready.
+ await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
+ await expect(page.locator('.page-viewport > .book-flow')).toContainText('КОНТРОЛЬ_ПОСЛЕДНЕГО_АБЗАЦА');
+ expect(await page.locator('.page-viewport > .book-flow').innerText()).toBe(original);
  const reloaded=await audit(page);
  expect(reloaded.bad,'after reload '+JSON.stringify(reloaded)).toEqual([]);
 });
