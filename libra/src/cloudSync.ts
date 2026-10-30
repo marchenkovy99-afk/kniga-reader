@@ -26,7 +26,7 @@ async function pull(owner:string,row:RemoteRecord,transport:CloudTransport,port:
  const existing=await port.book(id);
  const file=existing&&existing.file.size===p.size&&await sha256(existing.file)===p.sha256?existing.file:await transport.download(owner+'/'+p.sha256);
  if(file.size!==p.size||await sha256(file)!==p.sha256)throw Error('Проверка целостности облачной книги не пройдена');
- const book:StoredBook={id,filename:String(p.filename??'book.'+p.format),title:String(p.title??'Книга'),author:String(p.author??''),format:p.format as StoredBook['format'],importedAt:Number(p.importedAt)||Date.now(),file,bookmarks:p.bookmarks as StoredBook['bookmarks'],position:p.position as StoredBook['position'],lastOpenedAt:Number(p.lastOpenedAt)||undefined,cover:typeof p.cover==='string'&&p.cover.startsWith('data:image/')?p.cover:undefined};
+ const book:StoredBook={id,filename:String(p.filename??'book.'+p.format),title:String(p.title??'Книга'),author:String(p.author??''),format:p.format as StoredBook['format'],importedAt:Number(p.importedAt)||Date.now(),file,bookmarks:p.bookmarks as StoredBook['bookmarks'],position:p.position as StoredBook['position'],lastOpenedAt:Number(p.lastOpenedAt)||undefined,isFavorite:p.isFavorite===true,cover:typeof p.cover==='string'&&p.cover.startsWith('data:image/')?p.cover:undefined};
  return port.apply(owner,row.key,row.revision,book,undefined,generation);
 }
 async function push(owner:string,entry:CloudEntry,expected:number,transport:CloudTransport,port:LocalSyncPort){

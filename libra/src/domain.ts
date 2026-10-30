@@ -44,5 +44,5 @@ export type ParsedFB2 = { title: string; author: string; cover?: string; chapter
 export type StoredBook = {
   id: string; filename: string; title: string; author: string; format: Format;
   file: Blob; cover?: string; importedAt: number; position?: ReaderPosition;
-  lastOpenedAt?: number; bookmarks: ReaderPosition[];
+  lastOpenedAt?: number; bookmarks: ReaderPosition[]; isFavorite?: boolean;
 };

@@ -246,3 +246,22 @@ export async function applyCloudRecord(owner:string,key:string,revision:number,b
  store.put({id,owner,key,revision,pending:false,generation:old?.generation??0} satisfies CloudEntry);applied=true};
  tx.oncomplete=()=>resolve(applied);tx.onerror=()=>reject(tx.error)});
 }
+
+/** Persist a favorite flag atomically without loading or rewriting book bytes. */
+export async function setBookFavorite(id:string,isFavorite:boolean):Promise<void>{
+ const database=await db();
+ await new Promise<void>((resolve,reject)=>{
+  const tx=database.transaction(['books','cloud'],'readwrite');
+  const store=tx.objectStore('books');
+  const req=store.get(id);
+  req.onsuccess=()=>{
+   const book=req.result as PersistedBook|undefined;
+   if(!book){tx.abort();return}
+   store.put({...book,isFavorite});
+   queue(tx,'book:'+id);
+  };
+  tx.oncomplete=()=>{changed();resolve()};
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error??new Error('Книга не найдена'));
+ });
+}

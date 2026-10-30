@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
-import { listBooks, deleteBook, loadSettings, saveBook, saveSettings } from './storage';
+import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite } from './storage';
 import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
-import { setTheme } from './theme';
+import { setTheme,PALETTES } from './theme';
 import { normalizeSettings } from './readerSettings';
 import {useCloudSync} from './useCloudSync';
 import { Library } from './components/Library';
@@ -29,7 +29,15 @@ export default function App(){
   }).catch(e=>{if(live)setError('Не удалось открыть локальную библиотеку: '+String(e))});
   return ()=>{live=false};
  },[]);
- useEffect(()=>{setTheme(settings.theme);if(hydrated)void saveSettings(settings).catch(()=>{})},[settings,hydrated]);
+ useEffect(()=>{
+  setTheme(settings.theme);
+  document.documentElement.dataset.libraryView=opened?'false':'true';
+  const background=opened?PALETTES[settings.theme].background:'#151515';
+  document.documentElement.style.backgroundColor=background;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',background);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content',opened?PALETTES[settings.theme].status:'black');
+  if(hydrated)void saveSettings(settings).catch(()=>{});
+ },[settings,hydrated,opened]);
  async function refresh(){try{setBooks(await listBooks())}catch(e){setError(String(e))}}
  async function importFiles(list:FileList){
    setLoading(true);setError('');
@@ -65,13 +73,14 @@ export default function App(){
   if(!window.confirm('Удалить «'+book.title+'» из библиотеки?'))return;
   try{await deleteBook(book.id);forgetParsedFB2(book.id);await refresh()}catch(e){setError(String(e))}
  }
+ async function toggleFavorite(book:StoredBook){try{await setBookFavorite(book.id,!book.isFavorite);await refresh()}catch(e){setError('Не удалось обновить избранное: '+String(e))}}
  function back(){setOpened(null);void refresh()}
  function update(s:ReaderSettings){setSettings(normalizeSettings(s))}
  return <>
   {opened&&opened.format!=='pdf'?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
    <Library cloud={cloud} books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{if(book.format!=='pdf')setOpened(position?{...book,position}:book)}} onImport={files=>void importFiles(files)}
-     onDelete={book=>void remove(book)} onBackupImported={refresh} loading={loading}/>}
+     onDelete={book=>void remove(book)} onFavorite={book=>void toggleFavorite(book)} onBackupImported={refresh} loading={loading}/>}
   {error&&<div className="app-error" role="alert">{error}<button onClick={()=>setError('')}>Закрыть</button></div>}
  </>;
 }
