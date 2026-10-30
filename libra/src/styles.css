@@ -253,7 +253,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   hyphens:var(--hyphenation,auto);-webkit-hyphens:var(--hyphenation,auto)}
 .book-verse{max-width:100%}
 .book-figure{max-width:100%;min-width:0}
-.book-figure img{max-height:calc(var(--page-height) - 40px)}
+/* Reserve room for the figure's own 1.5em vertical margins, the inline
+   baseline, and WebKit rounding. A tall unbreakable image must never spill
+   beneath the visible column when font size or line height increases. */
+.book-figure img{display:block;margin-inline:auto;max-height:max(1px,calc(var(--page-height) - 2em - 16px));object-fit:contain}
 .book-table td{word-break:normal;overflow-wrap:anywhere}
 .type-preview{border:1px solid var(--border);border-radius:12px;background:var(--bg);
  color:var(--fg);padding:16px 18px;min-height:112px;max-height:210px;overflow:auto;
