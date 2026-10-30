@@ -61,6 +61,13 @@ export function measureColumns(scrollWidth:number,viewportWidth:number,gap:numbe
   if(viewportWidth<=0)return 1;
   return Math.max(1,Math.round((Math.max(scrollWidth,viewportWidth)+gap)/stride));
 }
+/** A bookmark may point outside the current chapter list after a malformed
+ * backup or book replacement. Start at the first existing chapter rather
+ * than rendering an endless loading screen. */
+export function restoreChapter(requested:number|undefined,count:number):number{
+  if(!Number.isSafeInteger(requested)||count<=0||requested!<0||requested!>=count)return 0;
+  return requested!;
+}
 export function clampPage(requested:number,count:number):number{
   return Math.min(Math.max(0,Math.floor(requested)),Math.max(0,count-1));
 }
@@ -69,5 +76,9 @@ export function restoreFraction(fraction:number,pageCount:number):number{
   return clampPage(Math.round(f*Math.max(0,pageCount-1)),pageCount);
 }
 export function progressOf(chapter:number,page:number,pages:number,chapters:number):number{
-  return Math.min(100,Math.max(0,Math.round((chapter+page/Math.max(1,pages))/Math.max(1,chapters)*100)));
+  if(chapters<=0||pages<=0)return 0;
+  // The last displayed page is the end of the chapter, including one-page
+  // chapters. An entire finished book must show 100%, not 90–99%.
+  const completed=Math.max(0,Math.min(chapters,chapter+(Math.min(Math.max(0,page),pages-1)+1)/pages));
+  return Math.min(100,Math.round(completed/chapters*100));
 }
