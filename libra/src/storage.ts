@@ -127,3 +127,34 @@ export async function toggleBookmark(id:string,position:ReaderPosition):Promise<
  });
  return updated.bookmarks;
 }
+
+/**
+ * Additive, atomic restore: never overwrite local books, reading state or
+ * preferences. The caller validates checksums before starting the transaction.
+ */
+export async function mergeBackupBooks(books:StoredBook[]):Promise<{added:number;skipped:number}>{
+ const records=await Promise.all(books.map(async book=>{
+  const {file,...meta}=book;
+  return {meta,bytes:await file.arrayBuffer(),mime:file.type};
+ }));
+ const database=await db();
+ return new Promise((resolve,reject)=>{
+  const tx=database.transaction(['books','reading'],'readwrite');
+  const bookStore=tx.objectStore('books'),stateStore=tx.objectStore('reading');
+  let added=0,skipped=0;
+  for(const record of records){
+   const req=bookStore.get(record.meta.id);
+   req.onsuccess=()=>{
+    if(req.result){skipped++;return}
+    const {meta,bytes,mime}=record;
+    bookStore.add({...meta,fileBytes:bytes,fileType:mime} satisfies PersistedBook);
+    stateStore.put({id:meta.id,position:meta.position,
+     bookmarks:meta.bookmarks||[],lastOpenedAt:meta.lastOpenedAt} satisfies ReadingState);
+    added++;
+   };
+  }
+  tx.oncomplete=()=>resolve({added,skipped});
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error??new Error('Восстановление не удалось'));
+ });
+}
