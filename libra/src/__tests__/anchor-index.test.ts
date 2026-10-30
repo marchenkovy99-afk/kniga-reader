@@ -36,11 +36,19 @@ describe('indexed chapter anchors',()=>{
   Object.defineProperty(flow,'getBoundingClientRect',{value:()=>({left:30,top:0,width:320,height:600})});
   Object.defineProperty(table,'getBoundingClientRect',{value:()=>({left:374,top:0,width:320,height:400})});
   const geo={width:320,gap:24};
-  // JSDOM has no real table text layout. A real rendered column may
-  // therefore use the structural table marker.
-  const anchor=getPageAnchor(flow,1,geo);
-  expect(anchor).toEqual({block:2,textNode:-1,offset:0});
-  expect(getAnchorPage(flow,anchor!,geo)).toBe(1);
-  expect(table.textContent).toBe('Содержимое таблицы');
+  // JSDOM does not implement Range.getClientRects. Simulate a table whose
+  // text produces no layout fragments, while its actual table box occupies
+  // the second column. The source text must remain untouched.
+  Object.defineProperty(Range.prototype,'getClientRects',{
+   configurable:true,value:()=>({item:()=>null})
+  });
+  try{
+   const anchor=getPageAnchor(flow,1,geo);
+   expect(anchor).toEqual({block:2,textNode:-1,offset:0});
+   expect(getAnchorPage(flow,anchor!,geo)).toBe(1);
+   expect(table.textContent).toBe('Содержимое таблицы');
+  }finally{
+   Reflect.deleteProperty(Range.prototype,'getClientRects');
+  }
  });
 });
