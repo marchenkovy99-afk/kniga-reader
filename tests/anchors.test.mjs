@@ -21,3 +21,24 @@ test('new spacing preferences survive reload after the one-time migration',async
  assert.equal(restoreSettings({paragraphSpacingVersion:1,paragraphGap:1.2}).paragraphGap,1.2);
  assert.equal(restoreSettings().paragraphGap,0);
 });
+
+test('zero page margins and vertical insets persist and are clamped independently',()=>{
+ const compact=clampSettings({margin:0,topInset:0,bottomInset:0});
+ assert.equal(compact.margin,0);
+ assert.equal(compact.topInset,0);
+ assert.equal(compact.bottomInset,0);
+ const extreme=clampSettings({margin:-10,topInset:-5,bottomInset:10000});
+ assert.equal(extreme.margin,0);
+ assert.equal(extreme.topInset,0);
+ assert.equal(extreme.bottomInset,40);
+});
+test('reloading saved compact settings retains user preference without discarding defaults',async()=>{
+ const {restoreSettings}=await import('../reader/src/anchors.js');
+ const restored=restoreSettings({margin:0,topInset:0,bottomInset:0,indent:0,letterSpacing:-.5,paragraphSpacingVersion:1});
+ assert.equal(restored.margin,0);
+ assert.equal(restored.topInset,0);
+ assert.equal(restored.bottomInset,0);
+ assert.equal(restored.indent,0);
+ assert.equal(restored.letterSpacing,-.5);
+ assert.equal(restored.font,'serif');
+});
