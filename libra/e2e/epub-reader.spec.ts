@@ -141,3 +141,57 @@ test('library sorting orders imported books and displays progress metadata',asyn
  await expect(page.locator('.book-tile-meta')).toHaveCount(2);
  await expect(page.locator('.book-tile-meta').first()).toContainText('EPUB');
 });
+
+
+test('EPUB final source paragraph is reachable after font and margin reflow',async({page})=>{
+ test.setTimeout(145000);
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'complete-book.epub',mimeType:'application/epub+zip',
+  buffer:epubFixture(false,'EPUB full-content test',12)
+ });
+ await page.locator('.continue-card').click();
+ const frame=page.frameLocator('.epub-mount iframe');
+ await expect(frame.locator('body')).toContainText('Passage 0',{timeout:15000});
+ await expect(frame.locator('body')).toContainText('END OF BOOK');
+ const before=await frame.locator('body').innerText();
+ await page.locator('.reading-zones').click({position:{x:195,y:240}});
+ await page.getByRole('button',{name:'Текст'}).click();
+ const sliders=page.locator('.sheet-settings input[type=range]');
+ await sliders.nth(0).fill('26');
+ await sliders.nth(1).fill('1.8');
+ await sliders.nth(2).fill('30');
+ await sliders.nth(8).fill('30');
+ await page.getByRole('button',{name:'Закрыть'}).click();
+ await expect(frame.locator('body')).toContainText('END OF BOOK');
+ expect(await frame.locator('body').innerText()).toBe(before);
+ const outer=page.locator('.epub-mount iframe');
+ const mount=page.locator('.epub-mount');
+ let accessible=false;
+ for(let i=0;i<100;i++){
+  const inner=await frame.locator('body > p:last-of-type').evaluate(el=>{
+   const rect=el.getBoundingClientRect();
+   return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height};
+  });
+  const [iframeBox,mountBox]=await Promise.all([
+   outer.boundingBox(),mount.boundingBox()
+  ]);
+  if(iframeBox&&mountBox){
+   const left=iframeBox.x+inner.left,right=iframeBox.x+inner.right;
+   const top=iframeBox.y+inner.top,bottom=iframeBox.y+inner.bottom;
+   if(inner.width>0&&inner.height>0&&left>=mountBox.x-3&&right<=mountBox.x+mountBox.width+3&&
+     top>=mountBox.y-3&&bottom<=mountBox.y+mountBox.height+3){
+    accessible=true;break;
+   }
+  }
+  await page.locator('.reading-zones').click({position:{x:345,y:350}});
+  await page.waitForTimeout(70);
+ }
+ expect(accessible,'EPUB terminal paragraph is not reachable within the visible page after reflow').toBe(true);
+ expect(await frame.locator('body').innerText()).toBe(before);
+ await page.reload();
+ await page.locator('.continue-card').click();
+ await expect(page.frameLocator('.epub-mount iframe').locator('body')).toContainText('END OF BOOK',{timeout:15000});
+ await expect(page.locator('.app-error')).toHaveCount(0);
+});
