@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {epubFixture} from './epub-reader.spec';
+import {epubFixture} from './support/epub-fixture';
 
 const fb2='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Цитатник</book-title></title-info></description><body><section><title><p>Начало</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Важные слова сохраняются без обрезки. '.repeat(10))+'</p>').join('')+'</section></body></FictionBook>';
 
