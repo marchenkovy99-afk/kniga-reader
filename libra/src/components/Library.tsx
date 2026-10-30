@@ -38,8 +38,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  return <div className="library-shell">
   <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<>
-   <header className="library-header"><div className="library-page-title"><h1>Библиотека</h1>
-    <button className="round-action" type="button" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus" size={27}/></button></div></header>
+   <header className="library-header"><div className="library-page-title"><h1>Библиотека</h1></div></header>
    <main className="library-main">
     <div className="library-state-tabs" role="group" aria-label="Статус чтения">
      {([{id:'all',label:'Все книги'},{id:'reading',label:'Читаю'},{id:'finished',label:'Прочитано'},{id:'favorite',label:'В избранном'}] as const).map(x=><button key={x.id} type="button" aria-pressed={filter===x.id} onClick={()=>{setFilter(x.id);setMenu(null)}}>{x.label}</button>)}
@@ -85,7 +84,9 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
     <div className="empty-library"><Icon name="bookmark" size={40}/><strong>Пока нет закладок</strong><p>Отмечайте важные места во время чтения.</p></div>}
   </main>}
   {tab==='settings'&&<main className="library-main library-secondary-page"><h1>Настройки</h1>
-   <div className="section-heading"><h2>Тема чтения</h2></div><p className="setting-hint">Выберите оформление страниц книги. Библиотека остаётся тёмной.</p>
+   <div className="section-heading"><h2>Импорт книг</h2></div>
+   <button className="backup-action" type="button" onClick={()=>input.current?.click()}>Добавить книгу (FB2, EPUB)</button>
+   <div className="section-heading" style={{marginTop:30}}><h2>Тема чтения</h2></div><p className="setting-hint">Выберите оформление страниц книги. Библиотека остаётся тёмной.</p>
    <div className="theme-options settings-themes">{(['paper','white','night','oled'] as const).map(t=><button key={t} className={'theme-swatch '+(settings.theme===t?'chosen':'')} data-option={t} onClick={()=>onSettings({...settings,theme:t})}><span>{t==='paper'?'Бумага':t==='white'?'Белая':t==='night'?'Ночь':'OLED'}</span></button>)}</div>
    <BackupPanel settings={settings} onSettings={onSettings} onImported={onBackupImported}/><CloudPanel cloud={cloud}/>
   </main>}
