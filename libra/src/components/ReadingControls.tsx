@@ -131,7 +131,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    {quoteMode&&quoteCapture&&<div className="quote-popover" role="group" aria-label="Действия с выделенной цитатой" style={{left:Math.min(Math.max(14,(quoteCapture.rect.left+quoteCapture.rect.right)/2-116),Math.max(14,window.innerWidth-246)),top:Math.min(Math.max(65,quoteCapture.rect.top-66),Math.max(65,window.innerHeight-110))}} onPointerDown={e=>e.preventDefault()}>
      <button type="button" onClick={()=>void saveQuote()} disabled={quoteBusy}>Сохранить цитату</button>
      <button type="button" onClick={()=>void copyQuote()}>Копировать</button>
-   </div>
+   </div>}
    <div className={'reading-bottom '+(panels?'visible':'')}>
      {chapterTitle&&<div className="reading-chapter">{chapterTitle}</div>}
      <div className="reading-progress"><span>{caption}</span><strong>{previewPercent}%</strong></div>
