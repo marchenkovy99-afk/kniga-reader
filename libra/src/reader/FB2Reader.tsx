@@ -11,6 +11,7 @@ import { bookPageLocation,bookPageNumber,chapterStartPages } from '../bookPagina
 import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
 import { ClippingAlert } from '../components/ClippingAlert';
 import {captureFB2Quote} from '../quoteSelection';
+import {applyFB2QuoteHighlights,clearQuoteHighlights} from '../quoteHighlights';
 
 const GAP=24;
 function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
@@ -56,6 +57,7 @@ function ChapterMeasure({chapter,width,height,style,onCount}:{chapter:Chapter;wi
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapters,setChapters]=useState<Chapter[]>([]);
+ const [quotes,setQuotes]=useState(book.quotes||[]);
  const [error,setError]=useState('');
  const [clipIssue,setClipIssue]=useState<ClipIssue|null>(null);
  const [retryVersion,setRetryVersion]=useState(0);
@@ -76,6 +78,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [tableLayout,setTableLayout]=useState<{key:string;indices:Set<number>}>(()=>({key:'',indices:new Set()}));
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
+ useLayoutEffect(()=>{
+  applyFB2QuoteHighlights(flow.current,quotes,chapter);
+  return ()=>clearQuoteHighlights(document);
+ },[quotes,chapter,chapters,geometry.width,geometry.height]);
  // Keep the outgoing page on screen while the next chapter's columns are
  // being measured. Otherwise WebKit paints provisional columns/offsets
  // on several consecutive frames, which looks like a horizontal jump.
@@ -370,7 +376,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapterTitle={actualChapter?.title}
   caption={clipIssue?'Глава с прокруткой':ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters.map((item,i)=>({title:item.title,page:chapterPages[i]}))} currentChapter={chapter}
-   quoteSelection={()=>captureFB2Quote(flow.current,position)} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
+   quoteSelection={()=>captureFB2Quote(flow.current,position)} onQuotesChange={setQuotes} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
   {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
    top:`calc(var(--reader-safe-top) + var(--reader-top-clearance, 8px) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
