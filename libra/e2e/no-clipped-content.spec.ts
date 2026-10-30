@@ -118,6 +118,10 @@ test('every fragment fits a real page and final source character is reachable af
   expect(checked.rectangles).toBeGreaterThan(100);
   expect(checked.firstPage).toBe(0);
   expect(checked.bad,'clipped glyphs at '+x.width+'x'+x.height+': '+JSON.stringify(checked.bad)).toEqual([]);
+  const current=await page.locator('.reading-progress span').textContent();
+  const advertised=Number(/из (\\d+)/.exec(current||'')?.[1]);
+  expect(advertised,'all rendered text columns must be reachable with page turns')
+   .toBe(checked.maxPage+1);
   expect(await page.locator('.book-flow').innerText()).toBe(text);
   await reachLastPage(page);
   await page.reload();
