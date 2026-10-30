@@ -10,9 +10,9 @@ type Props={
   onBack:()=>void; onNext:()=>void; onPrevious:()=>void;
   position:ReaderPosition; progress:number; caption:string;
   chapters?:{title:string}[]; currentChapter?:number; onChapter?:(index:number)=>void;
-  children:ReactNode; interactiveContent?:boolean;
+  children:ReactNode; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,modalContentOpen=false}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
@@ -37,7 +37,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
     setMarkError('Не удалось сохранить закладку');
    }finally{setMarkBusy(false)}
  }
- return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")}>
+ return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")}>
    <div className="reading-content">{children}</div>
    <div className="reading-zones" role="presentation"
      onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
