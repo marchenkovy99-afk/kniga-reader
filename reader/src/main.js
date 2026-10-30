@@ -313,7 +313,7 @@ async function layout(repair=null,attempt=0){
    const paintGuard=document.createElement('style');paintGuard.textContent=`@media ${paintQuery}{#flipbook.viewport-guard{visibility:visible}}`;stage.append(paintGuard,book);
    pageNodes=[];appendPageNodes();hydrateAround(pageIndex);
    const motion=pageTurnMotion(snapshot,matchMedia('(prefers-reduced-motion: reduce)').matches);
-   flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:true,maxShadowOpacity:0.24,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
+   flip=new PageFlip(book,{width,height,sizing:'fixed',initialPage:pageIndex,hardCovers:false,drawShadow:false,maxShadowOpacity:0,flippingTime:motion.flippingTime,allowTouchScroll:false,respectInteractiveContent:true,pointerInput:[],foldCornerOnHover:false,flipOnClick:'never',swipeDistance:35,pageBackground:'var(--paper)',respectReducedMotion:motion.respectReducedMotion});
    initializing=true;
    flip.on('flip',e=>{if(initializing||!stillCurrent())return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();requestAnimationFrame(verifyVisiblePage);});
    flip.loadFromHTML(pageNodes);flip.turnToPage(pageIndex);initializing=false;
