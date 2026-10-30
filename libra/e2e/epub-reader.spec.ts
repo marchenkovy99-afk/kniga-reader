@@ -270,3 +270,27 @@ test('EPUB clipped source block triggers recovery that exposes its full text',as
  expect(await body.locator('p').first().evaluate(el=>el.scrollHeight<=el.clientHeight+2)).toBe(true);
  await expect(body).toContainText('END OF BOOK');
 });
+
+
+test('near-end EPUB stays in reading filter until actual last page',async({page})=>{
+ test.setTimeout(90000);
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'completion.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'Exact completion',500)});
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ const slider=page.getByRole('slider',{name:'Прогресс чтения'});
+ await expect(slider).toBeEnabled({timeout:30000});
+ await slider.press('End');await expect(page.locator('.reading-progress strong')).toHaveText('100%');
+ await slider.press('ArrowLeft');await expect(page.locator('.reading-progress strong')).toHaveText('99%');
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await page.getByRole('button',{name:'Читаю',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(1);
+ await page.getByRole('button',{name:'Прочитано',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(0);
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ await expect(slider).toBeEnabled({timeout:30000});await slider.press('End');
+ await expect(page.locator('.reading-progress strong')).toHaveText('100%');
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await page.getByRole('button',{name:'Прочитано',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(1);
+});

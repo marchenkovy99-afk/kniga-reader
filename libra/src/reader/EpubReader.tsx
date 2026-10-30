@@ -152,10 +152,10 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const indexed=spine.length>0&&spine.every(s=>values[s.index]>0);
  const totalPages=indexed?spine.reduce((n,s)=>n+values[s.index],0):0;
  const globalPage=indexed?spine.filter(s=>s.index<view.index).reduce((n,s)=>n+values[s.index],0)+view.page:0;
- const progress=indexed?Math.min(100,Math.round(globalPage/Math.max(1,totalPages)*100)):Math.round((book.position?.fraction||0)*100);
+ const progress=indexed?(globalPage>=totalPages?100:Math.min(99,Math.round(globalPage/Math.max(1,totalPages)*100))):Math.round((book.position?.fraction||0)*100);
  useEffect(()=>{
   if(!indexed||!view.cfi)return;
-  void savePosition(book.id,{chapter:view.index,page:view.page-1,fraction:progress/100,cfi:view.cfi,updatedAt:Date.now()}).catch(console.error);
+  void savePosition(book.id,{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}).catch(console.error);
  },[indexed,globalPage,totalPages,view.cfi]);
  const go=(index:number,targetPage:number)=>enqueue(async()=>{
   const r=rendition.current,section=spineRef.current.find(s=>s.index===index);if(!r||!section)return;
@@ -180,7 +180,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   onNext={()=>turn(1)} onPrevious={()=>turn(-1)} safeMode={safeMode}
   chapters={chapters.length?chapters:undefined} currentChapter={currentChapter}
   onChapter={index=>{const item=chapters[index];if(item)enqueue(()=>rendition.current.display(item.href));}}
-  position={{chapter:view.index,page:view.page-1,fraction:progress/100,cfi:view.cfi,updatedAt:Date.now()}}
+  position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}}
   progress={progress} caption={safeMode?'Режим прокрутки':`Страница ${globalPage||view.page} из ${totalPages||view.total}`}
   pageNumber={indexed&&!safeMode?globalPage:undefined} totalPages={indexed&&!safeMode?totalPages:undefined}
   chapterTitle={chapters[currentChapter]?.title}
