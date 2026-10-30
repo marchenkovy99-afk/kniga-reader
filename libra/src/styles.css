@@ -750,3 +750,13 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
 }
 /* Browser with no native inter-character justification can still use
    Russian hyphenation rather than arbitrary mid-word breaks. */
+
+/* Atomic chapter switch: outgoing page stays fixed until the next chapter
+   has finished pagination. Never animate/reflow the frozen visual copy. */
+.page-viewport>.chapter-page-freeze{
+ position:absolute;inset:0;z-index:4;overflow:hidden;
+ background:var(--bg);pointer-events:none;contain:layout paint;
+}
+.page-viewport>.chapter-page-freeze>.book-flow{
+ position:relative;transition:none!important;will-change:auto!important;
+}

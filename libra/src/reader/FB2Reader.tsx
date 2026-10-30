@@ -75,6 +75,27 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [tableLayout,setTableLayout]=useState<{key:string;indices:Set<number>}>(()=>({key:'',indices:new Set()}));
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
+ // Keep the outgoing page on screen while the next chapter's columns are
+ // being measured. Otherwise WebKit paints provisional columns/offsets
+ // on several consecutive frames, which looks like a horizontal jump.
+ const frozenPage=useRef<HTMLDivElement|null>(null);
+ const clearFrozenPage=()=>{
+  frozenPage.current?.remove();
+  frozenPage.current=null;
+ };
+ const freezeVisiblePage=()=>{
+  if(frozenPage.current||!viewport.current||!flow.current)return;
+  const overlay=document.createElement('div');
+  overlay.className='chapter-page-freeze';
+  overlay.setAttribute('aria-hidden','true');
+  overlay.setAttribute('inert','');
+  const clone=flow.current.cloneNode(true) as HTMLDivElement;
+  clone.classList.add('no-animation');
+  clone.style.transition='none';
+  overlay.appendChild(clone);
+  viewport.current.appendChild(overlay);
+  frozenPage.current=overlay;
+ };
  const previous=useRef(false);
  const chapterRequest=useRef(0);
  const pendingChapter=useRef<number|null>(null);
@@ -184,13 +205,20 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  // committed to the screen. This prevents the initial or final page from
  // animating across the entire chapter at a chapter boundary.
  useLayoutEffect(()=>{
-  if(!ready||clipIssue)return;
+  if(clipIssue||error){clearFrozenPage();return}
+  if(!ready)return;
   let second=0;
   const first=requestAnimationFrame(()=>{
-   second=requestAnimationFrame(()=>setReflowing(false));
+   second=requestAnimationFrame(()=>{
+    // The destination's measured transform is now committed and painted.
+    // Release the old visible page only at this stable frame boundary.
+    clearFrozenPage();
+    setReflowing(false);
+   });
   });
   return ()=>{cancelAnimationFrame(first);cancelAnimationFrame(second)};
- },[ready,layoutKey,chapter,clipIssue]);
+ },[ready,layoutKey,chapter,clipIssue,error]);
+ useEffect(()=>()=>clearFrozenPage(),[]);
  // Check the displayed origin on every flip; a full glyph traversal is cached
  // until typography, source content, media or an external DOM mutation changes.
  useLayoutEffect(()=>{
@@ -241,6 +269,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  };
  const switchChapter=async(nextChapter:number,toLast=false)=>{
   if(!chapters[nextChapter])return;
+  // Capture the outgoing page before any state changes or asynchronous
+  // IndexedDB work. Never reveal the incoming chapter until measured.
+  freezeVisiblePage();
+  setReflowing(true);
   const request=++chapterRequest.current;
   pendingChapter.current=nextChapter;
   const key=layoutKey.slice(layoutKey.indexOf(':')+1);
@@ -328,6 +360,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    <div className="page-viewport" data-ready={ready} ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
+      visibility:ready||Boolean(clipIssue)?'visible':'hidden',
       transform:'translateX(-'+(page*(stride||geometry.width+GAP))+'px)'}}>
      {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
