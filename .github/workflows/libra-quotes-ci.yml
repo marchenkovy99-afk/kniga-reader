@@ -6,6 +6,9 @@ on:
       - 'libra/**'
       - '.github/workflows/libra-quotes-ci.yml'
   workflow_dispatch:
+concurrency:
+  group: libra-quote-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
