@@ -21,10 +21,10 @@ describe('quiet dark reading themes',()=>{
  });
  it('sets the exact dark background and reader tokens without transparency filters',()=>{
   setTheme('night');
-  expect(document.documentElement.style.getPropertyValue('--bg')).toBe('#191C1B');
-  expect(document.documentElement.style.getPropertyValue('--fg')).toBe('#C6C8C1');
+  expect(document.documentElement.style.getPropertyValue('--bg')).toBe('#1B1D1B');
+  expect(document.documentElement.style.getPropertyValue('--fg')).toBe('#B8BBB1');
   setTheme('oled');
   expect(document.documentElement.style.getPropertyValue('--bg')).toBe('#000000');
-  expect(document.documentElement.style.getPropertyValue('--fg')).toBe('#C0C2BC');
+  expect(document.documentElement.style.getPropertyValue('--fg')).toBe('#B8B9B0');
  });
 });
