@@ -316,7 +316,7 @@ test('publisher justified EPUB is rendered with equal word gaps and keeps origin
   const s=getComputedStyle(element);
   return {align:s.textAlign,last:s.textAlignLast,spacing:s.wordSpacing};
  });
- await expect.poll(async()=>(await check()).align).toBe('left');
+ await expect.poll(async()=>(await check()).align).toBe('justify');
  await expect.poll(async()=>(await check()).spacing).toBe('0px');
  await page.locator('.reading-zones').click({position:{x:190,y:240}});
  await page.getByRole('button',{name:'Текст'}).click();

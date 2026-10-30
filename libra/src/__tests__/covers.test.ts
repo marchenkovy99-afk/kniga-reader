@@ -10,7 +10,7 @@ it('creates stable book jackets with no fabricated cover images',()=>{
 it('stores temporary EPUB cover URLs as durable, portable data',async()=>{
  const original=globalThis.fetch;
  const bytes=new Uint8Array([137,80,78,71,13,10,26,10]);
- globalThis.fetch=vi.fn(async()=>new Response(new Blob([bytes],{type:'image/png'}),{status:200}));
+ globalThis.fetch=vi.fn(async()=>({ok:true,blob:async()=>new Blob([bytes],{type:'image/png'})} as Response));
  try{
   const data=await coverDataUrl('blob:https://example.test/cover');
   expect(data).toMatch(/^data:image\/png;base64,/);

@@ -48,8 +48,8 @@ describe('publisher spacing normalization',()=>{
   enforceEpubUniformSpacing(doc);
   const sheet=doc.getElementById('libra-uniform-spaces')!.textContent||'';
   expect(sheet).toContain('word-spacing:var(--libra-word-spacing,0px)!important');
-  expect(sheet).toContain('text-align:left!important');
-  expect(paragraph.style.getPropertyValue('text-align')).toBe('left');
+  expect(sheet).toContain('text-align:var(--libra-text-align,justify)!important');
+  expect(paragraph.style.getPropertyValue('text-align')).toBe('var(--libra-text-align,justify)');
   expect(paragraph.style.getPropertyPriority('text-align')).toBe('important');
   expect(paragraph.style.getPropertyValue('word-spacing')).toBe('var(--libra-word-spacing,0px)');
   expect(doc.querySelector('pre')!.getAttribute('style')).toContain('15px');

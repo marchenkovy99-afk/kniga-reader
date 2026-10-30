@@ -32,7 +32,7 @@ test('legacy book remains readable with even spaces and extended persistent typo
   return {alignment:s.textAlign,wordSpacing:s.wordSpacing,letterSpacing:s.letterSpacing,
    indent:p.textIndent,paragraphSpace:p.marginBottom,top:region.top,font:s.fontFamily};
  });
- expect(style.alignment).toBe('left');
+ expect(style.alignment).toBe('justify');
  expect(style.wordSpacing).toBe('2.5px');
  expect(style.letterSpacing).toBe('0.5px');
  expect(style.paragraphSpace).toBe('8px');

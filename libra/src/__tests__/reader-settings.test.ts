@@ -7,9 +7,9 @@ describe('reader typography normalization',()=>{
   const s=normalizeSettings({...DEFAULT_SETTINGS,margin:0,marginRight:0,verticalMargin:0,bottomMargin:0,paragraphSpacing:0,wordSpacing:0});
   for(const key of ['margin','marginRight','verticalMargin','bottomMargin','paragraphSpacing','wordSpacing'] as const)expect(s[key]).toBe(0);
  });
- it('migrates persisted stretched justification to even spaces',()=>{
-  const old={...DEFAULT_SETTINGS,align:'justify' as const};
-  expect(normalizeSettings(old).align).toBe('left');
+ it('automatically justifies existing libraries, including previous left alignment',()=>{
+  expect(normalizeSettings({...DEFAULT_SETTINGS,align:'left'}).align).toBe('justify');
+  expect(normalizeSettings({}).align).toBe('justify');
  });
  it('preserves the new word, letter, indent and vertical controls',()=>{
   const saved={...DEFAULT_SETTINGS,wordSpacing:2.5,letterSpacing:.4,paragraphSpacing:9,
