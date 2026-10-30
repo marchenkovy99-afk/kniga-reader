@@ -7,6 +7,7 @@ import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, p
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack } from '../readerSettings';
+import { bookPageLocation,bookPageNumber } from '../bookPagination';
 
 const GAP=24;
 function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
@@ -20,6 +21,35 @@ function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{blo
  if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
  return <p data-block-index={index} className="book-paragraph">{block.text}</p>;
 }
+/** Measure one chapter per frame using exactly the visible page's typography.
+ * This probe is inert, offscreen and never part of the accessibility tree. */
+function ChapterMeasure({chapter,width,height,style,onCount}:{chapter:Chapter;width:number;height:number;style:React.CSSProperties;onCount:(count:number)=>void}){
+ const ref=useRef<HTMLDivElement>(null);
+ const [tables,setTables]=useState<Set<number>>(()=>new Set());
+ useLayoutEffect(()=>{
+  let active=true;
+  const el=ref.current;if(!el)return;
+  const measure=()=>{
+   if(!active)return;
+   const oversized=Array.from(el.querySelectorAll<HTMLTableElement>('table.book-table'))
+    .filter(t=>Array.from(t.rows).some(row=>row.getBoundingClientRect().height>height-16))
+    .map(t=>Number(t.dataset.blockIndex)).filter(index=>!tables.has(index));
+   if(oversized.length){setTables(old=>new Set([...old,...oversized]));return;}
+   const stride=measureColumnStride(el,width,GAP);
+   onCount(measureRenderedPages(el,width,GAP,stride));
+  };
+  // Wait for intrinsic image sizes before accepting the page count.
+  const images=Array.from(el.querySelectorAll('img'));
+  void Promise.all([document.fonts.ready,...images.map(img=>img.decode().catch(()=>{}))])
+   .then(()=>{if(active)requestAnimationFrame(measure)});
+  return ()=>{active=false};
+ },[chapter,width,height,style,tables,onCount]);
+ return <div className="chapter-measure" aria-hidden="true" inert style={style}>
+  <div className="book-measure-flow" ref={ref} lang="ru" style={{width,height,columnWidth:width,columnGap:GAP}}>
+   {chapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={tables.has(index)} onMediaLoaded={()=>{}} onOpenTable={()=>{}}/>)}
+  </div>
+ </div>;
+}
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapters,setChapters]=useState<Chapter[]>([]);
@@ -32,10 +62,12 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [measuredKey,setMeasuredKey]=useState('');
  const [mediaVersion,setMediaVersion]=useState(0);
  const [reflowing,setReflowing]=useState(false);
+ const [pageIndex,setPageIndex]=useState<{key:string;counts:Record<number,number>}>({key:'',counts:{}});
+ const requestedPage=useRef<number|undefined>(undefined);
  const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
  // Some table rows are unbreakable in WebKit columns. Move a row that is
  // taller than the reading column into the full-content table viewer.
- const [nonfittingTables,setNonfittingTables]=useState<Set<number>>(()=>new Set());
+ const [tableLayout,setTableLayout]=useState<{key:string;indices:Set<number>}>(()=>({key:'',indices:new Set()}));
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
@@ -82,6 +114,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   settings.margin,settings.fontFamily,settings.align,settings.paragraphIndent,
   settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.verticalMargin,
   settings.marginRight,settings.bottomMargin,settings.fontWeight,settings.hyphenation]);
+ const nonfittingTables=tableLayout.key===layoutKey?tableLayout.indices:new Set<number>();
  useLayoutEffect(()=>{
   if(!flow.current||!geometry.width||!geometry.height)return;
   let active=true;
@@ -101,7 +134,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     // Re-render the actual source table as a scrollable accessible dialog
     // before accepting this pagination layout. No cell text is thrown away.
     setMeasuredKey('');
-    setNonfittingTables(old=>new Set([...old,...tooTall]));
+    setTableLayout(old=>({key:layoutKey,indices:new Set([...(old.key===layoutKey?old.indices:[]),...tooTall])}));
     return;
    }
    const actualStride=measureColumnStride(current,geometry.width,GAP);
@@ -112,32 +145,45 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    // Re-running measurements (fonts.ready, image loads, viewport changes)
    // must not undo an explicit chapter-boundary jump. Reuse the last page
    // until a precise source anchor is available.
-   const selected=previous.current?count-1:anchored??(
-    lastPosition.current?.chapter===chapter?clampPage(lastPosition.current.page,count):0);
-   if(previous.current){
-    lastPosition.current={chapter,page:selected,fraction:1,updatedAt:Date.now()};
-    const lastAnchor=getPageAnchor(current,selected,geo);
+   const explicitPage=requestedPage.current;
+   const selected=explicitPage??(previous.current?count-1:anchored??(
+    lastPosition.current?.chapter===chapter?clampPage(lastPosition.current.page,count):0));
+   requestedPage.current=undefined;
+   if(previous.current||explicitPage!==undefined){
+    lastPosition.current={chapter,page:clampPage(selected,count),fraction:lastPosition.current?.fraction||0,updatedAt:Date.now()};
+    const lastAnchor=getPageAnchor(current,clampPage(selected,count),geo);
     if(lastAnchor)anchorRef.current=lastAnchor;
    }
    previous.current=false;
    setPages(count);setPage(clampPage(selected,count));setMeasuredKey(layoutKey);
+   // Late image decoding or font readiness can change this count after all
+   // background probes have finished. Always refresh the shared page index.
+   const key=layoutKey.slice(layoutKey.indexOf(':')+1);
+   setPageIndex(old=>{
+    const counts=old.key===key?old.counts:{};
+    return counts[chapter]===count?old:{key,counts:{...counts,[chapter]:count}};
+   });
   };
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
   return ()=>{active=false;clearTimeout(animationTimer);cancelAnimationFrame(frame)};
- },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,nonfittingTables]);
+ },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout]);
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
   if(!ready||!flow.current)return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
-  const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
+  const measuredCounts=pageIndex.key===layoutKey.slice(layoutKey.indexOf(':')+1)?pageIndex.counts:{};
+  const allCounts=chapters.map((_,i)=>i===chapter?pages:measuredCounts[i]||0);
+  const fullyIndexed=allCounts.every(n=>n>0);
+  const fraction=fullyIndexed?bookPageNumber(allCounts,chapter,page)/allCounts.reduce((a,b)=>a+b,0):progressOf(chapter,page,pages,chapters.length)/100;
+  const position:ReaderPosition={chapter,page,fraction,
    anchor:anchorRef.current,updatedAt:Date.now()};
   lastPosition.current=position;
   // A small independent IndexedDB record is cheap enough to persist immediately.
   // Saving on each page flip avoids losing progress when iOS suspends the PWA.
   void savePosition(book.id,position).catch(console.error);
- },[ready,book.id,chapter,page,pages,geometry.width,layoutKey,stride]);
+ },[ready,book.id,chapter,page,pages,geometry.width,layoutKey,stride,pageIndex]);
  const setReaderPage=(target:number)=>{
   if(!ready||!flow.current)return;
   const safe=clampPage(target,pages);
@@ -149,7 +195,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   if(!chapters[nextChapter])return;
   previous.current=toLast;
   anchorRef.current=undefined;
-  setNonfittingTables(new Set());setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
+  setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
  };
  function next(){
   if(!ready)return;
@@ -175,16 +221,42 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   '--hyphenation':settings.hyphenation
  } as React.CSSProperties;
  const actualChapter=chapters[chapter];
- const position:ReaderPosition={chapter,page,fraction:pages>1?page/(pages-1):0,
+ const indexKey=layoutKey.slice(layoutKey.indexOf(':')+1);
+ const counts=pageIndex.key===indexKey?pageIndex.counts:{};
+ const knownCounts={...counts,...(ready?{[chapter]:pages}:{})};
+ const indexed=chapters.length>0&&chapters.every((_,i)=>knownCounts[i]>0);
+ const pageCounts=chapters.map((_,i)=>knownCounts[i]||0);
+ const totalPages=indexed?pageCounts.reduce((sum,n)=>sum+n,0):0;
+ const globalPage=indexed?bookPageNumber(pageCounts,chapter,page):0;
+ const probeChapter=ready?chapters.findIndex((_,i)=>!knownCounts[i]):-1;
+ const acceptCount=(target:number,count:number)=>{
+  setPageIndex(old=>{
+   const current=old.key===indexKey?old.counts:{};
+   if(current[target]===count&&current[chapter]===pages)return old;
+   return {key:indexKey,counts:{...current,[chapter]:pages,[target]:count}};
+  });
+ };
+ const seekPage=(number:number)=>{
+  if(!indexed||!ready)return;
+  const target=bookPageLocation(pageCounts,number);
+  if(target.chapter===chapter){setReaderPage(target.page);return;}
+  requestedPage.current=target.page;
+  switchChapter(target.chapter);
+ };
+ // Keep the small reading-state record and library percentage book-wide.
+ const bookProgress=indexed?Math.round(globalPage/totalPages*100):progressOf(chapter,page,pages,chapters.length);
+ const position:ReaderPosition={chapter,page,fraction:bookProgress/100,
   anchor:anchorRef.current,updatedAt:Date.now()};
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
-  position={position} progress={progressOf(chapter,page,pages,chapters.length)}
-  caption={ready?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
+  position={position} progress={bookProgress}
+  pageNumber={globalPage||undefined} totalPages={totalPages||undefined} onPage={indexed&&ready?seekPage:undefined}
+  chapterTitle={actualChapter?.title}
+  caption={ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
-   top:`calc(env(safe-area-inset-top) + ${settings.verticalMargin}px)`,
-   bottom:`calc(env(safe-area-inset-bottom) + ${settings.bottomMargin}px)`}}>
-   <div className="page-viewport" ref={viewport} style={style}>
+   top:`calc(var(--reader-safe-top) + ${settings.verticalMargin}px)`,
+   bottom:`calc(var(--reader-safe-bottom) + var(--reading-footer-height) + ${settings.bottomMargin}px)`}}>
+   <div className="page-viewport" data-ready={ready} ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
@@ -192,6 +264,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}
+  {probeChapter>=0&&<ChapterMeasure key={indexKey+':'+probeChapter} chapter={chapters[probeChapter]} width={geometry.width} height={geometry.height} style={style} onCount={count=>acceptCount(probeChapter,count)}/>}
   {expandedTable&&<div className="book-table-overlay" role="presentation">
    <section className="book-table-panel" role="dialog" aria-modal="true" aria-label="Таблица книги">
     <header><strong>Таблица · {expandedTable.length} строк</strong><button onClick={()=>setExpandedTable(null)} aria-label="Закрыть таблицу">Готово</button></header>

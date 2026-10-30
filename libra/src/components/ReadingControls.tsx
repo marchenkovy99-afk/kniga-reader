@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect,useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icons';
 import type { ReaderSettings, ReaderPosition, StoredBook } from '../domain';
 import { toggleBookmark } from '../storage';
@@ -9,19 +9,42 @@ type Props={
   book:StoredBook; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
   onBack:()=>void; onNext:()=>void; onPrevious:()=>void;
   position:ReaderPosition; progress:number; caption:string;
+  pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
   chapters?:{title:string}[]; currentChapter?:number; onChapter?:(index:number)=>void;
   children:ReactNode; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,modalContentOpen=false}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false}:Props){
  const [panels,setPanels]=useState(false);
- const [sheet,setSheet]=useState<'settings'|'chapters'|null>(null);
+ const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
  const [markBusy,setMarkBusy]=useState(false);
  const [markError,setMarkError]=useState('');
+ const [jump,setJump]=useState('');
+ const [seekDraft,setSeekDraft]=useState<number|null>(null);
+ const previewPercent=seekDraft===null?progress:Math.round(seekDraft/Math.max(1,totalPages||1)*100);
+ const commitSeek=(value:number)=>{onPage?.(value);setSeekDraft(null)};
+ const closeButton=useRef<HTMLButtonElement>(null);
+ const restoreFocus=useRef<HTMLElement|null>(null);
  const marked=bookmarks.some(saved=>sameBookmark(saved,position));
  const touch=useRef<{x:number;y:number}|null>(null);
  const ignoreClick=useRef(false);
  const update=<K extends keyof ReaderSettings>(key:K,value:ReaderSettings[K])=>onSettings({...settings,[key]:value});
+ useEffect(()=>{
+  if(!sheet)return;
+  restoreFocus.current=document.activeElement as HTMLElement;
+  closeButton.current?.focus();
+  return ()=>restoreFocus.current?.focus();
+ },[sheet]);
+ useEffect(()=>{
+  const key=(event:KeyboardEvent)=>{
+   const target=event.target as HTMLElement;
+   if(event.key==='Escape'){setSheet(null);setPanels(false);return;}
+   if(sheet||modalContentOpen||target.closest('input,select,button,textarea'))return;
+   if(event.key==='ArrowRight'||event.key==='PageDown'){event.preventDefault();onNext();}
+   if(event.key==='ArrowLeft'||event.key==='PageUp'){event.preventDefault();onPrevious();}
+  };
+  window.addEventListener('keydown',key);return ()=>window.removeEventListener('keydown',key);
+ },[sheet,modalContentOpen,onNext,onPrevious]);
  function onTap(x:number, left:number, width:number){
    if(sheet){setSheet(null);return;}
    const ratio=(x-left)/Math.max(1,width);
@@ -53,6 +76,10 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
        }
      }}
      onClick={e=>{if(ignoreClick.current)return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
+   <button className="reading-status" aria-label="Показать управление чтением" onClick={()=>setPanels(v=>!v)} disabled={modalContentOpen}>
+    <span>{pageNumber&&totalPages?`${pageNumber} / ${totalPages}`:caption}</span><span>{progress}%</span>
+    <i aria-hidden="true"><i style={{width:progress+'%'}}/></i>
+   </button>
    <header className={'reading-top '+(panels?'visible':'')}>
      <button aria-label="В библиотеку" onClick={onBack}><Icon name="back"/></button>
      <span className="reading-title">{book.title}</span>
@@ -60,25 +87,49 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    </header>
    {markError&&<div className="bookmark-error" role="alert">{markError}</div>}
    <div className={'reading-bottom '+(panels?'visible':'')}>
-     <div className="reading-progress"><span>{caption}</span><strong>{progress}%</strong></div>
-     <div className="reading-progress-track"><span style={{width:progress+'%'}} /></div>
+     {chapterTitle&&<div className="reading-chapter">{chapterTitle}</div>}
+     <div className="reading-progress"><span>{caption}</span><strong>{previewPercent}%</strong></div>
+     <input className="reading-seek" type="range" aria-label="Прогресс чтения" aria-valuetext={'Страница '+(seekDraft??pageNumber??1)+' из '+(totalPages||1)+', '+previewPercent+'% прочитано'} min="1" max={totalPages||1} step="1"
+      value={seekDraft??pageNumber??1} disabled={!onPage||!totalPages}
+      onChange={e=>setSeekDraft(Number(e.target.value))}
+      onPointerUp={e=>{commitSeek(Number(e.currentTarget.value))}}
+      onKeyUp={e=>{if(['ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(e.key)){commitSeek(Number(e.currentTarget.value))}}}
+      onBlur={e=>{if(seekDraft!==null){commitSeek(Number(e.currentTarget.value))}}}/>
+     {(!onPage||!totalPages)&&<small className="indexing-note">Считаем страницы… Читать уже можно.</small>}
      <nav className="reading-tools">
        <button onClick={()=>setSheet('chapters')} disabled={!chapters}><Icon name="list"/>Оглавление</button>
        <button onClick={()=>setSheet('settings')}><Icon name="type"/>Текст</button>
+       <button disabled={!totalPages||!onPage} onClick={()=>{setJump(String(pageNumber||1));setSheet('position')}}><Icon name="book"/>Страница</button>
      </nav>
    </div>
    {sheet&&<div className="sheet-scrim" onClick={()=>setSheet(null)}>
-      <div className="reading-sheet" onClick={e=>e.stopPropagation()}>
-       <div className="sheet-heading"><strong>{sheet==='settings'?'Настройки чтения':'Оглавление'}</strong><button aria-label="Закрыть" onClick={()=>setSheet(null)}><Icon name="close"/></button></div>
-       {sheet==='chapters'?<div className="chapter-menu">{chapters?.map((c,i)=><button className={currentChapter===i?'active':''} key={i} onClick={()=>{onChapter?.(i);setSheet(null);setPanels(false)}}>{c.title}</button>)}</div>:
+      <div className="reading-sheet" role="dialog" aria-modal="true" aria-label={sheet==='settings'?'Настройки чтения':sheet==='chapters'?'Оглавление':'Перейти на страницу'} onClick={e=>e.stopPropagation()}
+       onKeyDown={e=>{
+        if(e.key!=='Tab')return;
+        const controls=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select,a[href]'));
+        const first=controls[0],last=controls[controls.length-1];
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+       }}>
+       <div className="sheet-heading"><strong>{sheet==='settings'?'Настройки чтения':sheet==='chapters'?'Оглавление':'Перейти на страницу'}</strong><button ref={closeButton} aria-label="Закрыть" onClick={()=>setSheet(null)}><Icon name="close"/></button></div>
+       {sheet==='position'?<form className="page-jump" onSubmit={e=>{e.preventDefault();const value=Number(jump);if(Number.isFinite(value)&&value>=1&&value<=(totalPages||1)){onPage?.(value);setSheet(null);setPanels(false)}}}>
+         <label htmlFor="page-number">Страница от 1 до {totalPages}</label>
+         <input id="page-number" type="number" inputMode="numeric" min="1" max={totalPages} step="1" required value={jump} onChange={e=>setJump(e.target.value)}/>
+         {conditionalPages&&<p>В EPUB используются условные страницы по объёму текста. Они сохраняют номер при изменении шрифта.</p>}
+         <button type="submit">Перейти</button>
+       </form>:sheet==='chapters'?<div className="chapter-menu">{chapters?.map((c,i)=><button className={currentChapter===i?'active':''} key={i} onClick={()=>{onChapter?.(i);setSheet(null);setPanels(false)}}>{c.title}</button>)}</div>:
        <div className="sheet-settings">
-         <div className="settings-section-title">Как будет выглядеть текст</div>
+         <div className="reading-presets" aria-label="Готовые настройки текста">
+          <button onClick={()=>onSettings({...settings,fontSize:18,lineHeight:1.3,margin:12,marginRight:12,verticalMargin:4,bottomMargin:0,paragraphSpacing:0,wordSpacing:0,letterSpacing:0})}>Компактно</button>
+          <button onClick={()=>onSettings(resetTypography(settings))}>Обычно</button>
+          <button onClick={()=>onSettings({...settings,fontSize:24,lineHeight:1.5,margin:20,marginRight:20,verticalMargin:8,bottomMargin:4})}>Крупно</button>
+         </div>
          <div className="type-preview" aria-label="Предпросмотр типографики" style={{
           fontFamily:fontStack(settings.fontFamily),fontSize:Math.min(settings.fontSize,27),
           fontWeight:settings.fontWeight,lineHeight:settings.lineHeight,
           wordSpacing:settings.wordSpacing,letterSpacing:settings.letterSpacing,
           hyphens:settings.hyphenation,textAlign:'left'
-         }}>Правильно подобранные интервалы помогают читать свободно, не растягивая пробелы.</div>
+         }}>За окном медленно гас день. В комнате было тихо, и можно было наконец открыть книгу.</div>
          <div className="settings-section-title">Шрифт</div>
          <div className="font-buttons font-choices">
            {([
@@ -107,7 +158,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          <label>Поле снизу <strong>{settings.bottomMargin} px</strong><input type="range" min="0" max="52" step="2" value={settings.bottomMargin} onChange={e=>update('bottomMargin',Number(e.target.value))}/></label>
          <label>Насыщенность текста <strong>{settings.fontWeight}</strong><input type="range" min="400" max="600" step="100" value={settings.fontWeight} onChange={e=>update('fontWeight',Number(e.target.value))}/></label>
          <div className="setting-row"><span>Перенос слов</span><button type="button" aria-label="Перенос слов" onClick={()=>update('hyphenation',settings.hyphenation==='auto'?'none':'auto')}>{settings.hyphenation==='auto'?'Автоматический':'Выключен'}</button></div>
-         <div className="settings-hint">Межсловные интервалы остаются одинаковыми. Слова не растягиваются до правого края.</div>
+         <div className="settings-hint">Равные пробелы между словами. Поля и интервалы применяются ко всей книге.</div>
          <button type="button" className="typography-reset" onClick={()=>onSettings(resetTypography(settings))}>Сбросить настройки текста</button>
          <div className="theme-options">{(['paper','white','night','oled'] as const).map(name=><button key={name} className={'theme-swatch '+(settings.theme===name?'chosen':'')} data-option={name} title={name} onClick={()=>update('theme',name)}><span>{name==='paper'?'Бумага':name==='white'?'Белая':name==='night'?'Ночь':'OLED'}</span></button>)}</div>
          

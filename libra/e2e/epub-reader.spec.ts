@@ -195,3 +195,39 @@ test('EPUB final source paragraph is reachable after font and margin reflow',asy
  await expect(page.frameLocator('.epub-mount iframe').locator('body')).toContainText('END OF BOOK',{timeout:15000});
  await expect(page.locator('.app-error')).toHaveCount(0);
 });
+
+test('EPUB slider reaches final glyph and persists progress without rounded keyboard stalls',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'seek.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'EPUB seeking',40)});
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ const slider=page.getByRole('slider',{name:'Прогресс чтения'});
+ await expect(slider).toBeEnabled();
+ await slider.press('Home');
+ await expect(slider).toHaveValue('1');
+ for(const target of [2,3,4]){
+  await slider.press('ArrowRight');
+  await expect(slider).toHaveValue(String(target));
+ }
+ await page.getByRole('button',{name:'Текст',exact:true}).click();
+ await page.getByRole('slider',{name:/Размер текста/}).press('End');
+ await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ await slider.press('End');
+ await expect(page.locator('.reading-progress strong')).toHaveText('100%');
+ await expect.poll(()=>page.locator('.epub-mount').evaluate(host=>{
+  const iframe=host.querySelector('iframe')!;
+  const body=iframe.contentDocument?.body;
+  const last=body?.querySelector('p:last-child');
+  if(!last?.firstChild)return false;
+  const range=iframe.contentDocument!.createRange();
+  range.setStart(last.firstChild,Math.max(0,last.firstChild.textContent!.length-1));
+  range.setEnd(last.firstChild,last.firstChild.textContent!.length);
+  const glyph=range.getBoundingClientRect(),frame=iframe.getBoundingClientRect(),vp=host.getBoundingClientRect();
+  return glyph.left+frame.left>=vp.left-2&&glyph.right+frame.left<=vp.right+2&&glyph.top+frame.top>=vp.top-2&&glyph.bottom+frame.top<=vp.bottom+2;
+ })).toBe(true);
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await expect(page.locator('.book-tile-meta')).toContainText('100% прочитано');
+ await page.reload();await page.locator('.continue-card').click();
+ await expect(page.getByRole('button',{name:'Показать управление чтением'})).toContainText('100%');
+});

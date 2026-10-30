@@ -56,3 +56,19 @@ The reader opens and imports **FB2 and EPUB only**. PDF import and rendering hav
 ## Data safety
 
 All user books remain device-local in this alpha. Do not remove the original reader or its Supabase database. No legacy cloud migration or upload is enabled. IndexedDB v2 separates high-frequency reading state from large immutable files; an upgrade cursor copies V1 positions and bookmarks in the same upgrade transaction. Browser tests cover the migration scenario. Incognito mode or deletion of site data can still remove local books, so maintain a separate copy of the original files.
+
+## Reading interface update (2026-10-30)
+
+- Compact persistent page/percentage footer; tap the centre of the page or the
+  footer for the whole-book slider, contents, typography and page-number jump.
+- FB2 page totals measure every chapter with the current font and viewport.
+  Background counts do not block initial reading; changing settings preserves
+  the source anchor and refreshes the total.
+- EPUB uses conditional 1,600-character locations. These page numbers stay
+  stable across typography changes; the final slider position opens the end.
+- Denser defaults and Compact / Standard / Large presets, independent side and
+  vertical margins, line/word/letter spacing, weight, indent and paragraph gap.
+- Safe-area insets are shared tokens and applied once; the visible text area
+  excludes the compact footer. Source DOM is not truncated to fill a page.
+- Device-local books and settings remain in the same IndexedDB and origin.
+  This update does not add cloud sync or PDF support.

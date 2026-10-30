@@ -13,7 +13,7 @@ describe('EPUB live appearance',()=>{
   expect(changes.get('color')).toBe('#F2F2EF');
   expect(changes.get('font-size')).toBe('24px');
   expect(changes.get('line-height')).toBe('1.65');
-  expect(changes.get('padding')).toBe('12px 20px 12px 12px');
+  expect(changes.get('padding')).toBe('6px 16px 2px 12px');
  });
  it('sets text alignment and font family without recreating the book',()=>{
   const entries:Record<string,string>={};

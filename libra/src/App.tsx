@@ -37,7 +37,7 @@ export default function App(){
        if(!format)throw new Error('Поддерживаются только FB2 и EPUB');
        const blob=new Blob([await file.arrayBuffer()],{type:file.type||'application/octet-stream'});
        let title=file.name.replace(/\.[^.]+$/,'').replace(/_/g,' '),author='Автор не указан',cover: string|undefined;
-       const id=crypto.randomUUID();
+       const id=typeof crypto.randomUUID==='function'?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
        if(format==='fb2'){
          const parsed=parseFB2(await decodeFB2Blob(file));title=parsed.title;author=parsed.author;cover=parsed.cover;
          seedParsedFB2(id,parsed);

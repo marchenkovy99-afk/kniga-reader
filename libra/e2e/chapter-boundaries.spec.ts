@@ -31,13 +31,15 @@ test('switching between chapters preserves last page and all body content',async
  await expect(flow).not.toContainText('КОНЕЦ_ПЕРВОЙ_ГЛАВЫ');
  // Back from the first page of chapter two should land at the LAST page
  // of chapter one, not at its beginning or in an unrelated chapter.
- await expect(page.locator('.reading-progress')).toContainText('Страница 1 из');
+ const secondStart=await page.locator('.reading-progress span').innerText();
+ const secondPage=Number(/Страница (\d+)/.exec(secondStart)?.[1]);
+ expect(secondPage).toBeGreaterThan(1);
  await page.locator('.reading-zones').click({position:{x:45,y:220}});
  await expect(flow).toContainText('КОНЕЦ_ПЕРВОЙ_ГЛАВЫ');
- await expect(page.locator('.reading-progress')).not.toContainText('Страница 1 из');
+ await expect.poll(async()=>Number(/Страница (\d+)/.exec(await page.locator('.reading-progress span').innerText())?.[1])).toBe(secondPage-1);
  await page.locator('.reading-zones').click({position:{x:340,y:220}});
  await expect(flow).toContainText('КОНЕЦ_ВТОРОЙ_ГЛАВЫ');
- await expect(page.locator('.reading-progress')).toContainText('Страница 1 из');
+ await expect(page.locator('.reading-progress span')).toHaveText(secondStart);
  // The trailing FB2 <body name=notes> must be preserved as its own chapter.
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  await page.getByRole('button',{name:'Оглавление'}).click();
