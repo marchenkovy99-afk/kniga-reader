@@ -247,7 +247,7 @@ test('EPUB uses a distinct page number per turn and keeps zero-margin frame stat
  const slider=page.getByRole('slider',{name:'Прогресс чтения'});
  await expect(slider).toBeEnabled();await slider.press('Home');
  await expect(slider).toHaveValue('1');
- await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ await page.getByRole('button',{name:'Скрыть управление чтением'}).click();
  const fixed=await page.locator('.epub-mount').boundingBox();expect(fixed).toBeTruthy();
  for(let expected=2;expected<=9;expected++){
   await page.locator('.reading-zones').click({position:{x:345,y:350}});

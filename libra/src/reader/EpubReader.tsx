@@ -16,6 +16,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const epub=useRef<any>(null),rendition=useRef<any>(null),live=useRef(false),busy=useRef(false);
  const lastCfi=useRef(book.position?.cfi||''),settingsRef=useRef(settings);settingsRef.current=settings;
  const queue=useRef<Promise<unknown>>(Promise.resolve());
+ const settledKey=useRef('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [chapters,setChapters]=useState<EpubChapter[]>([]),[spine,setSpine]=useState<Section[]>([]);
@@ -60,9 +61,12 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  auditRef.current=()=>{
   if(safeRef.current||!host.current||!rendition.current||busy.current||geometry.width<1||geometry.height<1)return;
   const r=rendition.current;
+  if(settledKey.current!==keyRef.current||Math.abs(host.current.clientWidth-geometry.width)>1||Math.abs(host.current.clientHeight-geometry.height)>1)return;
+  const layout=r.layout();
+  if(Math.abs(layout.width-geometry.width)>1||Math.abs(layout.height-geometry.height)>1)return;
   for(const content of r.getContents?.()||[]){
    const body=content.document?.body as HTMLElement|undefined;if(!body)continue;
-   const problem=inspectTextColumns(body,{width:geometry.width,height:geometry.height,stride:r.layout?.delta||geometry.width,originLeft:0,originTop:0});
+   const problem=inspectTextColumns(body,{width:geometry.width,height:geometry.height,stride:r.layout()?.delta||geometry.width,originLeft:0,originTop:0});
    if(problem){setIssue(problem);setSafeMode(true);return;}
   }
  };
@@ -104,12 +108,14 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  },[book.id,book.file]);
  useEffect(()=>{
   const rend=rendition.current;if(!rend||!loaded||geometry.width<1||geometry.height<1)return;
-  const restore=lastCfi.current;
+  const restore=lastCfi.current;settledKey.current='';const measuringKey=layoutKey;
   enqueue(async()=>{
    applyEpubAppearance(rend.themes,settingsRef.current);
    rend.clear();rend.resize(geometry.width,geometry.height,restore);
    await rend.display(restore||undefined);
+   await settleEpub(rend);
    for(const c of rend.getContents?.()||[])if(c.document?.body)invalidateTextColumnAudit(c.document.body);
+   settledKey.current=measuringKey;
   });
  },[loaded,layoutKey,retry]);
  useEffect(()=>{if(rendition.current)applyEpubAppearance(rendition.current.themes,settings)},[settings.theme]);
@@ -137,7 +143,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   void measure();return()=>{active=false;try{probe?.destroy()}catch{}};
  },[loaded,layoutKey,spine,safeMode]);
  useEffect(()=>{
-  const r=rendition.current;if(!r||!loaded)return;
+  const r=rendition.current;if(!r||!loaded||(!safeMode&&r.settings.flow==='paginated'))return;
   enqueue(async()=>{
    applyEpubSafety(r,safeMode);r.flow(safeMode?'scrolled-doc':'paginated');r.clear();await r.display(lastCfi.current||undefined);
   });
@@ -156,7 +162,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   await r.display(section.href);await settleEpub(r);
   const here=physicalPage(r.currentLocation());
   const selected=targetPage===Infinity?here.total:Math.max(1,Math.min(here.total,targetPage));
-  r.moveTo({left:(selected-1)*r.layout.delta,top:0});r.reportLocation();
+  r.moveTo({left:(selected-1)*r.layout().delta,top:0});r.reportLocation();
  });
  const turn=(direction:number)=>enqueue(async()=>{
   const r=rendition.current,loc=physicalPage(r.currentLocation()),order=spineRef.current;
@@ -164,7 +170,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   if(direction>0&&loc.page>=loc.total&&order[offset+1]){await r.display(order[offset+1].href);return;}
   if(direction<0&&loc.page<=1&&order[offset-1]){
    await r.display(order[offset-1].href);await settleEpub(r);
-   const last=physicalPage(r.currentLocation());r.moveTo({left:(last.total-1)*r.layout.delta,top:0});r.reportLocation();return;
+   const last=physicalPage(r.currentLocation());r.moveTo({left:(last.total-1)*r.layout().delta,top:0});r.reportLocation();return;
   }
   if(direction>0)await r.next();else await r.prev();
  });

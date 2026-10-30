@@ -77,7 +77,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
        }
      }}
      onClick={e=>{if(ignoreClick.current)return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
-   <button className="reading-status" aria-label="Показать управление чтением" onClick={()=>setPanels(v=>!v)} disabled={modalContentOpen}>
+   <button className="reading-status" aria-label="Показать управление чтением" aria-expanded={panels} onClick={()=>setPanels(v=>!v)} disabled={modalContentOpen}>
     <span>{pageNumber&&totalPages?`${pageNumber} / ${totalPages}`:caption}</span><span>{progress}%</span>
     <i aria-hidden="true"><i style={{width:progress+'%'}}/></i>
    </button>
@@ -85,6 +85,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
      <button aria-label="В библиотеку" onClick={onBack}><Icon name="back"/></button>
      <span className="reading-title">{book.title}</span>
      <button aria-label="Закладка" aria-pressed={marked} disabled={markBusy} onClick={()=>void mark()}><Icon name="bookmark" fill={marked?'currentColor':'none'}/></button>
+     <button type="button" className="reading-panels-close" aria-label="Скрыть управление чтением" title="Скрыть управление чтением" onClick={()=>setPanels(false)}><Icon name="close"/></button>
    </header>
    {markError&&<div className="bookmark-error" role="alert">{markError}</div>}
    <div className={'reading-bottom '+(panels?'visible':'')}>

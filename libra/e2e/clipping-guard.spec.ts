@@ -32,7 +32,8 @@ test('real glyph overflow raises an error and exposes the complete chapter throu
  expect(await savedPosition(page),'safe scrolling must retain the saved source anchor and paginated progress').toEqual(before);
  await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await expect(page.getByRole('button',{name:'Текст'})).toBeVisible();
- await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ await page.getByRole('button',{name:'Скрыть управление чтением'}).click();
+ await expect(page.locator('.reading-bottom')).toBeHidden();
  // Retry must run the audit again, so an unresolved error cannot simply disappear.
  await page.getByRole('button',{name:'Проверить страницы'}).click();
  await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');

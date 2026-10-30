@@ -3,7 +3,8 @@ export default defineConfig({
  testDir:'./e2e',
  timeout:45000,
  retries:process.env.CI?1:0,
- reporter:process.env.CI?'github':'list',
+ reporter:'list',
+ maxFailures:process.env.CI?3:0,
  use:{baseURL:'http://127.0.0.1:4173',trace:'retain-on-failure',screenshot:'only-on-failure'},
  projects:[
   {name:'chromium-iphone',use:{...devices['iPhone 13'],browserName:'chromium'}},
