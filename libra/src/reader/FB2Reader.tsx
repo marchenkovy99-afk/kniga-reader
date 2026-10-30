@@ -3,7 +3,7 @@ import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from 
 import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
 import { loadParsedFB2 } from './parsedFB2Cache';
-import { clampPage, measureRenderedPages, measureColumnStride, progressOf } from '../pagination';
+import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, progressOf } from '../pagination';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack } from '../readerSettings';
@@ -40,8 +40,20 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  useEffect(()=>{
   let cancelled=false;
-  loadParsedFB2(book).then(result=>{if(!cancelled)setChapters(result.chapters)})
-   .catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
+  loadParsedFB2(book).then(result=>{
+   if(cancelled)return;
+   const savedChapter=lastPosition.current?.chapter;
+   const validChapter=restoreChapter(savedChapter,result.chapters.length);
+   if(validChapter!==savedChapter){
+    // Keep original book bytes and bookmarks. Discard only the unusable
+    // navigation location so pagination can start from visible text.
+    anchorRef.current=undefined;
+    lastPosition.current=undefined;
+    setPage(0);
+   }
+   setChapter(validChapter);
+   setChapters(result.chapters);
+  }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
   return ()=>{cancelled=true};
  },[book.id,book.file]);
  useLayoutEffect(()=>{
