@@ -6,8 +6,8 @@ const fixture='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'
 const themes=[
  {name:'paper',background:'rgb(247, 244, 239)',meta:'#F7F4EF',status:'default'},
  {name:'white',background:'rgb(255, 255, 255)',meta:'#FFFFFF',status:'default'},
- {name:'night',background:'rgb(29, 31, 30)',meta:'#1D1F1E',status:'black-translucent'},
- {name:'oled',background:'rgb(0, 0, 0)',meta:'#000000',status:'black-translucent'}
+ {name:'night',background:'rgb(29, 31, 30)',meta:'#1D1F1E',status:'black'},
+ {name:'oled',background:'rgb(0, 0, 0)',meta:'#000000',status:'black'}
 ] as const;
 
 test('theme color matches every shell panel, reader chrome and iPhone status-bar metadata',async({page})=>{
