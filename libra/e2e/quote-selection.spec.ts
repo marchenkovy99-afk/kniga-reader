@@ -7,6 +7,7 @@ test('FB2 quote action selects text without intercepting book gestures, saves an
  await page.goto('/');
  await page.locator('input[type=file]').setInputFiles({name:'quote.fb2',mimeType:'application/xml',buffer:Buffer.from(fb2)});
  await page.locator('.continue-card').click();
+ await expect(page.locator('.book-flow')).toBeVisible();
  await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await page.getByRole('button',{name:'Цитата',exact:true}).click();
  await expect(page.locator('.reading-root')).toHaveClass(/reading-quote-mode/);
@@ -20,6 +21,7 @@ test('FB2 quote action selects text without intercepting book gestures, saves an
  await page.getByRole('button',{name:'Сохранить цитату'}).click();
  await expect(page.getByRole('status')).toContainText('Цитата сохранена');
  await expect(page.locator('.reading-root')).not.toHaveClass(/reading-quote-mode/);
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Цитаты',exact:true}).click();
  await expect(page.locator('.saved-quote')).toHaveCount(1);
