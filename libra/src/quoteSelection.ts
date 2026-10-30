@@ -45,11 +45,15 @@ export function captureEpubQuote(contents:readonly any[],position:ReaderPosition
  for(const content of contents){
   const doc:Document|undefined=content?.document;
   if(!doc)continue;
-  const selected=selectedText(doc.getSelection());if(!selected)continue;
+  const selected=selectedText(doc.getSelection?.()??doc.defaultView?.getSelection()??null);if(!selected)continue;
   const {range,text}=selected;
   if(!doc.body?.contains(range.commonAncestorContainer))continue;
-  const rect=visibleRect(range.getBoundingClientRect());if(!rect)continue;
-  const frame=doc.defaultView?.frameElement as HTMLElement|null;
+  const fallback=range.startContainer.nodeType===Node.TEXT_NODE?range.startContainer.parentElement:range.startContainer as Element;
+  const bounds=range.getBoundingClientRect(),first=range.getClientRects()[0];
+  const rect=visibleRect(bounds)|| (first?visibleRect(first):null) ||
+   (fallback instanceof HTMLElement?visibleRect(fallback.getBoundingClientRect()):null);
+  if(!rect)continue;
+  const frame=(doc.defaultView?.frameElement as HTMLElement|null)||document.querySelector<HTMLElement>('.epub-mount iframe');
   if(!frame)continue;
   const offset=frame.getBoundingClientRect();
   let cfi=position.cfi;
