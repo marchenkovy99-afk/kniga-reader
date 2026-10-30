@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** Stored ZIP writer: minimum EPUB2 fixture, no external services or fixtures. */
-function epubFixture():Buffer{
+function epubFixture(complex=false):Buffer{
  const chapterParagraphs=Array.from({length:140},(_,i)=>
   '<p>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
@@ -11,6 +11,24 @@ function epubFixture():Buffer{
   ['OEBPS/toc.ncx','<?xml version="1.0" encoding="UTF-8"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="urn:uuid:aa-bb-cc"/></head><docTitle><text>EPUB fixture</text></docTitle><navMap><navPoint id="one" playOrder="1"><navLabel><text>Opening</text></navLabel><content src="one.xhtml"/></navPoint></navMap></ncx>'],
   ['OEBPS/one.xhtml','<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Opening</title></head><body><h1>FIRST CHAPTER</h1>'+chapterParagraphs+'<p>END OF BOOK</p></body></html>']
  ];
+
+ if(complex){
+  const opf=files.find(x=>x[0]==='OEBPS/content.opf')!;
+  opf[1]=opf[1]
+   .replace('</manifest>','<item id="c2" href="second.xhtml" media-type="application/xhtml+xml"/></manifest>')
+   .replace('</spine>','<itemref idref="c2"/></spine>');
+  const ncx=files.find(x=>x[0]==='OEBPS/toc.ncx')!;
+  ncx[1]=ncx[1].replace('</navMap>','<navPoint id="two" playOrder="2"><navLabel><text>Вторая глава</text></navLabel><content src="second.xhtml"/></navPoint></navMap>');
+  const pixel='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLytQAAAABJRU5ErkJggg==';
+  files.push(['OEBPS/second.xhtml',
+   '<?xml version="1.0" encoding="UTF-8"?>'+
+   '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Вторая глава</title></head><body>'+
+   '<h1>SECOND CHAPTER</h1>'+
+   '<p>Тестируем изображения и широкую таблицу, сохранение всех символов.</p>'+
+   '<table><tbody><tr><td>LEFT CELL</td><td>EXTREMELY_LONG_UNBREAKABLE_CELL_VALUE_123456789_987654321</td></tr></tbody></table>'+
+   '<p><img alt="Тестовая иллюстрация" src="data:image/png;base64,'+pixel+'"/></p>'+
+   '<p>END OF SECOND CHAPTER</p></body></html>']);
+ }
  const crc32=(buffer:Buffer)=>{
   let crc=0xffffffff;
   for(const b of buffer){
@@ -71,4 +89,54 @@ test('real EPUB stays readable across font, margin and palette adjustments',asyn
  await page.locator('.continue-card').click();
  await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:15000});
  await expect(page.locator('.app-error')).toHaveCount(0);
+});
+
+test('EPUB2 NCX navigation opens later chapter with wide table and inline image',async({page})=>{
+ test.setTimeout(60000);
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'complex.epub',mimeType:'application/epub+zip',buffer:epubFixture(true)
+ });
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:15000});
+ await page.locator('.reading-zones').click({position:{x:190,y:240}});
+ await page.getByRole('button',{name:'Оглавление'}).click();
+ await expect(page.locator('.chapter-menu button')).toHaveCount(2);
+ await page.getByRole('button',{name:'Вторая глава'}).click();
+ const frame=page.frameLocator('.epub-mount iframe');
+ await expect(frame.locator('body')).toContainText('SECOND CHAPTER',{timeout:15000});
+ await expect(frame.locator('body')).toContainText('EXTREMELY_LONG_UNBREAKABLE_CELL_VALUE');
+ const measure=await frame.locator('body').evaluate(el=>{
+   const table=el.querySelector('table'),image=el.querySelector('img');
+   const pageWidth=el.clientWidth;
+   return {tableWidth:table?.getBoundingClientRect().width||0,
+    imageWidth:image?.getBoundingClientRect().width||0,pageWidth};
+ });
+ expect(measure.pageWidth).toBeGreaterThan(200);
+ expect(measure.tableWidth).toBeLessThanOrEqual(measure.pageWidth+2);
+ expect(measure.imageWidth).toBeLessThanOrEqual(measure.pageWidth+2);
+ await page.locator('.reading-zones').click({position:{x:190,y:240}});
+ if(!await page.locator('.reading-bottom').evaluate(el=>el.classList.contains('visible'))){
+  await page.locator('.reading-zones').click({position:{x:190,y:240}});
+ }
+ await page.getByRole('button',{name:'Текст'}).click();
+ await page.locator('.sheet-settings input[type=range]').nth(2).fill('32');
+ await page.getByRole('button',{name:'Закрыть'}).click();
+ await expect(frame.locator('body')).toContainText('SECOND CHAPTER');
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await page.locator('.continue-card').click();
+ await expect(page.frameLocator('.epub-mount iframe').locator('body')).toContainText('SECOND CHAPTER',{timeout:15000});
+});
+
+test('library sorting orders imported books and displays progress metadata',async({page})=>{
+ await page.goto('/');
+ for(const name of ['Z-last.epub','A-first.epub']){
+  await page.locator('input[type=file]').setInputFiles({name,mimeType:'application/epub+zip',buffer:epubFixture()});
+  await expect(page.locator('.book-tile')).toHaveCount(name.startsWith('Z')?1:2);
+ }
+ const option=page.getByLabel('Сортировка книг');
+ await option.selectOption('title');
+ await expect(page.locator('.book-tile-open strong').first()).toContainText('EPUB fixture');
+ await expect(page.locator('.book-tile-meta')).toHaveCount(2);
+ await expect(page.locator('.book-tile-meta').first()).toContainText('EPUB');
 });
