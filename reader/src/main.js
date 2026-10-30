@@ -262,7 +262,7 @@ async function openBook(id){
 
  enableReaderGeometryReport();
  document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
- document.querySelector('#reading-progress').onchange=e=>goPage(Number(e.target.value));
+ document.querySelector('#reading-progress').onchange=e=>{const target=Number(e.target.value);if(Number.isInteger(target)&&target>=0&&target<pages.length)goPage(target);};
  const openingStage=document.querySelector('#book-stage');
  await layout();
  if(current!==b||owner!==localOwner||document.querySelector('#book-stage')!==openingStage)return;
