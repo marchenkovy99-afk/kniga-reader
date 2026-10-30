@@ -10,7 +10,7 @@ type Props={
   onBack:()=>void; onNext:()=>void; onPrevious:()=>void;
   position:ReaderPosition; progress:number; caption:string;
   pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
-  chapters?:{title:string}[]; currentChapter?:number; onChapter?:(index:number)=>void;
+  chapters?:{title:string;page?:number}[]; currentChapter?:number; onChapter?:(index:number)=>void;
   children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
 export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false}:Props){
@@ -119,7 +119,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          <input id="page-number" type="number" inputMode="numeric" min="1" max={totalPages} step="1" required value={jump} onChange={e=>setJump(e.target.value)}/>
          {conditionalPages&&<p>В EPUB используются условные страницы по объёму текста. Они сохраняют номер при изменении шрифта.</p>}
          <button type="submit">Перейти</button>
-       </form>:sheet==='chapters'?<div className="chapter-menu">{chapters?.map((c,i)=><button className={currentChapter===i?'active':''} key={i} onClick={()=>{onChapter?.(i);setSheet(null);setPanels(false)}}>{c.title}</button>)}</div>:
+       </form>:sheet==='chapters'?<div className="chapter-menu">{chapters?.map((c,i)=><button className={currentChapter===i?'active':''} key={i} onClick={()=>{onChapter?.(i);setSheet(null);setPanels(false)}}><span className="chapter-label">{c.title}</span><span className="chapter-page" aria-label={c.page!==undefined?'Страница '+c.page:'Номер страницы рассчитывается'}>{c.page!==undefined?c.page:'…'}</span></button>)}</div>:
        <div className="sheet-settings">
          <div className="reading-presets" aria-label="Готовые настройки текста">
           <button onClick={()=>onSettings({...settings,fontSize:18,lineHeight:1.3,margin:12,marginRight:12,verticalMargin:4,bottomMargin:0,paragraphSpacing:0,wordSpacing:0,letterSpacing:0})}>Компактно</button>
