@@ -30,7 +30,7 @@ test('2400-paragraph chapter retains original text across taps, font change and 
  for(let i=0;i<12;i++)await page.locator('.reading-zones').click({position:{x:340,y:250}});
  await expect.poll(()=>flow.evaluate(el=>(el as HTMLElement).style.transform)).not.toBe(before);
  await expect(flow).toContainText('абзац 2399');
- await expect(flow.innerText()).resolves.toBe(original);
+ expect(await flow.innerText()).toBe(original);
  await page.locator('.reading-zones').click({position:{x:190,y:250}});
  await page.getByRole('button',{name:'Текст'}).click();
  await page.locator('.sheet-settings input[type=range]').first().fill('23');
