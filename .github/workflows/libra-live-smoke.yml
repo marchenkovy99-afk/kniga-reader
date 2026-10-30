@@ -63,7 +63,7 @@ jobs:
             const response=await page.goto(url,{waitUntil:'networkidle',timeout:30000});
             if(response?.status()!==200)throw new Error('Public page HTTP '+response?.status());
             await page.locator('.library-header h1').waitFor({state:'visible',timeout:15000});
-            const eyebrow=await page.locator('.brand-eyebrow').innerText();
+            const eyebrow=await page.locator('.brand-eyebrow').textContent();
             if(eyebrow.trim()!=='Читалка')throw new Error('Stale LIBRA build: '+eyebrow);
             const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'+
               '<description><title-info><book-title>Публичная проверка</book-title></title-info></description>'+
@@ -136,6 +136,18 @@ jobs:
             await tile.waitFor({state:'visible'});
             if(!(await tile.innerText()).includes('FB2'))
               throw new Error('New library metadata not deployed');
+            const minimalist=await page.evaluate(()=>{
+              const cover=document.querySelector('.book-tile .book-cover');
+              const grid=document.querySelector('.book-grid');
+              const title=document.querySelector('.book-tile-open>strong');
+              return {initial:Boolean(cover?.querySelector('.book-cover-initial')),
+                art:cover?getComputedStyle(cover).backgroundImage:'',
+                columns:grid?getComputedStyle(grid).gridTemplateColumns:'',
+                title:title?.textContent||''};
+            });
+            if(!minimalist.initial||minimalist.art!=='none'||!minimalist.title.includes('Публичная проверка'))
+              throw new Error('Minimalist library not deployed: '+JSON.stringify(minimalist));
+            console.log('PUBLIC_MINIMAL_UI_OK: functional book row and neutral cover');
             await page.getByRole('button',{name:'Настройки'}).click();
             const [download]=await Promise.all([
               page.waitForEvent('download'),
