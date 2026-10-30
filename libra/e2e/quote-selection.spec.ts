@@ -19,7 +19,8 @@ test('FB2 quote action selects text without intercepting book gestures, saves an
  });
  await expect(page.getByRole('group',{name:'Действия с выделенной цитатой'})).toBeVisible();
  await page.getByRole('button',{name:'Сохранить цитату'}).click();
- await expect(page.getByRole('status')).toContainText('Цитата сохранена');
+ await expect(page.getByRole('status')).toContainText('Цитата сохранена и выделена цветом');
+ await expect.poll(()=>page.evaluate(()=>((window.CSS as any).highlights?.get('libra-saved-quote')?.size||0))).toBeGreaterThan(0);
  await expect(page.locator('.reading-root')).not.toHaveClass(/reading-quote-mode/);
  await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await page.getByRole('button',{name:'В библиотеку'}).click();
@@ -31,6 +32,7 @@ test('FB2 quote action selects text without intercepting book gestures, saves an
  await expect(page.locator('.saved-quote')).toHaveCount(1);
  await page.getByRole('button',{name:'Перейти к тексту'}).click();
  await expect(page.locator('.book-flow')).toContainText('Важные слова');
+ await expect.poll(()=>page.evaluate(()=>((window.CSS as any).highlights?.get('libra-saved-quote')?.size||0))).toBeGreaterThan(0);
 });
 test('EPUB content selection opens quote popover and saves original selected text',async({page})=>{
  await page.goto('/');
@@ -46,6 +48,10 @@ test('EPUB content selection opens quote popover and saves original selected tex
  });
  await expect(page.getByRole('group',{name:'Действия с выделенной цитатой'})).toBeVisible();
  await page.getByRole('button',{name:'Сохранить цитату'}).click();
+ await expect.poll(()=>page.frameLocator('.epub-mount iframe').locator('body').evaluate(body=>{
+  const registry=(body.ownerDocument.defaultView as any)?.CSS?.highlights;
+  return registry?.get('libra-saved-quote')?.size||0;
+ })).toBeGreaterThan(0);
  await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Цитаты',exact:true}).click();
