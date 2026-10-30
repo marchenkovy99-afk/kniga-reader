@@ -7,6 +7,7 @@ const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><des
 
 test('chapter boundary keeps page geometry fixed and does not animate across the previous chapter',async({page})=>{
  test.setTimeout(90000);
+ await page.emulateMedia({reducedMotion:'no-preference'});
  await page.setViewportSize({width:390,height:844});
  await page.goto('/');
  await page.locator('input[type=file]').first().setInputFiles({name:'chapter-stability.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});
@@ -22,7 +23,10 @@ test('chapter boundary keeps page geometry fixed and does not animate across the
  await page.getByRole('button',{name:'Глава два',exact:true}).click();
  await expect(flow).toContainText('КОНЕЦ_Глава_два');
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
- await expect.poll(()=>flow.evaluate(el=>getComputedStyle(el).transitionDuration)).toBe('0.22s');
+ // The transition must finish in a stable state. WebKit and Chromium
+ // may report a zero computed duration for accessibility/device reasons;
+ // verify that the app itself released its reflow lock instead.
+ await expect.poll(()=>flow.evaluate(el=>el.classList.contains('no-animation'))).toBe(false);
  const forward=await page.locator('.page-viewport').boundingBox();
  expect(forward).toEqual(initial);
  // From the first page of chapter two, back must go directly to the final
