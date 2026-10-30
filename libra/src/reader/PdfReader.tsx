@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReaderPosition, ReaderSettings, StoredBook } from '../domain';
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function PdfReader({book,settings,onSettings,onBack}:Props){
  const [document,setDocument]=useState<any>(null),[count,setCount]=useState(1),[page,setPage]=useState((book.position?.page||0)+1),[error,setError]=useState('');
@@ -15,7 +15,7 @@ export function PdfReader({book,settings,onSettings,onBack}:Props){
    let cancelled=false,task:any;
    async function open(){
      try{
-       const pdfjs=await import('pdfjs-dist');
+       const pdfjs=await import('pdfjs-dist/legacy/build/pdf.mjs');
        if(cancelled)return;
        pdfjs.GlobalWorkerOptions.workerSrc=workerUrl;
        task=pdfjs.getDocument({data:new Uint8Array(await book.file.arrayBuffer())});
