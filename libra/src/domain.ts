@@ -23,7 +23,7 @@ export type ReaderSettings = {
 export const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'paper', fontSize: 18, lineHeight: 1.4,
   margin: 16, paragraphIndent: 1.2,
-  fontFamily: 'serif', align: 'left', animation: 'slide',
+  fontFamily: 'serif', align: 'justify', animation: 'slide',
   wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 6,
   marginRight: 16, bottomMargin: 2, fontWeight: 400, hyphenation: 'auto', textContrast: 84
 };

@@ -3,9 +3,8 @@ import { PALETTES } from './theme';
 
 /**
  * Validate old IndexedDB preferences before applying them.
- * Previous LIBRA builds persisted full justification: it produced huge gaps
- * on narrow Russian-language lines. Readable left alignment is always used.
- * User controls adjust the *uniform* space width, never the line's distribution.
+ * Full justification is on by default. Automatic hyphenation helps
+ * avoid large gaps; final lines and poetry remain left aligned.
  */
 const bounded=(input:unknown,min:number,max:number,fallback:number):number=>
  typeof input==='number'&&Number.isFinite(input)
@@ -22,7 +21,7 @@ export function normalizeSettings(saved:Partial<ReaderSettings>|undefined):Reade
   ...DEFAULT_SETTINGS,
   theme,
   fontFamily:family,
-  align:'left',
+  align:'justify',
   animation:source.animation==='none'?'none':'slide',
   fontSize:bounded(source.fontSize,12,36,DEFAULT_SETTINGS.fontSize),
   lineHeight:bounded(source.lineHeight,1.1,2.2,DEFAULT_SETTINGS.lineHeight),

@@ -2,9 +2,8 @@ import type {ReaderSettings} from '../domain';
 import {applyEpubAppearance} from './epubAppearance';
 export const epubTypographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.lineHeight,s.fontFamily,s.align,s.wordSpacing,s.letterSpacing,s.paragraphSpacing,s.paragraphIndent,s.fontWeight,s.hyphenation]);
 /**
- * Publisher CSS often forces text-align:justify and overrides the body theme,
- * producing extremely wide gaps on narrow iPhone columns. Keep the source
- * text and EPUB CFI nodes untouched; only override the rendering styles.
+ * Publisher CSS may impose custom word gaps. Standardise narrative
+ * justification and hyphenation without changing EPUB source text or CFIs.
  */
 export function enforceEpubUniformSpacing(doc:Document):void{
  if(!doc.head||!doc.body)return;
@@ -16,10 +15,16 @@ export function enforceEpubUniformSpacing(doc:Document):void{
  }
  lock.textContent=`
   html body, html body :is(p,div,section,article,blockquote,li,dd,dt) {
-    text-align:left!important;
-    text-align-last:auto!important;
-    text-justify:auto!important;
+    text-align:var(--libra-text-align,justify)!important;
+    text-align-last:left!important;
+    text-justify:inter-word!important;
+    hyphens:var(--libra-hyphens,auto)!important;
+    -webkit-hyphens:var(--libra-hyphens,auto)!important;
     word-spacing:var(--libra-word-spacing,0px)!important;
+  }
+  html body :is(h1,h2,h3,h4,h5,h6,pre,code,poem,verse) {
+    text-align:left!important;
+    text-align-last:left!important;
   }
   html body :is(p,div,section,article,blockquote,li,dd,dt) :is(span,em,strong,b,i,a,small) {
     word-spacing:inherit!important;
@@ -31,9 +36,10 @@ export function enforceEpubUniformSpacing(doc:Document):void{
  for(const element of Array.from(doc.body.querySelectorAll<HTMLElement>('[style]'))){
   if(element.closest('pre,code,math,svg'))continue;
   const style=element.style;
-  if(/^(justify|justify-all)$/i.test(style.textAlign.trim()))style.setProperty('text-align','left','important');
+  if(element.matches('h1,h2,h3,h4,h5,h6,pre,code,poem,verse'))continue;
+  if(style.textAlign)style.setProperty('text-align','var(--libra-text-align,justify)','important');
   if(style.wordSpacing)style.setProperty('word-spacing','var(--libra-word-spacing,0px)','important');
-  if(/^(justify|justify-all)$/i.test((style.textAlignLast||'').trim()))style.setProperty('text-align-last','auto','important');
+  if(style.textAlignLast)style.setProperty('text-align-last','left','important');
  }
 }
 export const EPUB_OPTIONS={flow:'paginated',spread:'none',gap:0,allowScriptedContent:false,snap:false};

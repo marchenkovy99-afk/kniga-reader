@@ -263,7 +263,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   '--reading-font':fontStack(settings.fontFamily),
   '--indent':settings.paragraphIndent+'em',
   '--page-height':geometry.height+'px',
-  '--align':'left',
+  '--align':settings.align,
   '--word-spacing':settings.wordSpacing+'px',
   '--letter-spacing':settings.letterSpacing+'px',
   '--paragraph-spacing':settings.paragraphSpacing+'px',
