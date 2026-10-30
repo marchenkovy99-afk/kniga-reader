@@ -180,7 +180,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
   position={position} progress={progressOf(chapter,page,pages,chapters.length)}
   caption={ready?'Страница '+(page+1)+' из '+pages:'Открываем книгу'}
-  chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
+  chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
    top:`calc(env(safe-area-inset-top) + ${settings.verticalMargin}px)`,
    bottom:`calc(env(safe-area-inset-bottom) + ${settings.bottomMargin}px)`}}>
