@@ -9,8 +9,8 @@ import { ReadingControls } from '../components/ReadingControls';
 import { fontStack } from '../readerSettings';
 
 const GAP=24;
-function BookBlock({block,index,onMediaLoaded,onOpenTable}:{block:Block;index:number;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
- const oversized=block.kind==='table'&&(block.rows.length>9||block.rows.some(row=>row.join(' ').length>300)||block.rows.flat().join(' ').length>1100);
+function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
+ const oversized=block.kind==='table'&&(forceTableDialog||block.rows.length>9||block.rows.some(row=>row.join(' ').length>300)||block.rows.flat().join(' ').length>1100);
  if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
  if(block.kind==='table'){
   if(oversized)return <button data-block-index={index} className="book-table-launch" onClick={()=>onOpenTable(block.rows)}>Большая таблица · {block.rows.length} строк <span>Открыть полностью ↗</span></button>;
@@ -33,6 +33,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [mediaVersion,setMediaVersion]=useState(0);
  const [reflowing,setReflowing]=useState(false);
  const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
+ // Some table rows are unbreakable in WebKit columns. Move a row that is
+ // taller than the reading column into the full-content table viewer.
+ const [nonfittingTables,setNonfittingTables]=useState<Set<number>>(()=>new Set());
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
@@ -90,6 +93,17 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const compute=()=>{
    if(!active||!flow.current)return;
    const current=flow.current;
+   const tooTall=Array.from(current.querySelectorAll<HTMLTableElement>('table.book-table'))
+    .filter(table=>Array.from(table.rows).some(row=>row.getBoundingClientRect().height>geometry.height-16))
+    .map(table=>Number(table.dataset.blockIndex))
+    .filter(index=>Number.isSafeInteger(index)&&index>=0&&!nonfittingTables.has(index));
+   if(tooTall.length){
+    // Re-render the actual source table as a scrollable accessible dialog
+    // before accepting this pagination layout. No cell text is thrown away.
+    setMeasuredKey('');
+    setNonfittingTables(old=>new Set([...old,...tooTall]));
+    return;
+   }
    const actualStride=measureColumnStride(current,geometry.width,GAP);
    const geo={width:geometry.width,gap:GAP,stride:actualStride};
    const count=measureRenderedPages(current,geometry.width,GAP,actualStride);
@@ -111,7 +125,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
   return ()=>{active=false;clearTimeout(animationTimer);cancelAnimationFrame(frame)};
- },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion]);
+ },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,nonfittingTables]);
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
   if(!ready||!flow.current)return;
@@ -135,7 +149,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   if(!chapters[nextChapter])return;
   previous.current=toLast;
   anchorRef.current=undefined;
-  setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
+  setNonfittingTables(new Set());setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
  };
  function next(){
   if(!ready)return;
@@ -174,7 +188,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}
