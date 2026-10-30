@@ -690,3 +690,36 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
  .library-shell .sort-caption{font-size:11px}
  .library-shell .book-tile-open>strong{font-size:17px}
 }
+
+/* Auto-justified prose; keep actual text nodes and measured pages identical. */
+:is(.book-flow,.book-measure-flow) .book-paragraph{
+ text-align:justify!important;text-align-last:left!important;text-justify:inter-word!important;
+ -webkit-hyphens:auto;hyphens:auto;overflow-wrap:anywhere;
+ word-spacing:var(--word-spacing,0px)!important;
+}
+:is(.book-flow,.book-measure-flow) :is(.book-heading,.book-verse){
+ text-align:left!important;text-align-last:left!important;word-spacing:var(--word-spacing,0px)!important;
+}
+/* Editorial, deterministic jackets from real title and author metadata. */
+.library-shell .book-cover{background:#302922;overflow:hidden;border-radius:5px;aspect-ratio:2/3}
+.library-shell .book-cover img{width:100%;height:100%;display:block;object-fit:contain;object-position:center;background:#302922}
+.library-shell .book-cover-generated{width:100%;height:100%;position:relative;min-height:0;display:flex;
+ flex-direction:column;align-items:stretch;justify-content:space-between;
+ text-align:center;padding:10% 7%;gap:8%;background:var(--cover-paper,#d3baa3)!important;
+ color:var(--cover-ink,#2c2520)!important;border:1px solid #25201833;box-shadow:inset 0 0 0 5px #ffffff11}
+.library-shell .book-cover-generated:before{content:"";position:absolute;left:10%;right:10%;top:7%;
+ border-top:1px solid currentColor;opacity:.32}
+.library-shell .book-cover-generated:after{content:"";position:absolute;left:10%;right:10%;bottom:7%;
+ border-top:1px solid currentColor;opacity:.32}
+.library-shell .book-cover-generated .book-cover-author{font:500 clamp(7px,1.6vw,12px)/1.3 Georgia,serif;
+ letter-spacing:.025em;opacity:.79;max-width:100%;overflow:hidden;display:-webkit-box;
+ -webkit-line-clamp:2;-webkit-box-orient:vertical}
+.library-shell .book-cover-generated .book-cover-title{font:600 clamp(10px,2.6vw,20px)/1.16 Georgia,serif;
+ letter-spacing:-.012em;overflow-wrap:anywhere;max-width:100%;min-height:0;overflow:hidden;
+ display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
+.library-shell .book-cover-generated .book-cover-divider{height:1px;width:23%;background:currentColor;opacity:.55;align-self:center}
+.library-shell .book-cover-large .book-cover-generated .book-cover-title{font-size:clamp(13px,3.5vw,23px)}
+.library-shell .book-cover-large .book-cover-generated .book-cover-author{font-size:clamp(8px,2vw,13px)}
+.library-shell .book-tile-open .book-cover-generated{padding:11% 7%}
+.library-shell .book-tile-open .book-cover-generated .book-cover-title{font-size:clamp(9px,2vw,13px);-webkit-line-clamp:5}
+.library-shell .book-tile-open .book-cover-generated .book-cover-author{font-size:clamp(7px,1.45vw,9px)}

@@ -265,3 +265,22 @@ export async function setBookFavorite(id:string,isFavorite:boolean):Promise<void
   tx.onabort=()=>reject(tx.error??new Error('Книга не найдена'));
  });
 }
+
+/** Restore artwork without deleting book bytes, reading progress or bookmarks. */
+export async function updateBookCover(id:string,cover:string):Promise<void>{
+ if(!cover.startsWith('data:image/')||cover.length>2_100_000)return;
+ const database=await db();
+ await new Promise<void>((resolve,reject)=>{
+  const tx=database.transaction(['books','cloud'],'readwrite');
+  const store=tx.objectStore('books'),req=store.get(id);
+  req.onsuccess=()=>{
+   const book=req.result as PersistedBook|undefined;
+   if(!book||book.cover)return;
+   store.put({...book,cover});
+   queue(tx,'book:'+id);
+  };
+  tx.oncomplete=()=>{changed();resolve()};
+  tx.onerror=()=>reject(tx.error);
+  tx.onabort=()=>reject(tx.error);
+ });
+}

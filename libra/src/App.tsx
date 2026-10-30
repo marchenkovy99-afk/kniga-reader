@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
-import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite } from './storage';
+import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover } from './storage';
 import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
@@ -10,6 +10,7 @@ import {useCloudSync} from './useCloudSync';
 import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
+import {extractEpubCover,coverDataUrl} from './covers';
 
 const supported=(name:string):Format|null=>{
  const ext=name.split('.').pop()?.toLowerCase();
@@ -21,6 +22,7 @@ export default function App(){
  const [opened,setOpened]=useState<StoredBook|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
  const [hydrated,setHydrated]=useState(false);
+ const coverAttempts=useRef(new Set<string>());
  const cloud=useCloudSync(async()=>{const [stored,preferences]=await Promise.all([listBooks(),loadSettings()]);setBooks(stored);setSettings(normalizeSettings(preferences??DEFAULT_SETTINGS))},()=>setOpened(null));
  useEffect(()=>{
   let live=true;
@@ -39,6 +41,22 @@ export default function App(){
   if(hydrated)void saveSettings(settings).catch(()=>{});
  },[settings,hydrated,opened]);
  async function refresh(){try{setBooks(await listBooks())}catch(e){setError(String(e))}}
+ // Previous EPUB imports discarded blob: cover links. Recover those covers
+ // from the original files without changing the reading position or bookmarks.
+ useEffect(()=>{
+  if(!hydrated)return;
+  const book=books.find(b=>b.format==='epub'&&!b.cover&&!coverAttempts.current.has(b.id));
+  if(!book)return;
+  coverAttempts.current.add(book.id);
+  let cancelled=false;
+  void extractEpubCover(book.file).then(async cover=>{
+   if(cancelled||!cover)return;
+   await updateBookCover(book.id,cover);
+   if(!cancelled)await refresh();
+  }).catch(e=>console.warn('Не удалось восстановить обложку EPUB',e));
+  return ()=>{cancelled=true;coverAttempts.current.delete(book.id)};
+ },[hydrated,books]);
+
  async function importFiles(list:FileList){
    setLoading(true);setError('');
    for(const file of Array.from(list)){
@@ -58,7 +76,7 @@ export default function App(){
            const epub=ePub(await file.arrayBuffer());
            const meta=await epub.loaded.metadata;
            title=meta.title||title;author=meta.creator||author;
-           try{const path=await epub.coverUrl();if(path&&path.startsWith('data:'))cover=path}catch{}
+           try{cover=await coverDataUrl(await epub.coverUrl())}catch{}
            epub.destroy();
          }catch{/* The file is validated again at opening; metadata is optional. */}
        }
