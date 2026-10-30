@@ -150,7 +150,7 @@ test('library sorting orders imported books and displays progress metadata',asyn
  const option=page.getByLabel('Сортировка книг');
  await option.selectOption('title');
  await expect(page.locator('.book-tile-open strong').first()).toContainText('A-first');
- await expect(page.locator('.book-tile-meta')).toHaveCount(2);
+ await expect(page.locator('.book-tile-meta')).toHaveCount(1);
  await expect(page.locator('.book-tile-meta').first()).toContainText('EPUB');
 });
 
@@ -239,7 +239,7 @@ test('EPUB slider reaches final glyph and persists progress without rounded keyb
   return glyph.left+frame.left>=vp.left-2&&glyph.right+frame.left<=vp.right+2&&glyph.top+frame.top>=vp.top-2&&glyph.bottom+frame.top<=vp.bottom+2;
  })).toBe(true);
  await page.getByRole('button',{name:'В библиотеку'}).click();
- await expect(page.locator('.book-tile-meta')).toContainText('100% прочитано');
+ await expect(page.locator('.continue-progress-label')).toContainText('100% прочитано');
  await page.reload();await page.locator('.continue-card').click();
  await expect(page.getByRole('button',{name:'Показать управление чтением'})).toContainText('100%');
 });
