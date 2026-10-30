@@ -42,3 +42,38 @@ test('real glyph overflow raises an error and exposes the complete chapter throu
  await expect(page.getByRole('alert')).toHaveCount(0);
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
 });
+
+
+test('safe chapter navigation resets the next chapter to its start and the previous chapter to its end',async({page})=>{
+ const twoChapters=source.replace('</section></body>', '</section><section><title><p>Вторая глава</p></title>'+body+'<p>КОНЕЦ_ВТОРОЙ_ГЛАВЫ</p></section></body>');
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({name:'safe-chapters.fb2',mimeType:'application/xml',buffer:Buffer.from(twoChapters)});
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
+ // Keep the same real overflow in both chapters. Scroll-safe rules restore
+ // wrapping; leaving safe mode must detect this faulty paginated rule again.
+ const brokenStyle=await page.addStyleTag({content:'.book-flow p { white-space:nowrap; width:1800px; }'});
+ await page.locator('.book-flow p').first().evaluate(el=>{el.style.letterSpacing='.1px'});
+ await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');
+ await page.locator('.page-viewport').evaluate(el=>{el.scrollTop=el.scrollHeight});
+ await expect(page.locator('.book-flow p').last()).toBeInViewport();
+ await page.keyboard.press('ArrowRight');
+ await expect(page.locator('.book-flow .book-heading')).toHaveText('Вторая глава');
+ await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');
+ await expect.poll(()=>page.locator('.page-viewport').evaluate(el=>el.scrollTop)).toBe(0);
+ await expect(page.locator('.book-flow .book-heading')).toBeInViewport();
+ await page.keyboard.press('ArrowLeft');
+ await expect(page.locator('.book-flow .book-heading')).toHaveText('Глава');
+ await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');
+ await expect.poll(()=>page.locator('.page-viewport').evaluate(el=>Math.abs(el.scrollHeight-el.clientHeight-el.scrollTop))).toBeLessThan(2);
+ await expect(page.locator('.book-flow p').last()).toBeInViewport();
+ // A healthy following chapter must also discard the scroll offset when
+ // returning to pagination; overflow:hidden alone does not reset scrollTop.
+ await brokenStyle.evaluate(el=>el.remove());
+ await page.keyboard.press('ArrowRight');
+ await expect(page.locator('.book-flow .book-heading')).toHaveText('Вторая глава');
+ await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
+ await expect(page.locator('.reading-scroll-safe')).toHaveCount(0);
+ await expect.poll(()=>page.locator('.page-viewport').evaluate(el=>el.scrollTop)).toBe(0);
+ await expect(page.locator('.book-flow .book-heading')).toBeInViewport();
+});

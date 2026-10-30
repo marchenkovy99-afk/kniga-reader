@@ -141,7 +141,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   enqueue(async()=>{
    applyEpubSafety(r,safeMode);r.flow(safeMode?'scrolled-doc':'paginated');r.clear();await r.display(lastCfi.current||undefined);
   });
- },[safeMode]);
+ },[safeMode,loaded]);
  const values=pageIndex.key===layoutKey?pageIndex.values:{};
  const indexed=spine.length>0&&spine.every(s=>values[s.index]>0);
  const totalPages=indexed?spine.reduce((n,s)=>n+values[s.index],0):0;

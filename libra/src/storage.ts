@@ -214,7 +214,15 @@ export async function attachLocalLibrary(owner:string){
  await new Promise<void>((resolve,reject)=>{const tx=database.transaction(['cloud','preferences'],'readwrite');
  tx.objectStore('preferences').put({owner,enabled:true},'cloud-device');tx.objectStore('preferences').put(true,'cloud-enabled:'+owner);
  for(const book of books)if(!entries.some(r=>r.key==='book:'+book.id))queue(tx,'book:'+book.id);
- if(!entries.some(r=>r.owner===owner&&r.key==='settings')){const req=tx.objectStore('preferences').get('reader');req.onsuccess=()=>{if(req.result)tx.objectStore('preferences').put(req.result,'reader:'+owner);queue(tx,'settings')}}
+ if(!entries.some(r=>r.owner===owner&&r.key==='settings')){
+  const preferences=tx.objectStore('preferences'),owned=preferences.get('reader:'+owner);
+  owned.onsuccess=()=>{
+   if(owner!==activeOwner)return;
+   if(owned.result!==undefined){queue(tx,'settings');return}
+   const anonymous=preferences.get('reader');
+   anonymous.onsuccess=()=>{if(owner!==activeOwner)return;if(anonymous.result!==undefined)preferences.put(anonymous.result,'reader:'+owner);queue(tx,'settings')};
+  };
+ }
  tx.oncomplete=()=>{changed();resolve()};tx.onerror=()=>reject(tx.error)});
 }
 export async function acknowledgeCloudEntry(sent:CloudEntry,revision:number){

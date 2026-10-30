@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
 
 /** Stored ZIP writer: minimum EPUB2 fixture, no external services or fixtures. */
-export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=140):Buffer{
+export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=140,clipped=false):Buffer{
  const chapterParagraphs=Array.from({length:paragraphCount},(_,i)=>
-  '<p>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
+  '<p'+(clipped&&i===0?' style="height:10px;overflow:hidden"':'')+'>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
   ['mimetype','application/epub+zip'],
   ['META-INF/container.xml','<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>'],
@@ -251,7 +251,7 @@ test('EPUB uses a distinct page number per turn and keeps zero-margin frame stat
  const fixed=await page.locator('.epub-mount').boundingBox();expect(fixed).toBeTruthy();
  for(let expected=2;expected<=9;expected++){
   await page.locator('.reading-zones').click({position:{x:345,y:350}});
-  await expect(page.locator('.reading-status')).toContainText(`Страница ${expected} из`);
+  await expect(page.locator('.reading-status')).toContainText(`${expected} /`);
   expect(await page.locator('.epub-mount').boundingBox()).toEqual(fixed);
   await expect(page.getByRole('alert')).toHaveCount(0);
  }
@@ -260,11 +260,10 @@ test('EPUB uses a distinct page number per turn and keeps zero-margin frame stat
 
 test('EPUB clipped source block triggers recovery that exposes its full text',async({page})=>{
  await page.goto('/');
- await page.locator('input[type=file]').setInputFiles({name:'inner-clip.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'Clipped block',12)});
+ await page.locator('input[type=file]').setInputFiles({name:'inner-clip.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'Clipped block',12,true)});
  await page.locator('.continue-card').click();
  const body=page.frameLocator('.epub-mount iframe').locator('body');
  await expect(body).toContainText('Passage 0');
- await body.locator('p').first().evaluate(el=>{el.style.height='10px';el.style.overflow='hidden'});
  await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');
  await expect(page.locator('.reading-root')).toHaveClass(/reading-scroll-safe/);
  await expect.poll(()=>body.locator('p').first().evaluate(el=>getComputedStyle(el).overflow)).toBe('visible');

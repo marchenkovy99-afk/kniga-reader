@@ -37,5 +37,5 @@ export function setEpubDocumentSafety(doc:Document,safe:boolean){
  let style=doc.getElementById('libra-safe-flow');
  if(!safe){style?.remove();return;}
  if(!style){style=doc.createElement('style');style.id='libra-safe-flow';doc.head.appendChild(style);}
- style.textContent='body *:not(img):not(svg):not(video) { height:auto!important; max-height:none!important; min-height:0!important; overflow:visible!important; clip:auto!important; clip-path:none!important; contain:none!important; position:static!important; } pre { white-space:pre-wrap!important; }';
+ style.textContent='body *:not(img):not(svg):not(video) { height:auto!important; max-height:none!important; min-height:0!important; overflow:visible!important; clip:auto!important; clip-path:none!important; contain:none!important; position:static!important; max-width:100%!important; white-space:normal!important; overflow-wrap:anywhere!important; transform:none!important; margin-left:0!important; margin-right:0!important; margin-top:0!important; text-indent:0!important; } pre { white-space:pre-wrap!important; }';
 }

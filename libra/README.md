@@ -64,8 +64,11 @@ Original book files remain in IndexedDB. Optional Supabase synchronization uploa
 - FB2 page totals measure every chapter with the current font and viewport.
   Background counts do not block initial reading; changing settings preserves
   the source anchor and refreshes the total.
-- EPUB uses conditional 1,600-character locations. These page numbers stay
-  stable across typography changes; the final slider position opens the end.
+- EPUB numbers actual rendered pages, so every turn changes the page number.
+  A separate rendition counts all sections; typography changes recalculate the
+  total while preserving the source CFI. Fixed outer gutters never animate.
+- Side and vertical margins can be reduced to zero. Runtime glyph checks report
+  clipping and expose the complete chapter in scrolling recovery mode.
 - Denser defaults and Compact / Standard / Large presets, independent side and
   vertical margins, line/word/letter spacing, weight, indent and paragraph gap.
 - Safe-area insets are shared tokens and applied once; the visible text area

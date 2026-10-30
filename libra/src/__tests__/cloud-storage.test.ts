@@ -47,3 +47,10 @@ it('ignores a late reader write after its owning account has changed',async()=>{
  expect((await storage.getCloudEntries('late-b')).some(r=>r.key==='book:late')).toBe(false);
  await storage.setCloudAccount('late-a');expect((await storage.getBook('late'))?.position?.chapter).toBe(1);
 });
+it('preserves account preferences selected before first attach instead of restoring old anonymous preferences',async()=>{
+ await storage.setCloudAccount(null);await storage.saveSettings({...DEFAULT_SETTINGS,fontSize:14,theme:'paper'});
+ await storage.setCloudAccount('first-attach');await storage.saveSettings({...DEFAULT_SETTINGS,fontSize:25,theme:'oled'});
+ await storage.attachLocalLibrary('first-attach');
+ expect(await storage.loadSettings()).toMatchObject({fontSize:25,theme:'oled'});
+ expect((await storage.getCloudEntries('first-attach')).find(row=>row.key==='settings')).toMatchObject({pending:true});
+});

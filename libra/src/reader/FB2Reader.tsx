@@ -196,12 +196,15 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   return ()=>{stop();cancelAnimationFrame(frame)};
  },[ready,clipIssue,page,stride,layoutKey]);
  useLayoutEffect(()=>{
-  if(!clipIssue||!flow.current||!viewport.current)return;
+  if(!flow.current||!viewport.current)return;
+  // The viewport survives chapter changes and retains scrollTop even when its
+  // overflow switches back to hidden. Clear that offset before paginating.
+  if(!clipIssue){viewport.current.scrollTop=0;return;}
   // Keep the saved precise source anchor. Scroll mode is not a one-page book.
   const block=anchorRef.current?.block;
   const target=block===undefined?null:flow.current.querySelector<HTMLElement>(`[data-block-index="${block}"]`);
-  viewport.current.scrollTop=target?target.offsetTop:0;
- },[clipIssue]);
+  viewport.current.scrollTop=target?target.offsetTop:(previous.current?viewport.current.scrollHeight:0);
+ },[clipIssue,chapter]);
  useEffect(()=>{
   if(!ready||clipIssue||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
