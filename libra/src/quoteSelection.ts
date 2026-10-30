@@ -44,7 +44,7 @@ export function captureFB2Quote(flow:HTMLElement|null,position:ReaderPosition):Q
 export function captureEpubQuote(contents:readonly any[],position:ReaderPosition):QuoteCapture|null{
  for(const content of contents){
   const doc:Document|undefined=content?.document;
-  if(!doc)return null;
+  if(!doc)continue;
   const selected=selectedText(doc.getSelection());if(!selected)continue;
   const {range,text}=selected;
   if(!doc.body?.contains(range.commonAncestorContainer))continue;
