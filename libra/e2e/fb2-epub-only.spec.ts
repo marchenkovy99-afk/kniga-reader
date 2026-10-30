@@ -4,7 +4,8 @@ test('LIBRA imports only FB2 and EPUB and never exposes a PDF reading flow',asyn
  await page.goto('/');
  const chooser=page.locator('input[type=file]').first();
  await expect(chooser).toHaveAttribute('accept','.fb2,.epub');
- await expect(page.locator('.library-greeting')).toHaveText('Ваша библиотека · FB2 и EPUB');
+ await expect(page.locator('.library-page-title')).toContainText('Библиотека');
+ await expect(page.locator('.empty-library p')).toContainText('FB2 или EPUB');
  await chooser.setInputFiles({name:'ineligible.pdf',mimeType:'application/pdf',
   buffer:Buffer.from('%PDF-1.4\n')});
  await expect(page.locator('.app-error')).toContainText('Поддерживаются только FB2 и EPUB');

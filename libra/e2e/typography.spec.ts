@@ -51,7 +51,7 @@ test('legacy book remains readable with even spaces and extended persistent typo
 
 test('new LIBRA icon and iPhone touch icon have installable PNG assets',async({page,request})=>{
  await page.goto('/');
- await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href','./icon-180.png');
+ await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href',/icon-180\.png(?:\?v=\d+)?$/);
  for(const src of ['/icon-180.png','/icon-512.png','/icon.svg']){
   const response=await request.get(src);
   expect(response.ok(),src).toBe(true);
