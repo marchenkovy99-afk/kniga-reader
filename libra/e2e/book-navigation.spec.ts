@@ -4,7 +4,7 @@ test('whole-book slider, page jump, hidden footer and restored final character',
  await page.goto('/');
  await page.locator('input[type=file]').setInputFiles({name:'navigation.fb2',mimeType:'application/xml',buffer:Buffer.from(source)});
  await page.locator('.continue-card').click();
- await expect(page.locator('.book-flow')).toBeVisible();
+ await expect(page.locator('.page-viewport > .book-flow')).toBeVisible();
  const status=page.getByRole('button',{name:'Показать управление чтением'});
  await expect(status).toBeVisible();
  await status.click();
@@ -16,13 +16,13 @@ test('whole-book slider, page jump, hidden footer and restored final character',
  // Native keyboard interaction, not a programmatic handler invocation.
  await slider.focus();
  await slider.press('End');
- await expect(page.locator('.book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
+ await expect(page.locator('.page-viewport > .book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
  await expect(page.locator('.reading-progress span')).toHaveText('Страница '+total+' из '+total);
  await expect(page.locator('.reading-progress strong')).toHaveText('100%');
  await page.getByRole('button',{name:'Страница',exact:true}).click();
  await page.getByRole('spinbutton').fill('2');
  await page.getByRole('button',{name:'Перейти',exact:true}).click();
- await expect(page.locator('.book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_1');
+ await expect(page.locator('.page-viewport > .book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_1');
  await expect(status).toContainText('2 / '+total);
  // Jump into the middle of a later, multi-page chapter. Repeat font-ready
  // measurements must preserve the exact requested page, not reset to page1.
@@ -43,12 +43,12 @@ test('whole-book slider, page jump, hidden footer and restored final character',
  });
  expect(bounds.textBottom).toBeLessThanOrEqual(bounds.footerTop);
  expect(bounds.height).toBeGreaterThan(page.viewportSize()!.height-90);
- await expect.poll(()=>page.locator('.book-flow p').last().evaluate(el=>{
+ await expect.poll(()=>page.locator('.page-viewport > .book-flow p').last().evaluate(el=>{
   const range=document.createRange();range.selectNodeContents(el);range.setStart(el.firstChild!,el.firstChild!.textContent!.length-1);
   const r=range.getBoundingClientRect(),vp=el.closest('.page-viewport')!.getBoundingClientRect();
   return r.left>=vp.left-2&&r.right<=vp.right+2&&r.top>=vp.top-2&&r.bottom<=vp.bottom+2;
  })).toBe(true);
  await page.reload();await page.locator('.continue-card').click();
- await expect(page.locator('.book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
+ await expect(page.locator('.page-viewport > .book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
  await expect(status).toContainText('100%');
 });

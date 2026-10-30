@@ -19,7 +19,7 @@ test('switching between chapters preserves last page and all body content',async
  });
  await expect(page.locator('.continue-card')).toBeVisible();
  await page.locator('.continue-card').click();
- const flow=page.locator('.book-flow');
+ const flow=page.locator('.page-viewport > .book-flow');
  await expect(flow).toBeVisible();
  await expect(flow).toContainText('КОНЕЦ_ПЕРВОЙ_ГЛАВЫ');
  for(let i=0;i<75;i++)expect(await flow.innerText()).toContain('Первая глава: строка '+i+'.');
@@ -53,5 +53,5 @@ test('switching between chapters preserves last page and all body content',async
  await page.reload();
  await expect(page.locator('.continue-card')).toBeVisible();
  await page.locator('.continue-card').click();
- await expect(page.locator('.book-flow')).toContainText('ФИНАЛЬНОЕ_ПРИМЕЧАНИЕ');
+ await expect(page.locator('.page-viewport > .book-flow')).toContainText('ФИНАЛЬНОЕ_ПРИМЕЧАНИЕ');
 });

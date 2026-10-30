@@ -19,7 +19,7 @@ async function openSettings(page:import('@playwright/test').Page){
 }
 
 async function checkAllFragments(page:import('@playwright/test').Page){
- return page.locator('.book-flow').evaluate(flow=>{
+ return page.locator('.page-viewport > .book-flow').evaluate(flow=>{
   const viewport=flow.closest('.page-viewport') as HTMLElement;
   const stride=Number((flow as HTMLElement).dataset.columnStride);
   const width=viewport.clientWidth,height=viewport.clientHeight;
@@ -68,7 +68,7 @@ async function reachLastPage(page:import('@playwright/test').Page){
  },total);
  await expect(page.locator('.reading-progress span')).toHaveText('Страница '+total+' из '+total);
  await page.waitForTimeout(400);
- const last=await page.locator('.book-flow').evaluate(flow=>{
+ const last=await page.locator('.page-viewport > .book-flow').evaluate(flow=>{
   const vp=flow.closest('.page-viewport')!.getBoundingClientRect();
   const iterator=document.createTreeWalker(flow,NodeFilter.SHOW_TEXT);
   let node:Node|null,lastNode:Text|null=null;
@@ -99,7 +99,7 @@ test('every fragment fits a real page and final source character is reachable af
   name:'full-text.fb2',mimeType:'application/xml',buffer:Buffer.from(source)
  });
  await page.locator('.continue-card').click();
- const text=await page.locator('.book-flow').innerText();
+ const text=await page.locator('.page-viewport > .book-flow').innerText();
  for(let i=0;i<72;i++)expect(text).toContain('ПРОВЕРКА_АБЗАЦА_'+i);
  for(const x of cases){
   await page.setViewportSize({width:x.width,height:x.height});
@@ -112,7 +112,7 @@ test('every fragment fits a real page and final source character is reachable af
   await sliders.nth(8).fill(String(x.right));
   await sliders.nth(9).fill(String(x.bottom));
   await page.getByRole('button',{name:'Закрыть'}).click();
-  await expect.poll(()=>page.locator('.book-flow').evaluate(el=>getComputedStyle(el).fontSize)).toBe(x.font+'px');
+  await expect.poll(()=>page.locator('.page-viewport > .book-flow').evaluate(el=>getComputedStyle(el).fontSize)).toBe(x.font+'px');
   await page.waitForTimeout(420);
   const checked=await checkAllFragments(page);
   expect(checked.rectangles).toBeGreaterThan(100);
@@ -122,10 +122,11 @@ test('every fragment fits a real page and final source character is reachable af
   const advertised=Number(/из ([0-9]+)/.exec(current||'')?.[1]);
   expect(advertised,'all rendered text columns must be reachable with page turns')
    .toBe(checked.maxPage+1);
-  expect(await page.locator('.book-flow').innerText()).toBe(text);
+  expect(await page.locator('.page-viewport > .book-flow').innerText()).toBe(text);
   await reachLastPage(page);
   await page.reload();
   await page.locator('.continue-card').click();
-  expect(await page.locator('.book-flow').innerText()).toBe(text);
+  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
+  expect(await page.locator('.page-viewport > .book-flow').innerText()).toBe(text);
  }
 });

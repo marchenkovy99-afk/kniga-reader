@@ -12,7 +12,7 @@ test('chapter boundary keeps page geometry fixed and does not animate across the
  await page.goto('/');
  await page.locator('input[type=file]').first().setInputFiles({name:'chapter-stability.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});
  await page.locator('.continue-card').click();
- const flow=page.locator('.book-flow');
+ const flow=page.locator('.page-viewport > .book-flow');
  await expect(flow).toBeVisible();
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
  const initial=await page.locator('.page-viewport').boundingBox();
@@ -35,7 +35,7 @@ test('chapter boundary keeps page geometry fixed and does not animate across the
  await page.evaluate(()=>{
   (window as any).__chapterFrames=[];
   let count=0;const observe=()=>{
-   const el=document.querySelector('.book-flow') as HTMLElement|null;
+   const el=document.querySelector('.page-viewport > .book-flow') as HTMLElement|null;
    const viewport=document.querySelector('.page-viewport');
    (window as any).__chapterFrames.push({
     page:Number(/translateX\\(-?(\\d+(?:\\.\\d+)?)px\\)/.exec(el?.style.transform||'')?.[1]||0),
