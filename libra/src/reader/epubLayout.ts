@@ -4,6 +4,7 @@ export const epubTypographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.
 export const EPUB_OPTIONS={flow:'paginated',spread:'none',gap:0,allowScriptedContent:false,snap:false};
 export function configureEpub(rend:any,settings:ReaderSettings){
  rend.themes.default({
+  'html,body,body *':{filter:'none!important','backdrop-filter':'none!important','-webkit-backdrop-filter':'none!important','mask-image':'none!important','-webkit-mask-image':'none!important','text-shadow':'none!important'},
   body:{margin:'0',padding:'0','overflow-wrap':'anywhere'},
   p:{'margin-top':'0','margin-bottom':'var(--libra-paragraph-gap,0px)','text-indent':'var(--libra-paragraph-indent,1em)'},
   'h1:first-child,h2:first-child,h3:first-child':{'margin-top':'0'},

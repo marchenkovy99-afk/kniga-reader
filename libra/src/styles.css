@@ -448,7 +448,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .book-cover-generated{color:var(--fg);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 @media(max-height:440px){.reading-sheet{max-height:95dvh}.reading-chapter{display:none}.reading-top{height:calc(var(--reader-safe-top) + 48px)}}
 
-.epub-mount{bottom:calc(var(--reader-safe-bottom) + var(--reading-footer-height));top:var(--reader-safe-top)}
+.epub-mount{bottom:var(--reading-bottom-inset);top:var(--reader-safe-top)}
 .book-cover-generated>.book-cover-initial{font:400 38px/1 Georgia,serif;letter-spacing:-.04em;opacity:.7}
 .book-cover-large .book-cover-generated>.book-cover-initial{font-size:52px}
 
@@ -456,7 +456,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 :is(.book-flow,.book-measure-flow){transition:none!important}
 .epub-mount{left:var(--page-left,0px);right:var(--page-right,0px);
  top:calc(var(--reader-safe-top) + var(--page-top,0px) + var(--clipping-alert-height,0px));
- bottom:calc(var(--reader-safe-bottom) + var(--reading-footer-height) + var(--page-bottom,0px));
+ bottom:calc(var(--reading-bottom-inset) + var(--page-bottom,0px));
  overflow:hidden;isolation:isolate}
 .epub-page-probe{position:absolute;left:-100000px;top:0;visibility:hidden;pointer-events:none;overflow:hidden;contain:layout paint}
 .reading-scroll-safe .epub-mount{overflow:auto}
@@ -467,3 +467,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .library-account{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 10px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--fg);font:500 12px/1 system-ui,sans-serif;cursor:pointer}
 #cloud-title{scroll-margin-top:24px}
 @media(max-width:340px){.library-account{width:40px;padding:0}.library-account span{display:none}.library-brand{gap:8px}}
+
+/* Reader clarity is a hard invariant, including hidden chrome and text nodes. */
+.reading-root,.reading-root *{filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;mask-image:none!important;-webkit-mask-image:none!important;text-shadow:none!important}
+.reading-root::before,.reading-root::after,.reading-content::before,.reading-content::after,.page-region::before,.page-region::after{content:none!important;display:none!important}
+.reading-root{--reading-footer-height:16px;--reading-bottom-inset:max(var(--reader-safe-bottom),var(--reading-footer-height));isolation:isolate}
+.reading-status{bottom:max(0px,calc(var(--reader-safe-bottom) - var(--reading-footer-height)));padding:0 20px 3px}
+.reading-status::before{content:'';position:absolute;inset:-14px 0;}
+.reading-status>i{bottom:0}
+
+/* Reading stays chrome-free. The transparent control remains keyboard/AT accessible. */
+.reading-root{--reading-footer-height:0px;--reading-bottom-inset:var(--reader-safe-bottom)}
+.reading-status{height:44px;bottom:0;background:transparent!important;color:transparent;padding:0;opacity:0}
+.reading-status>span,.reading-status>i{display:none}
+.reading-status::before{content:none}
+.reading-status:focus-visible{opacity:1;outline:2px solid var(--accent);outline-offset:-3px}

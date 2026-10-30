@@ -306,11 +306,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
    top:`calc(var(--reader-safe-top) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
-   bottom:`calc(var(--reader-safe-bottom) + var(--reading-footer-height) + ${settings.bottomMargin}px)`}}>
+   bottom:`calc(var(--reading-bottom-inset) + ${settings.bottomMargin}px)`}}>
    <div className="page-viewport" data-ready={ready} ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
-      transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
+      transform:'translateX(-'+(page*(stride||geometry.width+GAP))+'px)'}}>
      {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
