@@ -19,9 +19,9 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,onBa
  return <div className="library-shell">
   <header className="library-header"><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div>
   <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></header>
-  <input ref={input} type="file" accept=".fb2,.epub,.pdf,application/pdf" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
+  <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<main className="library-main">
-    <div className="library-greeting">Ваша библиотека · FB2, EPUB и PDF</div>
+    <div className="library-greeting">Ваша библиотека · FB2 и EPUB</div>
     {continueBook&&<section className="continue-section">
       <div className="section-heading"><h2>Продолжить</h2></div>
       <button className="continue-card" onClick={()=>onOpen(continueBook)}>
@@ -49,7 +49,7 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,onBa
          <span>{book.format.toUpperCase()}</span><span>{book.position?Math.round(Math.max(0,Math.min(1,book.position.fraction))*100)+'% прочитано':'Не начата'}</span>
         </span></button>
         <button title="Удалить книгу" className="book-remove" onClick={()=>onDelete(book)}><Icon name="trash" size={15}/></button></div>)}</div>:
-        <div className="empty-library"><Icon name="book" size={38}/><strong>{books.length?'Книги не найдены':'Пока здесь тихо'}</strong><p>{books.length?'Попробуйте другой запрос.':'Добавьте первую книгу в формате FB2, EPUB или PDF.'}</p><button onClick={()=>input.current?.click()}>Добавить книгу</button></div>}
+        <div className="empty-library"><Icon name="book" size={38}/><strong>{books.length?'Книги не найдены':'Пока здесь тихо'}</strong><p>{books.length?'Попробуйте другой запрос.':'Добавьте первую книгу в формате FB2 или EPUB.'}</p><button onClick={()=>input.current?.click()}>Добавить книгу</button></div>}
     </section>
     </main>}
   {tab==='bookmarks'&&<main className="library-main"><div className="section-heading"><h2>Закладки</h2></div>
