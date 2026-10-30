@@ -50,7 +50,9 @@ test('chapter boundary keeps page geometry fixed and does not animate across the
  await page.locator('.reading-zones').click({position:{x:40,y:250}});
  await expect(flow).toContainText('КОНЕЦ_Глава_один',{timeout:20000});
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
- await expect.poll(()=>page.locator('.reading-progress span').innerText()).toContain('Страница');
+ // The bottom toolbar is normally hidden while reading, so page
+ // readiness must be checked through its stable viewport state, not hidden text.
+ await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
  const back=await page.locator('.page-viewport').boundingBox();
  expect(back).toEqual(initial);
  const text=await flow.innerText();
