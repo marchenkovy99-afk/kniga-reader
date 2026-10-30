@@ -5,7 +5,7 @@ import {ReadingControls} from '../components/ReadingControls';
 import {ClippingAlert} from '../components/ClippingAlert';
 import {inspectTextColumns,invalidateTextColumnAudit,observeTextColumnChanges,type ClipIssue} from '../clippingGuard';
 import {applyEpubAppearance,applyEpubInk} from './epubAppearance';
-import {chapterForHref,flattenEpubToc,type EpubChapter} from './epubNavigation';
+import {chapterForHref,flattenEpubToc,epubTocStartPages,type EpubChapter} from './epubNavigation';
 import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub} from './epubLayout';
 
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
@@ -26,6 +26,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const [issue,setIssue]=useState<ClipIssue|null>(null),[safeMode,setSafeMode]=useState(false),[retry,setRetry]=useState(0);
  const safeRef=useRef(false);safeRef.current=safeMode;
  const [pageIndex,setPageIndex]=useState<{key:string;values:Record<number,number>}>({key:'',values:{}});
+ const [tocLocations,setTocLocations]=useState<{key:string;values:Record<number,{index:number;page:number}>}>({key:'',values:{}});
  const pageIndexRef=useRef(pageIndex);pageIndexRef.current=pageIndex;
  const layoutKey=[geometry.width,geometry.height,epubTypographyKey(settings)].join(':');
  const keyRef=useRef(layoutKey);keyRef.current=layoutKey;
@@ -141,10 +142,25 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
       return values[section.index]===location.total?old:{key,values:{...values,[section.index]:location.total}};
      });
     }
+    // Some TOC entries start in the middle of a spine section. Resolve each
+    // anchor against the same hidden rendition used for physical page counts.
+    for(const [chapter,item] of chapters.entries()){
+     if(!active)return;
+     try{
+      await probe.display(item.href);await settleEpub(probe);if(!active)return;
+      const location=physicalPage(probe.currentLocation());
+      if(!spine.some(s=>s.index===location.index))continue;
+      setTocLocations(old=>{
+       const values=old.key===key?old.values:{};
+       const previous=values[chapter];
+       return previous?.index===location.index&&previous.page===location.page?old:{key,values:{...values,[chapter]:{index:location.index,page:location.page}}};
+      });
+     }catch(e){console.warn('Не удалось определить страницу главы EPUB',item.href,e)}
+    }
    }catch(e){if(active)console.error('Не удалось пересчитать страницы EPUB',e);}
   }
   void measure();return()=>{active=false;try{probe?.destroy()}catch{}};
- },[loaded,layoutKey,spine,safeMode]);
+ },[loaded,layoutKey,spine,safeMode,chapters]);
  useEffect(()=>{
   const r=rendition.current;if(!r||!loaded||(!safeMode&&r.settings.flow==='paginated'))return;
   enqueue(async()=>{
@@ -152,6 +168,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   });
  },[safeMode,loaded]);
  const values=pageIndex.key===layoutKey?pageIndex.values:{};
+ const chapterPageNumbers=epubTocStartPages(spine,values,tocLocations.key===layoutKey?tocLocations.values:{},chapters.length);
  const indexed=spine.length>0&&spine.every(s=>values[s.index]>0);
  const totalPages=indexed?spine.reduce((n,s)=>n+values[s.index],0):0;
  const globalPage=indexed?spine.filter(s=>s.index<view.index).reduce((n,s)=>n+values[s.index],0)+view.page:0;
@@ -181,7 +198,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;
  return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={onBack}
   onNext={()=>turn(1)} onPrevious={()=>turn(-1)} safeMode={safeMode}
-  chapters={chapters.length?chapters:undefined} currentChapter={currentChapter}
+  chapters={chapters.length?chapters.map((entry,i)=>({...entry,page:chapterPageNumbers[i]})):undefined} currentChapter={currentChapter}
   onChapter={index=>{const item=chapters[index];if(item)enqueue(()=>rendition.current.display(item.href));}}
   position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}}
   progress={progress} caption={safeMode?'Режим прокрутки':`Страница ${globalPage||view.page} из ${totalPages||view.total}`}
