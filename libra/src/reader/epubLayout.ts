@@ -33,7 +33,7 @@ export function enforceEpubUniformSpacing(doc:Document):void{
   const style=element.style;
   if(/^(justify|justify-all)$/i.test(style.textAlign.trim()))style.setProperty('text-align','left','important');
   if(style.wordSpacing)style.setProperty('word-spacing','var(--libra-word-spacing,0px)','important');
-  if(/^(justify|justify-all)$/i.test(style.textAlignLast.trim()))style.setProperty('text-align-last','auto','important');
+  if(/^(justify|justify-all)$/i.test((style.textAlignLast||'').trim()))style.setProperty('text-align-last','auto','important');
  }
 }
 export const EPUB_OPTIONS={flow:'paginated',spread:'none',gap:0,allowScriptedContent:false,snap:false};
