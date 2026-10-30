@@ -107,8 +107,9 @@ test('a PDF with a very large MediaBox is completely fitted, never cropped to a 
     rect.left>=parent.left-3&&rect.right<=parent.right+3&&
     rect.top>=parent.top-3&&rect.bottom<=parent.bottom+3;
   })).toBe(true);
-  expect(await canvasDigest(page)).toMatchObject({ink:expect.any(Number)});
-  expect((await canvasDigest(page)).ink).toBeGreaterThan(10);
+  // PDF.js renders asynchronously after ResizeObserver; a resized canvas is
+  // briefly blank on WebKit. Wait for completed ink, never accept a blank page.
+  await expect.poll(async()=>(await canvasDigest(page)).ink,{timeout:12000}).toBeGreaterThan(10);
  }
  await expect(page.locator('.app-error')).toHaveCount(0);
 });
