@@ -105,6 +105,9 @@ jobs:
             }
             await page.getByRole('button',{name:'Текст'}).click();
             await page.locator('.sheet-settings input[type=range]').nth(3).fill('2');
+            await page.locator('.sheet-settings input[type=range]').nth(8).fill('46');
+            await page.locator('.sheet-settings input[type=range]').nth(9).fill('30');
+            await page.locator('.sheet-settings input[type=range]').nth(10).fill('600');
             await page.getByRole('button',{name:'Закрыть'}).click();
             const spacing=await page.locator('.book-flow').evaluate(el=>({
               align:getComputedStyle(el).textAlign,
@@ -112,10 +115,20 @@ jobs:
             }));
             if(spacing.align!=='left'||spacing.spacing!=='2px')
               throw new Error('Typography update not deployed: '+JSON.stringify(spacing));
+            const insets=await page.locator('.page-region').evaluate(el=>{
+              const s=getComputedStyle(el),flow=el.querySelector('.book-flow');
+              return {right:parseFloat(s.paddingRight),bottom:parseFloat(s.bottom),
+               weight:flow?getComputedStyle(flow).fontWeight:null};
+            });
+            if(insets.right!==46||insets.bottom<30||insets.weight!=='600')
+              throw new Error('Advanced margin controls not deployed: '+JSON.stringify(insets));
             await page.reload();
             await page.locator('.continue-card').click();
             const restored=await page.locator('.book-flow').evaluate(el=>getComputedStyle(el).wordSpacing);
             if(restored!=='2px')throw new Error('Typography preferences not restored: '+restored);
+            const right=await page.locator('.page-region').evaluate(el=>parseFloat(getComputedStyle(el).paddingRight));
+            if(right!==46)throw new Error('Asymmetric margins not restored: '+right);
+            console.log('PUBLIC_TYPOGRAPHY_OK: independently saved page margins and font weight');
             await page.locator('.reading-zones').click({position:{x:190,y:240}});
             await page.getByRole('button',{name:'В библиотеку'}).click();
             await page.getByLabel('Сортировка книг').selectOption('title');
