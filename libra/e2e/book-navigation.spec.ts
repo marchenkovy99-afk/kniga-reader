@@ -42,13 +42,12 @@ test('whole-book slider, page jump, compact footer and restored final character'
   return {textBottom:r.bottom,footerTop:footer.top,height:r.height};
  });
  expect(bounds.textBottom).toBeLessThanOrEqual(bounds.footerTop);
- expect(bounds.height).toBeGreaterThan(700);
- const glyph=await page.locator('.book-flow p').last().evaluate(el=>{
+ expect(bounds.height).toBeGreaterThan(page.viewportSize()!.height-90);
+ await expect.poll(()=>page.locator('.book-flow p').last().evaluate(el=>{
   const range=document.createRange();range.selectNodeContents(el);range.setStart(el.firstChild!,el.firstChild!.textContent!.length-1);
   const r=range.getBoundingClientRect(),vp=el.closest('.page-viewport')!.getBoundingClientRect();
-  return {visible:r.left>=vp.left-2&&r.right<=vp.right+2&&r.top>=vp.top-2&&r.bottom<=vp.bottom+2};
- });
- expect(glyph.visible).toBe(true);
+  return r.left>=vp.left-2&&r.right<=vp.right+2&&r.top>=vp.top-2&&r.bottom<=vp.bottom+2;
+ })).toBe(true);
  await page.reload();await page.locator('.continue-card').click();
  await expect(page.locator('.book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
  await expect(status).toContainText('100%');

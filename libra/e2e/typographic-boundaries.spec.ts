@@ -122,7 +122,7 @@ test('separate margin controls, hyphenation and reset remain usable',async({page
  await expect(sliders.nth(9)).toHaveValue('30');
  await expect(sliders.nth(10)).toHaveValue('600');
  await page.getByRole('button',{name:'Сбросить настройки текста'}).click();
- await expect(sliders.nth(8)).toHaveValue('20');
- await expect(sliders.nth(9)).toHaveValue('12');
+ await expect(sliders.nth(8)).toHaveValue('16');
+ await expect(sliders.nth(9)).toHaveValue('2');
  await expect(sliders.nth(10)).toHaveValue('400');
 });

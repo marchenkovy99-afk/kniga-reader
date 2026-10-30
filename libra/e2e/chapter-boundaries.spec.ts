@@ -31,6 +31,8 @@ test('switching between chapters preserves last page and all body content',async
  await expect(flow).not.toContainText('КОНЕЦ_ПЕРВОЙ_ГЛАВЫ');
  // Back from the first page of chapter two should land at the LAST page
  // of chapter one, not at its beginning or in an unrelated chapter.
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled();
+ await expect(page.locator('.reading-progress span')).toHaveText(/Страница \d+ из \d+/);
  const secondStart=await page.locator('.reading-progress span').innerText();
  const secondPage=Number(/Страница (\d+)/.exec(secondStart)?.[1]);
  expect(secondPage).toBeGreaterThan(1);

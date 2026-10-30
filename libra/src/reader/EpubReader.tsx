@@ -5,6 +5,7 @@ import { ReadingControls } from '../components/ReadingControls';
 import { applyEpubAppearance } from './epubAppearance';
 import { chapterForHref, flattenEpubToc, type EpubChapter } from './epubNavigation';
 
+const typographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.lineHeight,s.fontFamily,s.margin,s.marginRight,s.verticalMargin,s.bottomMargin,s.align,s.wordSpacing,s.letterSpacing,s.paragraphSpacing,s.paragraphIndent,s.fontWeight,s.hyphenation]);
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 export function EpubReader({book,settings,onSettings,onBack}:Props){
  const epubRef=useRef<any>(null);
@@ -13,6 +14,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const host=useRef<HTMLDivElement>(null),rendition=useRef<any>(null);
  const lastCfi=useRef(book.position?.cfi||'');
  const currentAppearance=useRef(settings);
+ const appliedTypography=useRef(typographyKey(settings));
  const savedFraction=useRef(book.position?.fraction||0);
  const locationsReady=useRef(false),atBookEnd=useRef(false);
  const explicitTarget=useRef<{page:number;cfi:string}|null>(null);
@@ -46,6 +48,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
         pre:{'white-space':'pre-wrap','overflow-wrap':'anywhere'}
        });
        applyEpubAppearance(rend.themes,currentAppearance.current);
+       appliedTypography.current=typographyKey(currentAppearance.current);
        const navigation=await epub.loaded.navigation;
        if(cancelled)return;
        const items=flattenEpubToc(navigation?.toc||[]);
@@ -94,7 +97,17 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
    };
  },[book.id,book.file]);
  useEffect(()=>{
-   if(rendition.current)applyEpubAppearance(rendition.current.themes,settings);
+   const rend=rendition.current;if(!rend)return;
+   applyEpubAppearance(rend.themes,settings);
+   const key=typographyKey(settings);
+   if(key!==appliedTypography.current){
+    appliedTypography.current=key;
+    // A changed font invalidates epub.js' cached view width and column
+    // offsets. Recreate views in the same rendition and restore the CFI;
+    // subsequent seek requests run after this display in its render queue.
+    rend.clear();
+    void rend.display(lastCfi.current||undefined).catch((e:unknown)=>setError(String(e)));
+   }
  },[settings.theme,settings.fontSize,settings.lineHeight,settings.fontFamily,settings.margin,settings.align,settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.paragraphIndent,settings.verticalMargin,settings.marginRight,settings.bottomMargin,settings.fontWeight,settings.hyphenation]);
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack}
   onNext={()=>{clearTarget();void rendition.current?.next().catch((e:unknown)=>setError(String(e)))}}
