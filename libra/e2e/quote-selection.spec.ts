@@ -46,6 +46,7 @@ test('EPUB content selection opens quote popover and saves original selected tex
  });
  await expect(page.getByRole('group',{name:'Действия с выделенной цитатой'})).toBeVisible();
  await page.getByRole('button',{name:'Сохранить цитату'}).click();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Цитаты',exact:true}).click();
  await expect(page.locator('.saved-quote blockquote')).toContainText('Passage');
