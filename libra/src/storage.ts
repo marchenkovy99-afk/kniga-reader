@@ -114,8 +114,23 @@ function updateReading(id:string,transform:(state:ReadingState)=>ReadingState):P
   tx.onabort=()=>reject(tx.error??new Error('Reading state write aborted'));
  }));
 }
+/**
+ * A delayed page-flip write must never replace a newer reading location.
+ * This can happen when a device suspends a tab during an asynchronous write
+ * or when an earlier EPUB relocation resolves after a later navigation.
+ *
+ * For equal timestamps we keep the later queued event (IDB serializes the
+ * readwrite transactions), preserving fast consecutive taps within one ms.
+ */
+export function newestReadingPosition(current:ReaderPosition|undefined,next:ReaderPosition):ReaderPosition{
+ return current && current.updatedAt>next.updatedAt?current:next;
+}
 export function savePosition(id:string,position:ReaderPosition){
- return updateReading(id,old=>({...old,position,lastOpenedAt:Date.now()}));
+ return updateReading(id,old=>{
+  if(old.position && old.position.updatedAt>position.updatedAt)return old;
+  return {...old,position:newestReadingPosition(old.position,position),
+   lastOpenedAt:Math.max(old.lastOpenedAt??0,Date.now())};
+ });
 }
 export async function toggleBookmark(id:string,position:ReaderPosition):Promise<ReaderPosition[]>{
  const updated=await updateReading(id,old=>{
