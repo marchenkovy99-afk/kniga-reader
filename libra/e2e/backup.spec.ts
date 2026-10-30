@@ -53,6 +53,9 @@ test('backup export and additive restore recover exact book bytes, bookmarks and
  await page.locator('.continue-card').click();
  await expect(page.locator('.book-flow')).toContainText('КОНЕЦ КНИГИ БЕЗ ПОТЕРЬ');
  await expect.poll(()=>page.locator('.book-flow').evaluate(el=>(el as HTMLElement).style.transform)).toBe(position);
+ // After reopening a book the reader chrome is hidden. A centre tap reveals
+ // the back button; clicking it without revealing the toolbar times out.
+ await page.locator('.reading-zones').click({position:{x:190,y:230}});
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Закладки'}).click();
  await expect(page.locator('.bookmark-item')).toHaveCount(1);
