@@ -11,3 +11,14 @@ export function bookPageLocation(counts:number[],requested:number):{chapter:numb
 export function bookPageNumber(counts:number[],chapter:number,page:number):number{
  return counts.slice(0,chapter).reduce((sum,n)=>sum+n,0)+page+1;
 }
+
+/** Unknown preceding chapter sizes must never produce invented page numbers. */
+export function chapterStartPages(counts:readonly number[]):Array<number|undefined>{
+ let next=1,known=true;
+ return counts.map(count=>{
+  const start=known?next:undefined;
+  if(!Number.isSafeInteger(count)||count<1)known=false;
+  else if(known)next+=count;
+  return start;
+ });
+}
