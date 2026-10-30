@@ -71,6 +71,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
  const previous=useRef(false);
+ const chapterRequest=useRef(0);
+ const pendingChapter=useRef<number|null>(null);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  useEffect(()=>{
@@ -170,7 +172,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout]);
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
-  if(!ready||!flow.current)return;
+  if(!ready||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
   const measuredCounts=pageIndex.key===layoutKey.slice(layoutKey.indexOf(':')+1)?pageIndex.counts:{};
@@ -191,8 +193,20 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   if(anchor)anchorRef.current=anchor;
   setPage(safe);
  };
- const switchChapter=(nextChapter:number,toLast=false)=>{
+ const switchChapter=async(nextChapter:number,toLast=false)=>{
   if(!chapters[nextChapter])return;
+  const request=++chapterRequest.current;
+  pendingChapter.current=nextChapter;
+  const key=layoutKey.slice(layoutKey.indexOf(':')+1);
+  const cached=pageIndex.key===key?pageIndex.counts[nextChapter]:undefined;
+  const target=requestedPage.current??(toLast?Math.max(0,(cached||1)-1):0);
+  const pending:ReaderPosition={chapter:nextChapter,page:target,
+   fraction:lastPosition.current?.fraction||0,updatedAt:Date.now()};
+  // Commit the selected chapter before exposing its text. A reload/iOS
+  // suspension between rendering and column measurement must reopen here.
+  try{await savePosition(book.id,pending)}catch(e){console.error(e)}
+  if(request!==chapterRequest.current)return;
+  lastPosition.current=pending;
   previous.current=toLast;
   anchorRef.current=undefined;
   setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
