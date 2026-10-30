@@ -4,10 +4,12 @@ import { bookmarkLocationLabel } from '../bookmarks';
 import { BookCover } from './BookCover';
 import { Icon } from './Icons';
 import { BackupPanel } from './BackupPanel';
+import {CloudPanel} from './CloudPanel';
+import type {CloudController} from '../useCloudSync';
 import { sortLibraryBooks, type LibraryOrder } from '../librarySort';
-type Props={books:StoredBook[]; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
+type Props={cloud:CloudController;books:StoredBook[]; settings:ReaderSettings; onSettings:(s:ReaderSettings)=>void;
   onOpen:(book:StoredBook,position?:ReaderPosition)=>void;onImport:(files:FileList)=>void;onDelete:(book:StoredBook)=>void;onBackupImported:()=>Promise<void>;loading:boolean};
-export function Library({books,settings,onSettings,onOpen,onImport,onDelete,onBackupImported,loading}:Props){
+export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelete,onBackupImported,loading}:Props){
  const input=useRef<HTMLInputElement>(null);
  const [tab,setTab]=useState<'library'|'bookmarks'|'settings'>('library');
  const [query,setQuery]=useState('');
@@ -22,6 +24,7 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,onBa
   <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<main className="library-main">
     <div className="library-greeting">Ваша библиотека · FB2 и EPUB</div>
+    {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги аккаунта сохранены на устройстве. Войдите в него в настройках, чтобы открыть библиотеку.</p>}
     {continueBook&&<section className="continue-section">
       <div className="section-heading"><h2>Продолжить</h2></div>
       <button className="continue-card" onClick={()=>onOpen(continueBook)}>
@@ -59,7 +62,7 @@ export function Library({books,settings,onSettings,onOpen,onImport,onDelete,onBa
     <p className="setting-hint">Тема меняет фон всего приложения, включая область системной строки iPhone, насколько это допускает iOS.</p>
     <div className="theme-options settings-themes">{(['paper','white','night','oled'] as const).map(t=><button key={t} className={'theme-swatch '+(settings.theme===t?'chosen':'')} data-option={t} onClick={()=>onSettings({...settings,theme:t})}><span>{t==='paper'?'Бумага':t==='white'?'Белая':t==='night'?'Ночь':'OLED'}</span></button>)}</div>
     <BackupPanel settings={settings} onSettings={onSettings} onImported={onBackupImported}/>
-    <div className="settings-info"><Icon name="cloud" size={19}/><span>Облачная синхронизация пока не подключена. Резервный файл сохраняйте в «Файлы» или другом надёжном месте.</span></div>
+    <CloudPanel cloud={cloud}/>
   </main>}
   {loading&&<div role="status" className="import-status">Импорт книги…</div>}
   <nav className="app-tabbar"><button className={tab==='library'?'active':''} onClick={()=>setTab('library')}><Icon name="book"/>Библиотека</button><button className={tab==='bookmarks'?'active':''} onClick={()=>setTab('bookmarks')}><Icon name="bookmark"/>Закладки</button><button className={tab==='settings'?'active':''} onClick={()=>setTab('settings')}><Icon name="settings"/>Настройки</button></nav>

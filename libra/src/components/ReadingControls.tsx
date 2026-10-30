@@ -11,9 +11,9 @@ type Props={
   position:ReaderPosition; progress:number; caption:string;
   pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
   chapters?:{title:string}[]; currentChapter?:number; onChapter?:(index:number)=>void;
-  children:ReactNode; interactiveContent?:boolean; modalContentOpen?:boolean;
+  children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
@@ -40,11 +40,12 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    const target=event.target as HTMLElement;
    if(event.key==='Escape'){setSheet(null);setPanels(false);return;}
    if(sheet||modalContentOpen||target.closest('input,select,button,textarea'))return;
+   if(safeMode&&(event.key==='PageDown'||event.key==='PageUp'))return;
    if(event.key==='ArrowRight'||event.key==='PageDown'){event.preventDefault();onNext();}
    if(event.key==='ArrowLeft'||event.key==='PageUp'){event.preventDefault();onPrevious();}
   };
   window.addEventListener('keydown',key);return ()=>window.removeEventListener('keydown',key);
- },[sheet,modalContentOpen,onNext,onPrevious]);
+ },[sheet,safeMode,modalContentOpen,onNext,onPrevious]);
  function onTap(x:number, left:number, width:number){
    if(sheet){setSheet(null);return;}
    const ratio=(x-left)/Math.max(1,width);
@@ -60,7 +61,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
     setMarkError('Не удалось сохранить закладку');
    }finally{setMarkBusy(false)}
  }
- return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")}>
+ return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")}>
    <div className="reading-content">{children}</div>
    <div className="reading-zones" role="presentation"
      onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
@@ -147,14 +148,14 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          <div className="settings-section-title">Размер и интервалы</div>
          <label>Размер текста <strong>{settings.fontSize} px</strong><input type="range" min="12" max="36" step="1" value={settings.fontSize} onChange={e=>update('fontSize',Number(e.target.value))}/></label>
          <label>Интервал строк <strong>{settings.lineHeight.toFixed(2)}</strong><input type="range" min="1.1" max="2.2" step=".05" value={settings.lineHeight} onChange={e=>update('lineHeight',Number(e.target.value))}/></label>
-         <label>Поле слева <strong>{settings.margin} px</strong><input type="range" min="6" max="52" step="2" value={settings.margin} onChange={e=>update('margin',Number(e.target.value))}/></label>
+         <label>Поле слева <strong>{settings.margin} px</strong><input type="range" min="0" max="52" step="2" value={settings.margin} onChange={e=>update('margin',Number(e.target.value))}/></label>
          <label>Между словами <strong>{settings.wordSpacing.toFixed(1)} px</strong><input type="range" min="0" max="5" step=".5" value={settings.wordSpacing} onChange={e=>update('wordSpacing',Number(e.target.value))}/></label>
          <label>Между буквами <strong>{settings.letterSpacing.toFixed(1)} px</strong><input type="range" min="-.5" max="1.5" step=".1" value={settings.letterSpacing} onChange={e=>update('letterSpacing',Number(e.target.value))}/></label>
          <div className="settings-section-title">Абзацы и страница</div>
          <label>Красная строка <strong>{settings.paragraphIndent.toFixed(1)} em</strong><input type="range" min="0" max="2.5" step=".1" value={settings.paragraphIndent} onChange={e=>update('paragraphIndent',Number(e.target.value))}/></label>
          <label>Между абзацами <strong>{settings.paragraphSpacing} px</strong><input type="range" min="0" max="24" step="1" value={settings.paragraphSpacing} onChange={e=>update('paragraphSpacing',Number(e.target.value))}/></label>
          <label>Поле сверху <strong>{settings.verticalMargin} px</strong><input type="range" min="0" max="52" step="2" value={settings.verticalMargin} onChange={e=>update('verticalMargin',Number(e.target.value))}/></label>
-         <label>Поле справа <strong>{settings.marginRight} px</strong><input type="range" min="6" max="52" step="2" value={settings.marginRight} onChange={e=>update('marginRight',Number(e.target.value))}/></label>
+         <label>Поле справа <strong>{settings.marginRight} px</strong><input type="range" min="0" max="52" step="2" value={settings.marginRight} onChange={e=>update('marginRight',Number(e.target.value))}/></label>
          <label>Поле снизу <strong>{settings.bottomMargin} px</strong><input type="range" min="0" max="52" step="2" value={settings.bottomMargin} onChange={e=>update('bottomMargin',Number(e.target.value))}/></label>
          <label>Насыщенность текста <strong>{settings.fontWeight}</strong><input type="range" min="400" max="600" step="100" value={settings.fontWeight} onChange={e=>update('fontWeight',Number(e.target.value))}/></label>
          <div className="setting-row"><span>Перенос слов</span><button type="button" aria-label="Перенос слов" onClick={()=>update('hyphenation',settings.hyphenation==='auto'?'none':'auto')}>{settings.hyphenation==='auto'?'Автоматический':'Выключен'}</button></div>

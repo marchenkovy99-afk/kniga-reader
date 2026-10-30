@@ -3,6 +3,10 @@ import {describe,it,expect} from 'vitest';
 import {DEFAULT_SETTINGS} from '../domain';
 import {normalizeSettings,fontStack,resetTypography} from '../readerSettings';
 describe('reader typography normalization',()=>{
+ it('retains zero page margins and spacing',()=>{
+  const s=normalizeSettings({...DEFAULT_SETTINGS,margin:0,marginRight:0,verticalMargin:0,bottomMargin:0,paragraphSpacing:0,wordSpacing:0});
+  for(const key of ['margin','marginRight','verticalMargin','bottomMargin','paragraphSpacing','wordSpacing'] as const)expect(s[key]).toBe(0);
+ });
  it('migrates persisted stretched justification to even spaces',()=>{
   const old={...DEFAULT_SETTINGS,align:'justify' as const};
   expect(normalizeSettings(old).align).toBe('left');

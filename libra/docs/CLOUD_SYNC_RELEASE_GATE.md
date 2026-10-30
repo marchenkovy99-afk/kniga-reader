@@ -1,51 +1,32 @@
-# LIBRA cloud sync: safety gate and implementation plan
+# LIBRA cloud synchronization
 
-**Status: design and deterministic local preflight only. Cloud sync is NOT enabled.**
-No existing Supabase database, Storage bucket, user, book, setting or progress was modified.
+Implemented 30 October 2026. Supabase project `qwnkigorqsgugcctnfmj` (Trecker) hosts new, isolated `public.libra_records` and private `libra-files` resources. Existing `kniga_*`, lawyer and fitness tables, existing Storage and authentication configuration were inspected and left unchanged. No legacy reader data is automatically imported.
 
-## Verified scope (30 October 2026)
+## Behavior
 
-- The connected Supabase account currently exposes only an existing project that is **not identified as LIBRA**.
-- LIBRA itself is a local-first standalone application using IndexedDB.
-- A dedicated Supabase project must be chosen or provisioned before any SQL is applied.
-- `src/cloudSyncPlan.ts` compares local and remote manifests without writing to either.
-- `supabase/schema-draft.sql` is a proposed schema, **not a deployed migration**.
+- Settings → Cloud accepts email/password sign-in or account creation. If signup requires confirmation, confirm the email and then return to sign in; no custom redirect URL is assumed.
+- First connection explicitly attaches unowned device books. Existing books belonging to another account never attach automatically. Later imports are queued for the connected account.
+- Original bytes remain in IndexedDB. IDB v3 adds account bindings, server revisions and durable pending entries. Book, progress, bookmark and setting writes queue in the same local transaction.
+- A worker mounted at App level syncs after local changes (1.5-second debounce), network reconnection, foregrounding and every 30 seconds while visible. Reading and offline use continue when refresh/auth/network requests fail.
+- SHA-256-addressed uploads are immutable; downloads must match the metadata size and SHA-256 before local application. Books are limited to 50 MiB per file.
+- The compare-and-set RPC rejects stale server revisions. Simultaneous edits remain pending and show a choice between the device and cloud versions. Selecting one replaces the whole book's reading metadata or the whole settings record; automatic per-bookmark merging is not claimed.
+- Deletions create permanent server tombstones. Another device hides the book but retains its downloaded bytes in IndexedDB. Tombstoned IDs are never reuploaded. No remote object garbage collection is enabled.
+- Signing out hides account books and keeps their bytes. The UI explains that sign-in is needed to regain access. Auth refresh failures alone do not hide offline books. Reader settings are stored separately for each account.
 
-## Release phases
+## Backend security and evidence
 
-1. **Provision dedicated backend:** verify owner, project name, region, allowed authentication methods, quotas, and production URL. Do not reuse the legacy reader's or another product's database.
-2. **Review and apply schema:** use `schema-draft.sql` only after a separate project and independent database backup exist. Deploy the private bucket; confirm anon cannot read, authenticated A cannot read or change B's records or objects, cross-owner inserts fail, and owner updates require expected revision.
-3. **Authenticated opt-in:** sign-in, clear account state, explicit choice to upload local library; do not upload automatically on first launch or first sign-in.
-4. **Safe initial upload:** compute SHA-256 over original bytes before network transfer, upload immutable content-addressed objects, verify downloaded bytes, then publish metadata with server-managed revision. Store a durable local pending queue and retry idempotently after offline periods. Keep original IndexedDB blobs.
-5. **Reading-state synchronization:** bookmarks and progress are separate from immutable book files; use optimistic concurrency against server revision. If remote and local values differ, show a review choice and never replace a newer local passage without consent.
-6. **Deletions:** represent removal as a tombstone with retention. Remote tombstones cannot automatically erase local files. Confirm deletion and verification on every device before any eventual GC.
-7. **Legacy migration:** first inspect the exact old reader schema and current user data. Offer dry run and local backup; import a copy rather than destructive takeover. Do not combine unrelated projects or merge identity namespaces.
-8. **Acceptance and launch:** test two users, two devices, offline edits, simultaneous changes, session expiry, large files, reconnect, failed upload, reinstalled PWA, interrupted restore, and repeated deletion; verify signed-out privacy, RLS and Storage policies. Only then enable sync for users.
+Migration: `supabase/migrations/20261030103156_libra_private_sync.sql` was applied successfully through the connected Supabase tool.
 
-## Conflict-preview semantics
+- RLS is enabled, with `auth.uid() = user_id` ownership and explicit authenticated grants. Anonymous table/function access is revoked.
+- CAS uses `SECURITY INVOKER` with an empty search path; the server increments revisions. A trigger forbids owner/key changes, file-hash changes and revival of deleted rows.
+- The private bucket permits authenticated reads/inserts only under the user's UUID. There is no client overwrite or deletion policy; the preexisting bucket's policies are restricted to its own bucket.
+- Rollback-only SQL transactions with two synthetic auth identities passed: cross-account insert/read/CAS denial; anonymous table/RPC denial; private Storage listing and cross-owner upload denial; stale CAS rejection; durable tombstone rejection. No test identities or objects were retained.
+- Security advisors reported no Libra table/function/RLS findings. The existing project has leaked-password protection disabled; enabling it is an independent auth configuration decision: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
-| Case | Preview decision | Safety rule |
-| --- | --- | --- |
-| Local-only file | Upload proposal | Explicit opt-in first |
-| Remote-only file | Download proposal | Check local quota and SHA-256 |
-| Same file and reading-state digests | No action | Still compare remote revisions before writes |
-| Same ID, different book hashes | Manual review | Never overwrite source bytes |
-| Same book, different progress/bookmarks | Manual review | Never silently rewind |
-| Tombstone on either side | Manual review | No silent deletion |
+## Automated checks and acceptance limits
 
-The local preflight is **not an uploader**, a conflict-resolution UI, or a substitute for access control. It intentionally rejects malformed/duplicate manifest entries.
+`cloud-storage.test.ts` exercises real IndexedDB behavior with fake-indexeddb: local-byte preservation, account scoping, offline outbox, deletion markers, generation-aware acknowledgements and per-account settings. `cloud-sync.test.ts` uses the real sync engine with an injected in-memory transport to exercise two-device book/bookmark/settings transfer, stale conflicts, permanent tombstones and corrupt download rejection.
 
-## Privacy and security constraints
+`e2e/cloud-sync.spec.ts` is a browser integration test using two isolated contexts and mocked Supabase HTTP responses. It covers UI sign-in/opt-in, transfer, bookmarks, offline changes/reconnection and sign-out privacy. Its current browser execution evidence belongs to CI; authoring the test alone does not establish a pass.
 
-- Public bucket access is prohibited; use user JWT and private Storage RLS.
-- `auth.uid()` is the only row ownership basis; never trust a client-provided owner ID or editable profile metadata.
-- Only a publishable key may appear in a browser build. Never expose a secret/service-role key.
-- Storage paths are rooted at the authenticated user's UUID. Content is immutable once uploaded.
-- No enabled client code may read or write LIBRA remote records before the dedicated environment is configured and validated.
-- Require an audit of database grants, RLS, cross-user access, CORS, token expiry, download integrity and quotas before launch.
-
-## Documentation references
-
-- [Private buckets and authenticated downloads](https://supabase.com/docs/guides/storage/buckets/fundamentals)
-- [Storage access policies](https://supabase.com/docs/guides/storage/security/access-control)
-- [Row level security](https://supabase.com/docs/guides/database/postgres/row-level-security)
+Real-user authentication across two physical devices, actual email delivery/confirmation, installed iOS PWA offline lifecycle, quota exhaustion and production-scale libraries remain acceptance work. No claim is made that these were exercised using the user's identity.

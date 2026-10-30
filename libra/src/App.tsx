@@ -6,6 +6,7 @@ import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
 import { setTheme } from './theme';
 import { normalizeSettings } from './readerSettings';
+import {useCloudSync} from './useCloudSync';
 import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
@@ -20,6 +21,7 @@ export default function App(){
  const [opened,setOpened]=useState<StoredBook|null>(null);
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
  const [hydrated,setHydrated]=useState(false);
+ const cloud=useCloudSync(async()=>{const [stored,preferences]=await Promise.all([listBooks(),loadSettings()]);setBooks(stored);setSettings(normalizeSettings(preferences??DEFAULT_SETTINGS))},()=>setOpened(null));
  useEffect(()=>{
   let live=true;
   Promise.all([listBooks(),loadSettings()]).then(([stored,preferences])=>{
@@ -68,7 +70,7 @@ export default function App(){
  return <>
   {opened&&opened.format!=='pdf'?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
-   <Library books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{if(book.format!=='pdf')setOpened(position?{...book,position}:book)}} onImport={files=>void importFiles(files)}
+   <Library cloud={cloud} books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{if(book.format!=='pdf')setOpened(position?{...book,position}:book)}} onImport={files=>void importFiles(files)}
      onDelete={book=>void remove(book)} onBackupImported={refresh} loading={loading}/>}
   {error&&<div className="app-error" role="alert">{error}<button onClick={()=>setError('')}>Закрыть</button></div>}
  </>;

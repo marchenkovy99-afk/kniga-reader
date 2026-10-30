@@ -11,19 +11,21 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.99.3",
+    "epubjs": "0.3.93",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "epubjs": "0.3.93"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@types/node": "^22.19.19",
     "@vitejs/plugin-react": "6.0.2",
+    "fake-indexeddb": "6.2.5",
+    "jsdom": "^26.1.0",
     "typescript": "5.9.3",
     "vite": "8.3.5",
-    "vitest": "^3.2.0",
-    "jsdom": "^26.1.0"
+    "vitest": "^3.2.0"
   },
   "overrides": {
     "@xmldom/xmldom": "0.9.12"

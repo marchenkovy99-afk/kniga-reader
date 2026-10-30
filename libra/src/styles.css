@@ -451,3 +451,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .epub-mount{bottom:calc(var(--reader-safe-bottom) + var(--reading-footer-height));top:var(--reader-safe-top)}
 .book-cover-generated>.book-cover-initial{font:400 38px/1 Georgia,serif;letter-spacing:-.04em;opacity:.7}
 .book-cover-large .book-cover-generated>.book-cover-initial{font-size:52px}
+
+/* Fixed reading gutters: page turns change the visible column instantly. */
+:is(.book-flow,.book-measure-flow){transition:none!important}
+.epub-mount{left:var(--page-left,0px);right:var(--page-right,0px);
+ top:calc(var(--reader-safe-top) + var(--page-top,0px) + var(--clipping-alert-height,0px));
+ bottom:calc(var(--reader-safe-bottom) + var(--reading-footer-height) + var(--page-bottom,0px));
+ overflow:hidden;isolation:isolate}
+.epub-page-probe{position:absolute;left:-100000px;top:0;visibility:hidden;pointer-events:none;overflow:hidden;contain:layout paint}
+.reading-scroll-safe .epub-mount{overflow:auto}

@@ -8,6 +8,8 @@ import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack } from '../readerSettings';
 import { bookPageLocation,bookPageNumber } from '../bookPagination';
+import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
+import { ClippingAlert } from '../components/ClippingAlert';
 
 const GAP=24;
 function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
@@ -54,7 +56,10 @@ type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings
 export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapters,setChapters]=useState<Chapter[]>([]);
  const [error,setError]=useState('');
+ const [clipIssue,setClipIssue]=useState<ClipIssue|null>(null);
+ const [retryVersion,setRetryVersion]=useState(0);
  const [chapter,setChapter]=useState(book.position?.chapter||0);
+ useEffect(()=>{setClipIssue(null);setRetryVersion(v=>v+1)},[settings,chapter]);
  const [page,setPage]=useState(book.position?.page||0);
  const [pages,setPages]=useState(1);
  const [stride,setStride]=useState(0);
@@ -118,7 +123,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   settings.marginRight,settings.bottomMargin,settings.fontWeight,settings.hyphenation]);
  const nonfittingTables=tableLayout.key===layoutKey?tableLayout.indices:new Set<number>();
  useLayoutEffect(()=>{
-  if(!flow.current||!geometry.width||!geometry.height)return;
+  if(clipIssue||!flow.current||!geometry.width||!geometry.height)return;
   let active=true;
   // A font/margin change is a re-layout, not a page turn. Animating from
   // the old column origin causes Safari to clip content mid-transition.
@@ -140,6 +145,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     return;
    }
    const actualStride=measureColumnStride(current,geometry.width,GAP);
+   invalidateTextColumnAudit(current);
+   const issue=inspectTextColumns(current,{...geometry,stride:actualStride});
+   if(issue){setClipIssue(issue);return;}
    const geo={width:geometry.width,gap:GAP,stride:actualStride};
    const count=measureRenderedPages(current,geometry.width,GAP,actualStride);
    setStride(old=>Math.abs(old-actualStride)<.01?old:actualStride);
@@ -169,10 +177,33 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
   return ()=>{active=false;clearTimeout(animationTimer);cancelAnimationFrame(frame)};
- },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout]);
- const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
+ },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout,clipIssue,retryVersion]);
+ const ready=Boolean(!clipIssue&&chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
+ // Check the displayed origin on every flip; a full glyph traversal is cached
+ // until typography, source content, media or an external DOM mutation changes.
+ useLayoutEffect(()=>{
+  const root=flow.current,view=viewport.current;
+  if(!ready||clipIssue||!root||!view)return;
+  let frame=0;
+  const audit=()=>{
+   const actualStride=stride||geometry.width+GAP;
+   const issue=inspectTextColumns(root,{...geometry,stride:actualStride})||inspectCurrentColumn(root,view,page,actualStride);
+   if(issue)setClipIssue(issue);
+  };
+  const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(audit)};
+  const stop=observeTextColumnChanges(root,schedule);
+  schedule();
+  return ()=>{stop();cancelAnimationFrame(frame)};
+ },[ready,clipIssue,page,stride,layoutKey]);
+ useLayoutEffect(()=>{
+  if(!clipIssue||!flow.current||!viewport.current)return;
+  // Keep the saved precise source anchor. Scroll mode is not a one-page book.
+  const block=anchorRef.current?.block;
+  const target=block===undefined?null:flow.current.querySelector<HTMLElement>(`[data-block-index="${block}"]`);
+  viewport.current.scrollTop=target?target.offsetTop:0;
+ },[clipIssue]);
  useEffect(()=>{
-  if(!ready||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
+  if(!ready||clipIssue||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
   const measuredCounts=pageIndex.key===layoutKey.slice(layoutKey.indexOf(':')+1)?pageIndex.counts:{};
@@ -212,11 +243,13 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
  };
  function next(){
+  if(clipIssue){if(chapter<chapters.length-1)void switchChapter(chapter+1);return;}
   if(!ready)return;
   if(page<pages-1)setReaderPage(page+1);
   else if(chapter<chapters.length-1)switchChapter(chapter+1);
  }
  function prev(){
+  if(clipIssue){if(chapter>0)void switchChapter(chapter-1,true);return;}
   if(!ready)return;
   if(page>0)setReaderPage(page-1);
   else if(chapter>0)switchChapter(chapter-1,true);
@@ -262,19 +295,20 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const position:ReaderPosition={chapter,page,fraction:bookProgress/100,
   anchor:anchorRef.current,updatedAt:Date.now()};
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
-  position={position} progress={bookProgress}
+  position={position} progress={bookProgress} safeMode={Boolean(clipIssue)}
   pageNumber={globalPage||undefined} totalPages={totalPages||undefined} onPage={indexed&&ready?seekPage:undefined}
   chapterTitle={actualChapter?.title}
-  caption={ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
+  caption={clipIssue?'Глава с прокруткой':ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
+  {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
-   top:`calc(var(--reader-safe-top) + ${settings.verticalMargin}px)`,
+   top:`calc(var(--reader-safe-top) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
    bottom:`calc(var(--reader-safe-bottom) + var(--reading-footer-height) + ${settings.bottomMargin}px)`}}>
    <div className="page-viewport" data-ready={ready} ref={viewport} style={style}>
     {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}

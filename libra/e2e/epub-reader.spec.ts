@@ -231,3 +231,43 @@ test('EPUB slider reaches final glyph and persists progress without rounded keyb
  await page.reload();await page.locator('.continue-card').click();
  await expect(page.getByRole('button',{name:'Показать управление чтением'})).toContainText('100%');
 });
+
+test('EPUB uses a distinct page number per turn and keeps zero-margin frame static',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'physical.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'Physical pages',24)});
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ await page.getByRole('button',{name:'Текст',exact:true}).click();
+ await page.getByRole('slider',{name:/Размер текста/}).fill('30');
+ for(const label of ['Поле слева','Поле справа','Поле сверху','Поле снизу']){
+  await page.getByRole('slider',{name:new RegExp(label)}).fill('0');
+ }
+ await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ const slider=page.getByRole('slider',{name:'Прогресс чтения'});
+ await expect(slider).toBeEnabled();await slider.press('Home');
+ await expect(slider).toHaveValue('1');
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ const fixed=await page.locator('.epub-mount').boundingBox();expect(fixed).toBeTruthy();
+ for(let expected=2;expected<=9;expected++){
+  await page.locator('.reading-zones').click({position:{x:345,y:350}});
+  await expect(page.locator('.reading-status')).toContainText(`Страница ${expected} из`);
+  expect(await page.locator('.epub-mount').boundingBox()).toEqual(fixed);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+ }
+});
+
+
+test('EPUB clipped source block triggers recovery that exposes its full text',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'inner-clip.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'Clipped block',12)});
+ await page.locator('.continue-card').click();
+ const body=page.frameLocator('.epub-mount iframe').locator('body');
+ await expect(body).toContainText('Passage 0');
+ await body.locator('p').first().evaluate(el=>{el.style.height='10px';el.style.overflow='hidden'});
+ await expect(page.getByRole('alert')).toContainText('Ошибка вёрстки');
+ await expect(page.locator('.reading-root')).toHaveClass(/reading-scroll-safe/);
+ await expect.poll(()=>body.locator('p').first().evaluate(el=>getComputedStyle(el).overflow)).toBe('visible');
+ expect(await body.locator('p').first().evaluate(el=>el.scrollHeight<=el.clientHeight+2)).toBe(true);
+ await expect(body).toContainText('END OF BOOK');
+});

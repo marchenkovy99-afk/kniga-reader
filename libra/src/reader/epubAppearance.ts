@@ -18,7 +18,8 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'letter-spacing':settings.letterSpacing+'px',
   '--libra-paragraph-gap':settings.paragraphSpacing+'px',
   '--libra-paragraph-indent':settings.paragraphIndent+'em',
-  padding:settings.verticalMargin+'px '+settings.marginRight+'px '+settings.bottomMargin+'px '+settings.margin+'px',
+  // Page gutters live on the outer viewport, never on moving EPUB columns.
+  padding:'0px',
   hyphens:settings.hyphenation
  };
  for(const [key,value] of Object.entries(overrides))themes.override(key,value);
