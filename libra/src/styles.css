@@ -822,6 +822,11 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
 @media(min-width:700px){.library-shell .reference-header{padding-left:30px;padding-right:30px}.library-shell .reference-main{padding-left:30px;padding-right:30px}.library-shell .reference-feature .continue-card.book-tile-open{grid-template-columns:160px minmax(0,1fr);min-height:231px}.library-shell .reference-feature .continue-card.book-tile-open .book-cover-large{min-height:231px}.library-shell .reference-feature .continue-info>strong{font-size:26px}}
 @media(max-width:359px){.library-shell .reference-header{padding-left:16px;padding-right:16px}.library-shell .reference-main{padding-left:16px;padding-right:16px}.library-shell .reference-feature{padding:13px}.library-shell .reference-feature .continue-card.book-tile-open{grid-template-columns:34% minmax(0,1fr);gap:12px}.library-shell .reference-feature .continue-info>strong{font-size:16px}.library-shell .library-section-heading h2{font-size:24px}.library-shell .sort-caption{font-size:11px}.library-shell .library-state-tabs button{padding:10px 13px}}
 
+/* Saved quotes use paint-only highlights: no inline wrappers, reflow or page shifts. */
+::highlight(libra-saved-quote){background-color:rgba(239,185,65,.52)!important}
+html[data-theme="night"] ::highlight(libra-saved-quote),
+html[data-theme="oled"] ::highlight(libra-saved-quote){background-color:rgba(197,151,74,.42)!important}
+
 /* Quotes: activate native selection only when explicitly requested, keeping
    the ordinary full-page tap/swipe reader geometry untouched. */
 .reading-root.reading-quote-mode .reading-zones{pointer-events:none}
