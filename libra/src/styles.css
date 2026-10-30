@@ -260,3 +260,111 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
  font-size:18px;overflow-wrap:anywhere}
 .typography-reset{background:transparent;color:var(--muted);border:1px solid var(--border);
  border-radius:9px;min-height:41px;font:500 12px -apple-system,BlinkMacSystemFont,sans-serif}
+
+
+/* Minimal editorial interface v2: one canvas, one type hierarchy, no fake
+   book gradients, raised cards, excessive badges, or bright decorative marks.
+   Theme colors remain the source of truth throughout iPhone safe areas. */
+:root{--content-width:820px;--ui-radius:10px}
+.library-shell{scrollbar-gutter:stable;scrollbar-width:thin}
+.library-header{padding:calc(env(safe-area-inset-top) + 27px) 22px 0;
+ max-width:calc(var(--content-width) + 44px);margin:0 auto}
+.library-header h1{font:600 31px/1.1 -apple-system,BlinkMacSystemFont,sans-serif;
+ letter-spacing:-.045em;margin:0}
+.brand-eyebrow{display:none}
+.round-action{width:42px;height:42px;border:1px solid var(--border);border-radius:10px;
+ background:transparent;color:var(--fg);box-shadow:none}
+.round-action:active{background:var(--border)}
+.library-main{max-width:var(--content-width);padding:0 22px 35px}
+.library-greeting{margin:14px 0 33px;color:var(--muted);
+ font:13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif}
+.section-heading{margin-bottom:14px}
+.section-heading h2{font:600 17px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;
+ letter-spacing:-.015em}
+.section-heading em{font-size:12px;font-weight:400;vertical-align:baseline}
+.continue-section{margin-bottom:31px}
+.continue-card{min-height:0;padding:14px;border:1px solid var(--border);
+ background:transparent;box-shadow:none;border-radius:var(--ui-radius);gap:15px;
+ align-items:center}
+.continue-card:hover{border-color:var(--muted)}
+.continue-info{padding:0;align-self:stretch}
+.continue-info>strong{font:600 17px/1.32 -apple-system,BlinkMacSystemFont,sans-serif;
+ letter-spacing:-.016em;max-height:none}
+.continue-author{font:12px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;
+ margin-top:5px}
+.continue-line{height:2px;margin-top:auto;background:var(--border)}
+.continue-footer{font-size:12px;font-weight:500;margin-top:9px}
+.continue-footer span{font-size:15px}
+.book-cover{background:color-mix(in srgb,var(--fg) 7%,var(--bg));border-radius:4px;
+ box-shadow:none;border:1px solid var(--border)}
+.book-cover::before{content:none}
+.book-cover-large{width:72px;min-width:72px;height:104px}
+.book-cover-generated{display:grid;place-items:center;height:100%;padding:10px;
+ background:transparent;color:var(--muted)}
+.book-cover-initial{font:400 clamp(28px,4vw,46px)/1 Georgia,serif;
+ letter-spacing:-.055em;opacity:.74}
+.book-grid{grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:0}
+.book-tile{display:grid;grid-template-columns:1fr;min-width:0;border-bottom:1px solid var(--border);
+ padding:11px 38px 11px 0}
+.book-tile-open{display:grid;grid-template-columns:58px minmax(0,1fr);column-gap:15px;
+ grid-template-rows:auto auto 1fr;align-items:start}
+.book-tile-open .book-cover{grid-row:1/4;grid-column:1;width:58px;height:86px;
+ aspect-ratio:auto;margin:0}
+.book-tile-open>strong{grid-column:2;font:600 15px/1.35 -apple-system,BlinkMacSystemFont,sans-serif;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow:hidden;max-width:100%}
+.book-tile-open>small{grid-column:2;margin-top:4px;font:12px/1.35 -apple-system,BlinkMacSystemFont,sans-serif}
+.book-tile-meta{grid-column:2;display:flex;justify-content:flex-start;gap:15px;
+ margin-top:8px;font:11px/1.4 -apple-system,BlinkMacSystemFont,sans-serif}
+.book-tile-meta>span:first-child{font-size:10px;letter-spacing:.03em}
+.book-remove{top:calc(50% - 17px);right:0;background:transparent;color:var(--muted);
+ width:34px;height:34px;border:0;border-radius:8px;opacity:.75}
+.book-remove:focus-visible,.book-remove:hover{background:var(--border);opacity:1}
+.library-filters{align-items:end;gap:18px;margin-bottom:10px}
+.search-wrap{margin:0;height:41px;border-bottom:1px solid var(--border)}
+.library-sort-label select{border-bottom:1px solid var(--border);min-height:41px}
+.app-tabbar{height:calc(62px + env(safe-area-inset-bottom))}
+.app-tabbar button{gap:4px;font-size:11px}
+.app-tabbar button.active svg{stroke:currentColor}
+.app-tabbar button.active{font-weight:600}
+.bookmark-item .book-cover{width:44px;height:65px}
+.reading-top{height:calc(env(safe-area-inset-top) + 54px);border-color:var(--border)}
+.reading-top button{width:42px}
+.reading-title{font:500 13px -apple-system,BlinkMacSystemFont,sans-serif}
+.reading-bottom{padding:14px 22px calc(env(safe-area-inset-bottom) + 11px);
+ border-color:var(--border)}
+.reading-tools{gap:42px}
+.reading-tools button{min-width:75px;font:12px -apple-system,BlinkMacSystemFont,sans-serif}
+.reading-sheet{max-height:83dvh;border-radius:14px 14px 0 0;
+ padding:20px 20px calc(env(safe-area-inset-bottom) + 26px);
+ box-shadow:none}
+.sheet-heading strong{font:600 18px -apple-system,BlinkMacSystemFont,sans-serif}
+.sheet-settings{gap:16px}
+.settings-section-title{font:600 12px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;
+ letter-spacing:0;color:var(--muted);padding-top:7px}
+.font-buttons button,.font-choices button{border-radius:8px;background:transparent;
+ border:1px solid var(--border)}
+.font-buttons button.selected{border:2px solid var(--fg);background:transparent}
+.theme-swatch{border-radius:8px}
+.theme-swatch.chosen{outline:2px solid var(--fg);outline-offset:2px}
+.settings-themes{margin-top:17px}
+.type-preview{border-radius:8px;padding:18px;background:transparent;min-height:110px;
+ border:1px solid var(--border)}
+.typography-reset{border:0;border-top:1px solid var(--border);border-radius:0;
+ text-align:left;padding:13px 0;color:var(--fg)}
+.chapter-menu button.active{color:var(--fg);font-weight:700}
+.setting-row button{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
+.backup-action{border-radius:8px}
+.book-table-launch{background:transparent;color:var(--fg);border-radius:8px}
+.book-table-launch span,.book-table-panel header button{color:var(--fg)}
+@media(min-width:740px){
+ .library-main{max-width:var(--content-width)}
+ .library-header{max-width:calc(var(--content-width) + 44px)}
+ .book-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+ .continue-card{max-width:490px}
+ .reading-root{border-color:var(--border)}
+}
+@media(max-width:350px){
+ .library-main{padding-inline:17px}.library-header{padding-inline:17px}
+ .book-tile-open{column-gap:11px}.book-tile{padding-right:31px}
+}
