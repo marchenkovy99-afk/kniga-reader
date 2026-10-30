@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** Stored ZIP writer: minimum EPUB2 fixture, no external services or fixtures. */
-function epubFixture(complex=false):Buffer{
+function epubFixture(complex=false,title='EPUB fixture'):Buffer{
  const chapterParagraphs=Array.from({length:140},(_,i)=>
   '<p>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
@@ -29,6 +29,7 @@ function epubFixture(complex=false):Buffer{
    '<p><img alt="Тестовая иллюстрация" src="data:image/png;base64,'+pixel+'"/></p>'+
    '<p>END OF SECOND CHAPTER</p></body></html>']);
  }
+ for(const file of files)file[1]=file[1].replaceAll('EPUB fixture',title);
  const crc32=(buffer:Buffer)=>{
   let crc=0xffffffff;
   for(const b of buffer){
@@ -131,12 +132,12 @@ test('EPUB2 NCX navigation opens later chapter with wide table and inline image'
 test('library sorting orders imported books and displays progress metadata',async({page})=>{
  await page.goto('/');
  for(const name of ['Z-last.epub','A-first.epub']){
-  await page.locator('input[type=file]').setInputFiles({name,mimeType:'application/epub+zip',buffer:epubFixture()});
+  await page.locator('input[type=file]').setInputFiles({name,mimeType:'application/epub+zip',buffer:epubFixture(false,name)});
   await expect(page.locator('.book-tile')).toHaveCount(name.startsWith('Z')?1:2);
  }
  const option=page.getByLabel('Сортировка книг');
  await option.selectOption('title');
- await expect(page.locator('.book-tile-open strong').first()).toContainText('EPUB fixture');
+ await expect(page.locator('.book-tile-open strong').first()).toContainText('A-first');
  await expect(page.locator('.book-tile-meta')).toHaveCount(2);
  await expect(page.locator('.book-tile-meta').first()).toContainText('EPUB');
 });
