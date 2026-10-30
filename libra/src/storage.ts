@@ -220,7 +220,7 @@ export async function attachLocalLibrary(owner:string){
    if(owner!==activeOwner)return;
    if(owned.result!==undefined){queue(tx,'settings');return}
    const anonymous=preferences.get('reader');
-   anonymous.onsuccess=()=>{if(owner!==activeOwner)return;if(anonymous.result!==undefined)preferences.put(anonymous.result,'reader:'+owner);queue(tx,'settings')};
+   anonymous.onsuccess=()=>{if(owner!==activeOwner)return;if(anonymous.result!==undefined){preferences.put(anonymous.result,'reader:'+owner);queue(tx,'settings')}};
   };
  }
  tx.oncomplete=()=>{changed();resolve()};tx.onerror=()=>reject(tx.error)});
