@@ -72,10 +72,11 @@ jobs:
             });
             const page=await context.newPage(),errors=[];
             page.on('pageerror',error=>errors.push(error.message));
-            const url=(process.env.LIBRA_SMOKE_URL||'https://libra-standalone-preview.vercel.app/').replace(/\\/?$/,'/');
-            const hostname=new URL(url).hostname;
-            if(!/^libra-standalone-preview(?:-[a-z0-9]+-marchenkovy99-3693)?\\.vercel\\.app$/.test(hostname)
-              || !url.startsWith('https://')) throw new Error('Unapproved LIBRA public URL');
+            const parsedUrl=new URL(process.env.LIBRA_SMOKE_URL||'https://libra-standalone-preview.vercel.app/');
+            const hostname=parsedUrl.hostname;
+            if(!new RegExp('^libra-standalone-preview(?:-[a-z0-9]+-marchenkovy99-3693)?[.]vercel[.]app$').test(hostname)
+              || parsedUrl.protocol!=='https:') throw new Error('Unapproved LIBRA public URL');
+            const url=parsedUrl.origin+'/';
             const response=await page.goto(url,{waitUntil:'networkidle',timeout:30000});
             if(response?.status()!==200)throw new Error('Public page HTTP '+response?.status());
             await page.locator('.library-header h1').waitFor({state:'visible',timeout:15000});
