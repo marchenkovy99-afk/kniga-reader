@@ -23,7 +23,7 @@ test('zero top margin never paints first reading line against iPhone clip or sta
 
   for(const viewport of [{width:320,height:568},{width:390,height:844},{width:430,height:932}]){
     await page.setViewportSize(viewport);
-    const info=await page.locator('.page-region').evaluate(region=>{
+    const info=await page.locator('.page-region').evaluate((region,viewportWidth)=>{
       const root=region.closest('.reading-root')!;
       const page=region.querySelector('.page-viewport')!;
       const probe=document.createElement('div');
@@ -43,11 +43,11 @@ test('zero top margin never paints first reading line against iPhone clip or sta
         const range=document.createRange();
         range.selectNodeContents(node);
         for(const r of Array.from(range.getClientRects()))
-          if(r.width>0&&r.height>0&&r.right>0&&r.left<viewport.width&&r.bottom>=clipTop&&r.top<page.getBoundingClientRect().bottom)
+          if(r.width>0&&r.height>0&&r.right>0&&r.left<viewportWidth&&r.bottom>=clipTop&&r.top<page.getBoundingClientRect().bottom)
             firstVisibleTop=Math.min(firstVisibleTop,r.top);
       }
       return {safeTop,top,clipTop,firstVisibleTop,filter:style.filter,mask:style.maskImage};
-    });
+    },viewport.width);
     expect(info.top-info.safeTop,'top paint clearance '+viewport.width).toBeGreaterThanOrEqual(8);
     expect(info.firstVisibleTop,'first text line exists '+viewport.width).toBeLessThan(Infinity);
     expect(info.firstVisibleTop,'first line stays inside reading clip '+viewport.width).toBeGreaterThanOrEqual(info.clipTop-1);
