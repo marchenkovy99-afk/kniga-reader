@@ -38,8 +38,7 @@ export default function App(){
   document.documentElement.style.backgroundColor=background;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',background);
   document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content',opened?PALETTES[settings.theme].status:'black');
-  if(hydrated)void saveSettings(settings).catch(()=>{});
- },[settings,hydrated,opened]);
+ },[settings,opened]);
  async function refresh(){try{setBooks(await listBooks())}catch(e){setError(String(e))}}
  // Previous EPUB imports discarded blob: cover links. Recover those covers
  // from the original files without changing the reading position or bookmarks.
@@ -94,7 +93,13 @@ export default function App(){
  }
  async function toggleFavorite(book:StoredBook){try{await setBookFavorite(book.id,!book.isFavorite);await refresh()}catch(e){setError('Не удалось обновить избранное: '+String(e))}}
  function back(){setOpened(null);void refresh()}
- function update(s:ReaderSettings){setSettings(normalizeSettings(s))}
+ function update(s:ReaderSettings){
+  const next=normalizeSettings(s);
+  setSettings(next);
+  // Persist only an explicit preference change. Cloud hydration must never
+  // rewrite the incoming account's settings with the previous render's values.
+  void saveSettings(next).catch(e=>setError('Не удалось сохранить настройки чтения: '+String(e)));
+ }
  return <>
   {opened&&opened.format!=='pdf'?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
