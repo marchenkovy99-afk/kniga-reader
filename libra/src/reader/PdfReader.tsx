@@ -45,7 +45,10 @@ export function PdfReader({book,settings,onSettings,onBack}:Props){
        const natural=source.getViewport({scale:1});
        const scale=Math.min((bounds.width-20)/natural.width,(bounds.height-20)/natural.height);
        const dpi=Math.max(1,Math.min(window.devicePixelRatio||1,2));
-       const view=source.getViewport({scale:Math.max(.1,scale)});
+       // Never clamp the scale upward: very large PDFs can require a scale
+       // below 0.1 to fit the canvas without losing page edges.
+       if(!Number.isFinite(scale)||scale<=0)return;
+       const view=source.getViewport({scale});
        const visible=canvas.current;
        visible.width=Math.ceil(view.width*dpi);visible.height=Math.ceil(view.height*dpi);
        visible.style.width=view.width+'px';visible.style.height=view.height+'px';
