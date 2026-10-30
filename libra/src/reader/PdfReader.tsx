@@ -7,45 +7,71 @@ type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings
 export function PdfReader({book,settings,onSettings,onBack}:Props){
  const [document,setDocument]=useState<any>(null),[count,setCount]=useState(1),[page,setPage]=useState((book.position?.page||0)+1),[error,setError]=useState('');
  const canvas=useRef<HTMLCanvasElement>(null),container=useRef<HTMLDivElement>(null);
+ // A canvas cannot be rendered into by two PDF.js tasks at once.
+ // Serialize *all* page and resize paints, even across effect cleanups.
+ const painting=useRef<Promise<void>>(Promise.resolve());
+ const activeTask=useRef<any>(null);
  useEffect(()=>{
-   let cancelled=false,task:any,loaded:any;
+   let cancelled=false,task:any;
    async function open(){
      try{
        const pdfjs=await import('pdfjs-dist');
+       if(cancelled)return;
        pdfjs.GlobalWorkerOptions.workerSrc=workerUrl;
        task=pdfjs.getDocument({data:new Uint8Array(await book.file.arrayBuffer())});
-       loaded=await task.promise;
-       if(!cancelled){setDocument(loaded);setCount(loaded.numPages)}
+       const loaded=await task.promise;
+       if(!cancelled){
+        setDocument(loaded);setCount(loaded.numPages);
+        setPage(p=>Math.min(Math.max(1,p),loaded.numPages));
+       }
      }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть PDF')}
    }void open();
-   return ()=>{cancelled=true;if(task)void task.destroy().catch(()=>{});};
+   return ()=>{cancelled=true;if(task)void task.destroy().catch(()=>{})};
  },[book.id,book.file]);
  useEffect(()=>{
    if(!document||!canvas.current||!container.current)return;
-   let disposed=false,renderTask:any;
-   const paint=async()=>{
-     try{
+   let disposed=false,revision=0;
+   const paint=()=>{
+     const wanted=++revision;
+     // Cancelling the old render is not sufficient: PDF.js releases the
+     // canvas only after its RenderTask.promise settles.
+     activeTask.current?.cancel();
+     const next=painting.current.catch(()=>{}).then(async()=>{
+       if(disposed||wanted!==revision||!canvas.current||!container.current)return;
        const source=await document.getPage(page);
-       if(disposed||!canvas.current||!container.current)return;
-       const r=container.current.getBoundingClientRect();
+       if(disposed||wanted!==revision||!canvas.current||!container.current)return;
+       const bounds=container.current.getBoundingClientRect();
+       if(bounds.width<=20||bounds.height<=20)return;
        const natural=source.getViewport({scale:1});
-       const scale=Math.min((r.width-20)/natural.width,(r.height-20)/natural.height);
-       const scaleFactor=Math.max(1,Math.min(window.devicePixelRatio||1,2));
-       const v=source.getViewport({scale:Math.max(.1,scale)});
-       const c=canvas.current;
-       c.width=Math.ceil(v.width*scaleFactor);c.height=Math.ceil(v.height*scaleFactor);
-       c.style.width=v.width+'px';c.style.height=v.height+'px';
-       const context=c.getContext('2d');if(!context)return;
-       renderTask=source.render({canvas:c,canvasContext:context,viewport:v,transform:[scaleFactor,0,0,scaleFactor,0,0]});
-       await renderTask.promise;
-     }catch(e){if(!disposed&&!(e instanceof Error&&e.name==='RenderingCancelledException'))setError('Ошибка отображения страницы PDF')}
+       const scale=Math.min((bounds.width-20)/natural.width,(bounds.height-20)/natural.height);
+       const dpi=Math.max(1,Math.min(window.devicePixelRatio||1,2));
+       const view=source.getViewport({scale:Math.max(.1,scale)});
+       const visible=canvas.current;
+       visible.width=Math.ceil(view.width*dpi);visible.height=Math.ceil(view.height*dpi);
+       visible.style.width=view.width+'px';visible.style.height=view.height+'px';
+       const context=visible.getContext('2d');if(!context)return;
+       const task=source.render({canvas:visible,canvasContext:context,viewport:view,transform:[dpi,0,0,dpi,0,0]});
+       activeTask.current=task;
+       try{await task.promise}
+       catch(e){
+        if(!disposed&&wanted===revision&&!(e instanceof Error&&e.name==='RenderingCancelledException'))
+         setError('Ошибка отображения страницы PDF');
+       }finally{if(activeTask.current===task)activeTask.current=null}
+     }).catch(e=>{
+       if(!disposed&&wanted===revision)setError(e instanceof Error?e.message:'Ошибка отображения страницы PDF');
+     });
+     painting.current=next;
    };
-   const observer=new ResizeObserver(()=>{if(renderTask)renderTask.cancel();void paint()});
-   observer.observe(container.current);void paint();
-   return ()=>{disposed=true;observer.disconnect();if(renderTask)renderTask.cancel()};
+   const observer=new ResizeObserver(paint);
+   observer.observe(container.current);
+   paint();
+   return ()=>{
+    disposed=true;revision++;
+    observer.disconnect();activeTask.current?.cancel();
+   };
  },[document,page]);
  useEffect(()=>{
-   if(document)void savePosition(book.id,{chapter:0,page:page-1,fraction:page/count,updatedAt:Date.now()});
+   if(document)void savePosition(book.id,{chapter:0,page:page-1,fraction:page/count,updatedAt:Date.now()}).catch(console.error);
  },[book.id,page,count,document]);
  const position:ReaderPosition={chapter:0,page:page-1,fraction:page/count,updatedAt:Date.now()};
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack}
