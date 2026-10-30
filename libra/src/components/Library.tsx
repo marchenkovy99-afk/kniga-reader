@@ -19,8 +19,9 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  const savedPlaces=sorted.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
  const shown=sortLibraryBooks(sorted.filter(b=>(b.title+' '+b.author).toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))),order);
  return <div className="library-shell">
-  <header className="library-header"><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div>
-  <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></header>
+  <header className="library-header"><div className="library-brand"><img src="./icon-180.png" width="40" height="40" alt="" aria-hidden="true"/><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div></div>
+  <div className="library-header-actions"><button className="library-account" aria-label={cloud.session?'Облачный аккаунт':'Войти в облако'} onClick={()=>{setTab('settings');requestAnimationFrame(()=>document.getElementById('cloud-title')?.scrollIntoView({block:'start',behavior:'smooth'}))}}><Icon name="cloud" size={19}/><span>{cloud.session?'Аккаунт':'Войти'}</span></button>
+  <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></div></header>
   <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<main className="library-main">
     <div className="library-greeting">Ваша библиотека · FB2 и EPUB</div>
