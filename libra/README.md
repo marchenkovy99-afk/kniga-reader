@@ -1,17 +1,16 @@
 # LIBRA
 
-A standalone, local-first iPhone e-reader prototype built with React, TypeScript, Vite, IndexedDB, EPUB.js and PDF.js.
+A standalone, local-first iPhone e-reader prototype built with React, TypeScript, Vite, IndexedDB and EPUB.js.
 
 ## Current status: functional alpha
 
 The code in this directory is a **new application**. It imports no modules, CSS, pagination code, or UI components from the legacy `kniga-reader` project. It currently lives in an isolated GitHub branch because the connected GitHub integration cannot create repositories.
 
 ### Implemented in this alpha
-- Local IndexedDB library: FB2, EPUB, PDF import and file retention.
+- Local IndexedDB library: FB2 and EPUB import, reading, and original-file retention.
 - FB2 parser with chapters, paragraphs, poetry, images, tables, basic title/author/cover metadata.
 - FB2 reading with native CSS multicolumn pagination and fragmentable DOM; no manual string slicing or content truncation. Stable source-text anchors are used to restore the approximate visible passage after typography and viewport changes.
 - EPUB.js paginated reader with CFI-based position persistence.
-- PDF.js page-by-page canvas rendering, aspect-ratio-preserving fit.
 - Reading progress and bookmarks stored separately from book bytes in IndexedDB schema v2, with a transactional upgrade from v1.
 - iPhone-oriented library, search, generated covers, reader controls and settings.
 - Four consistent shell themes, with matching `theme-color` metadata.
@@ -21,9 +20,9 @@ The code in this directory is a **new application**. It imports no modules, CSS,
 ### Intentionally not claimed as complete
 - **Cloud sync / Supabase**: not connected; no migration of old user data. Do not delete the old application.
 - Pixel-perfect pagination guarantees, iPhone Status Bar behavior, extensive stress/visual tests, polished design review, cross-device sync conflicts and production accessibility have **not** been accepted.
-- EPUB images, fonts and exotic layouts depend on EPUB.js. PDF is fixed-layout, not reflowed.
+- EPUB images, fonts and exotic layouts depend on EPUB.js.
 - FB2 source-character anchors now survive changes to page geometry, but an exact first-line match is not guaranteed because a saved character can move into a newly fragmented page. Image-only positions and bookmarks need additional hardening.
-- PDF file size, encrypted PDFs, bad FB2 and malformed archives need stronger limits and error handling.
+- Bad FB2 and malformed EPUB archives need stronger limits and error handling.
 - Offline PWA requires initial successful online load; exported/remote assets are not guaranteed offline.
 
 ## Local use
@@ -49,6 +48,10 @@ For a new GitHub Pages repository set `LIBRA_BASE_PATH=/REPOSITORY_NAME/` at bui
 7. **Performance**: collect measured timings; 2-second startup and other PRD targets remain **targets**, not proven facts.
 
 Never replace the legacy app until all acceptance gates are satisfied.
+
+## Supported files
+
+The reader opens and imports **FB2 and EPUB only**. PDF import and rendering have been removed. Historical PDF items, if present in a pre-existing local library or backup, are not shown in the library, but their original bytes are **not deleted from IndexedDB** and are still preserved in full-library backups. Never erase site data without an independent backup.
 
 ## Data safety
 
