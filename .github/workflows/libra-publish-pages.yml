@@ -1,0 +1,60 @@
+name: Publish Libra on GitHub Pages
+
+on:
+  push:
+    branches: [feature/libra-standalone-v1]
+    paths:
+      - 'libra/**'
+      - '.github/workflows/libra-publish-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: libra-pages-publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the Libra source branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: libra/package-lock.json
+      - name: Install packages
+        working-directory: libra
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify types and build GitHub Pages edition
+        working-directory: libra
+        env:
+          LIBRA_BASE_PATH: /kniga-reader/libra/
+        run: |
+          npm run build
+          test -s dist/index.html
+          test -f dist/sw.js
+          grep -q '/kniga-reader/libra/assets/' dist/index.html
+      - name: Publish only the Libra folder without changing the existing reader
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add --detach /tmp/kniga-pages origin/main
+          rm -rf /tmp/kniga-pages/docs/libra
+          mkdir -p /tmp/kniga-pages/docs/libra
+          cp -a libra/dist/. /tmp/kniga-pages/docs/libra/
+          touch /tmp/kniga-pages/docs/.nojekyll
+          cd /tmp/kniga-pages
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/libra docs/.nojekyll
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish Libra on GitHub Pages'
+            git push origin HEAD:main
+          fi
