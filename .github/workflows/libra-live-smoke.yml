@@ -115,6 +115,13 @@ jobs:
             await page.locator('.continue-card').click();
             const restored=await page.locator('.book-flow').evaluate(el=>getComputedStyle(el).wordSpacing);
             if(restored!=='2px')throw new Error('Typography preferences not restored: '+restored);
+            await page.locator('.reading-zones').click({position:{x:190,y:240}});
+            await page.getByRole('button',{name:'В библиотеку'}).click();
+            await page.getByLabel('Сортировка книг').selectOption('title');
+            const tile=page.locator('.book-tile-meta').first();
+            await tile.waitFor({state:'visible'});
+            if(!(await tile.innerText()).includes('FB2'))
+              throw new Error('New library metadata not deployed');
             if(errors.length)throw new Error('Page JavaScript errors: '+errors.join(' | '));
             console.log('PUBLIC_BROWSER_OK: rendered FB2 on public LIBRA URL');
             await context.close();
