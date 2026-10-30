@@ -12,7 +12,8 @@ type Tab='library'|'bookmarks'|'settings';
 type Props={cloud:CloudController;books:StoredBook[];settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;
  onOpen:(b:StoredBook,p?:ReaderPosition)=>void;onImport:(files:FileList)=>void;onDelete:(b:StoredBook)=>void;
  onFavorite:(b:StoredBook)=>void;onBackupImported:()=>Promise<void>;loading:boolean};
-const progress=(b:StoredBook)=>Math.round(Math.max(0,Math.min(1,b.position?.fraction||0))*100);
+const fraction=(b:StoredBook)=>Math.max(0,Math.min(1,b.position?.fraction||0));
+const progress=(b:StoredBook)=>fraction(b)>=1?100:Math.min(99,Math.round(fraction(b)*100));
 export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelete,onFavorite,onBackupImported,loading}:Props){
  const input=useRef<HTMLInputElement>(null);
  const [tab,setTab]=useState<Tab>('library');
@@ -21,13 +22,13 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  const [order,setOrder]=useState<LibraryOrder>('recent');
  const [menu,setMenu]=useState<string|null>(null);
  const recent=sortLibraryBooks(books,'recent');
- const continueBook=recent.find(b=>b.position&&progress(b)<100)||recent[0];
+ const continueBook=recent.find(b=>b.position&&fraction(b)<1)||recent[0];
  const places=recent.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
  const shown=sortLibraryBooks(recent.filter(b=>{
   if(!(b.title+' '+b.author).toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')))return false;
   if(filter==='favorite')return b.isFavorite===true;
-  if(filter==='reading')return progress(b)>0&&progress(b)<100;
-  if(filter==='finished')return progress(b)>=100;
+  if(filter==='reading')return fraction(b)>0&&fraction(b)<1;
+  if(filter==='finished')return fraction(b)>=1;
   return true;
  }),order);
  const open=(b:StoredBook,p?:ReaderPosition)=>{setMenu(null);onOpen(b,p)};
@@ -43,7 +44,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
     <div className="library-state-tabs" role="group" aria-label="Статус чтения">
      {([{id:'all',label:'Все книги'},{id:'reading',label:'Читаю'},{id:'finished',label:'Прочитано'},{id:'favorite',label:'В избранном'}] as const).map(x=><button key={x.id} type="button" aria-pressed={filter===x.id} onClick={()=>{setFilter(x.id);setMenu(null)}}>{x.label}</button>)}
     </div>
-    {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги облачного аккаунта доступны после входа в настройках.</p>}
+    {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги аккаунта сохранены на устройстве. Войдите в него в настройках, чтобы открыть библиотеку.</p>}
     {cloud.enabled&&cloud.session&&<p className="library-sync-status" role="status">{cloud.busy?'Синхронизация Supabase…':cloud.pending?'Ожидает синхронизации: '+cloud.pending:'Синхронизация Supabase подключена'}</p>}
     {continueBook&&<section className="continue-section" aria-label="Продолжить чтение"><div className="continue-wrapper">
      <button type="button" className="continue-card" onClick={()=>open(continueBook)}>

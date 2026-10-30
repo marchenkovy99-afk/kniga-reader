@@ -48,7 +48,7 @@ test('last page remains accessible with large text and narrow asymmetric margins
  expect(await page.locator('.book-flow').innerText()).toBe(original);
 });
 
-test('minimal library displays functional rows without colorful generated cover gradients',async({page})=>{
+test('library displays attractive real-metadata jackets without synthetic images or gradients',async({page})=>{
  await page.goto('/');
  await page.locator('input[type=file]').first().setInputFiles({
   name:'minimal.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
@@ -56,7 +56,8 @@ test('minimal library displays functional rows without colorful generated cover 
  const tile=page.locator('.book-tile');
  await expect(tile).toBeVisible();
  const cover=tile.locator('.book-cover');
- await expect(cover.locator('.book-cover-initial')).toContainText('П');
+ await expect(cover.locator('.book-cover-title')).toContainText('Последняя страница');
+ await expect(cover.locator('.book-cover-generated')).toBeVisible();
  const result=await page.evaluate(()=>{
   const item=document.querySelector('.book-tile')!;
   const cover=document.querySelector('.book-cover')!;

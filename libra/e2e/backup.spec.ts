@@ -41,6 +41,7 @@ test('backup export and additive restore recover exact book bytes, bookmarks and
  expect(archive.books[0].position.page).toBeGreaterThan(0);
  await page.getByRole('button',{name:'Библиотека'}).click();
  page.once('dialog',dialog=>dialog.accept());
+ await page.locator('.book-tile-menu').click();
  await page.getByRole('button',{name:'Удалить книгу'}).click();
  await expect(page.locator('.book-tile')).toHaveCount(0);
  await librarySettings(page);
