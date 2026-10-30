@@ -128,8 +128,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   // A font/margin change is a re-layout, not a page turn. Animating from
   // the old column origin causes Safari to clip content mid-transition.
   // Regular user-initiated page flips retain their optional animation.
+  // Never release the lock on a timer: a chapter's fonts/media or a slow
+  // iPhone layout pass can finish after the old 360ms deadline.
   setReflowing(true);
-  const animationTimer=window.setTimeout(()=>{if(active)setReflowing(false)},360);
   const compute=()=>{
    if(!active||!flow.current)return;
    const current=flow.current;
@@ -176,9 +177,20 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   };
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
-  return ()=>{active=false;clearTimeout(animationTimer);cancelAnimationFrame(frame)};
+  return ()=>{active=false;cancelAnimationFrame(frame)};
  },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout,clipIssue,retryVersion]);
  const ready=Boolean(!clipIssue&&chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
+ // Enable sliding only once the newly measured column has actually been
+ // committed to the screen. This prevents the initial or final page from
+ // animating across the entire chapter at a chapter boundary.
+ useLayoutEffect(()=>{
+  if(!ready||clipIssue)return;
+  let second=0;
+  const first=requestAnimationFrame(()=>{
+   second=requestAnimationFrame(()=>setReflowing(false));
+  });
+  return ()=>{cancelAnimationFrame(first);cancelAnimationFrame(second)};
+ },[ready,layoutKey,chapter,clipIssue]);
  // Check the displayed origin on every flip; a full glyph traversal is cached
  // until typography, source content, media or an external DOM mutation changes.
  useLayoutEffect(()=>{
@@ -243,7 +255,12 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   lastPosition.current=pending;
   previous.current=toLast;
   anchorRef.current=undefined;
-  setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);setPage(0);setPages(1);setMeasuredKey('');
+  // Compute the provisional chapter page BEFORE rendering its columns.
+  // Going backwards must never expose page one of the previous chapter
+  // before jumping to the cached final page.
+  setReflowing(true);
+  setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);
+  setPage(target);setPages(cached||1);setMeasuredKey('');
  };
  function next(){
   if(clipIssue){if(chapter<chapters.length-1)void switchChapter(chapter+1);return;}
