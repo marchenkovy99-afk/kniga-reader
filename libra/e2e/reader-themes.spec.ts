@@ -6,7 +6,7 @@ const fixture='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'
 const themes=[
  {name:'paper',background:'rgb(247, 244, 239)',meta:'#F7F4EF',status:'default'},
  {name:'white',background:'rgb(255, 255, 255)',meta:'#FFFFFF',status:'default'},
- {name:'night',background:'rgb(25, 28, 27)',meta:'#191C1B',status:'black'},
+ {name:'night',background:'rgb(27, 29, 27)',meta:'#1B1D1B',status:'black'},
  {name:'oled',background:'rgb(0, 0, 0)',meta:'#000000',status:'black'}
 ] as const;
 
@@ -22,10 +22,11 @@ test('theme color matches every shell panel, reader chrome and iPhone status-bar
   await page.getByRole('button',{name:'Библиотека'}).click();
   await expect(page.locator('.continue-card')).toBeVisible();
   await page.locator('.continue-card').click();
-  await expect(page.locator('.book-flow')).toBeVisible();
+  await expect(page.locator('.page-viewport > .book-flow')).toBeVisible();
   await page.locator('.reading-zones').click({position:{x:190,y:220}});
   await expect(page.locator('.reading-top')).toHaveClass(/visible/);
   const observed=await page.evaluate(()=>({
+   readingInk:getComputedStyle(document.querySelector('.page-viewport > .book-flow')!).color,
    html:getComputedStyle(document.documentElement).backgroundColor,
    body:getComputedStyle(document.body).backgroundColor,
    app:getComputedStyle(document.querySelector('#root')!).backgroundColor,
@@ -38,6 +39,8 @@ test('theme color matches every shell panel, reader chrome and iPhone status-bar
   for(const field of ['html','body','app','shell','header','footer'] as const)
    expect(observed[field],theme.name+' '+field).toBe(theme.background);
   expect(observed.meta).toBe(theme.meta);
+  if(theme.name==='night')expect(observed.readingInk).toBe('rgb(146, 149, 141)');
+  if(theme.name==='oled')expect(observed.readingInk).toBe('rgb(140, 141, 134)');
   expect(observed.status).toBe(theme.status);
   await page.getByRole('button',{name:'В библиотеку'}).click();
  }

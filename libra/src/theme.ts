@@ -2,8 +2,8 @@ import type { ThemeName } from './domain';
 export const PALETTES: Record<ThemeName,{background:string;text:string;muted:string;border:string;accent:string;status:'default'|'black'}>={
   paper:{background:'#F7F4EF',text:'#262522',muted:'#76716B',border:'#E7E1D9',accent:'#B65B35',status:'default'},
   white:{background:'#FFFFFF',text:'#242824',muted:'#737973',border:'#E5E8E5',accent:'#B65B35',status:'default'},
-  night:{background:'#191C1B',text:'#C6C8C1',muted:'#939A93',border:'#343A36',accent:'#C58A69',status:'black'},
-  oled:{background:'#000000',text:'#C0C2BC',muted:'#91938E',border:'#2D302D',accent:'#C58A69',status:'black'}
+  night:{background:'#1B1D1B',text:'#B8BBB1',muted:'#8B9189',border:'#353932',accent:'#B98C73',status:'black'},
+  oled:{background:'#000000',text:'#B8B9B0',muted:'#868B84',border:'#292C28',accent:'#B98C73',status:'black'}
 };
 export function setTheme(theme:ThemeName){
   const colors=PALETTES[theme];
