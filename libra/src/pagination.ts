@@ -12,19 +12,25 @@ export function measureColumnStride(flow:HTMLElement,width:number,gap:number):nu
  const fallback=width+gap;
  if(width<=0)return fallback;
  const left=flow.getBoundingClientRect().left;
- let best=fallback,difference=Infinity;
- for(const element of Array.from(flow.children).slice(0,120)){
+ const elements=Array.from(flow.children);
+ // Use a late page to average Safari's fractional rounding error across
+ // many columns. Measuring only the second column can drift by several
+ // pixels on page 100 even if the first measurement is off by 0.04px.
+ const samples=[...elements.slice(0,20),...elements.slice(-24)];
+ let farthest=0,measured=fallback;
+ for(const element of samples){
   for(const fragment of Array.from(element.getClientRects())){
    if(fragment.width<1||fragment.height<1)continue;
    const x=fragment.left-left;
-   const distance=Math.abs(x-fallback);
-   if(x>width+gap-8&&distance<Math.min(12,difference)){
-    difference=distance;best=x;
-   }
+   if(x<fallback-12)continue;
+   const index=Math.round(x/fallback);
+   if(index<1||index<=farthest)continue;
+   const step=x/index;
+   if(Math.abs(step-fallback)>8)continue;
+   farthest=index;measured=step;
   }
-  if(difference<.05)break;
  }
- return best;
+ return measured;
 }
 export function measureColumns(scrollWidth:number,viewportWidth:number,gap:number,stride=viewportWidth+gap):number {
   if(viewportWidth<=0)return 1;
