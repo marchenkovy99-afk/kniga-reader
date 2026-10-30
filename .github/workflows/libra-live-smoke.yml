@@ -24,14 +24,22 @@ jobs:
           set -euo pipefail
           base="https://libra-standalone-preview.vercel.app"
           curl --fail --silent --show-error --location --retry 3 "$base/" -o /tmp/libra-public.html
+          echo "CHECK_HTML"; head -c 130 /tmp/libra-public.html; echo
           grep -q 'LIBRA · Библиотека' /tmp/libra-public.html
+          echo "HTML_OK"
           curl --fail --silent --show-error --location "$base/manifest.webmanifest" -o /tmp/libra-manifest.json
+          echo "CHECK_MANIFEST"; head -c 200 /tmp/libra-manifest.json; echo
           grep -q '"short_name": "LIBRA"' /tmp/libra-manifest.json
+          echo "MANIFEST_OK"
           grep -q 'icon-512.png' /tmp/libra-manifest.json
           curl --fail --silent --show-error --location "$base/icon-180.png" -o /tmp/libra-icon.png
+          echo "CHECK_ICON"; file /tmp/libra-icon.png
           file /tmp/libra-icon.png | grep -q 'PNG image data'
+          echo "ICON_OK"
           curl --fail --silent --show-error --location "$base/sw.js" -o /tmp/libra-public-sw.js
+          echo "CHECK_SW"; head -c 110 /tmp/libra-public-sw.js; echo
           grep -q 'cache' /tmp/libra-public-sw.js
+          echo "SW_OK"
           echo "PUBLIC_HTTP_OK: $base"
       - name: Install browser smoke runner
         run: |
