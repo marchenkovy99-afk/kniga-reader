@@ -6,6 +6,7 @@ import {ClippingAlert} from '../components/ClippingAlert';
 import {inspectTextColumns,invalidateTextColumnAudit,observeTextColumnChanges,type ClipIssue} from '../clippingGuard';
 import {applyEpubAppearance,applyEpubInk} from './epubAppearance';
 import {chapterForHref,flattenEpubToc,epubTocStartPages,type EpubChapter} from './epubNavigation';
+import {captureEpubQuote} from '../quoteSelection';
 import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub} from './epubLayout';
 
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
@@ -79,6 +80,8 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  },[]);
  useEffect(()=>{
   live.current=true;let cancelled=false,ownRend:any,ownBook:any;const observers:Array<()=>void>=[];
+  const selectionDocs=new WeakSet<Document>();
+  const announceSelection=()=>window.dispatchEvent(new Event('libra-quote-selection'));
   async function mount(){
    try{
     const {default:ePub}=await import('epubjs');if(cancelled||!host.current)return;
@@ -87,8 +90,15 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
     ownRend=ownBook.renderTo(host.current,{...EPUB_OPTIONS,width:'100%',height:'100%'});rendition.current=ownRend;
     configureEpub(ownRend,settingsRef.current);
     ownRend.hooks.content.register((content:any)=>setEpubDocumentSafety(content.document,safeRef.current));
+    ownRend.on('selected',announceSelection);
     ownRend.on('rendered',()=>{
      for(const c of ownRend.getContents?.()||[]){
+       const doc=c.document as Document|undefined;
+       if(doc&&!selectionDocs.has(doc)){
+        selectionDocs.add(doc);
+        for(const event of ['selectionchange','pointerup','touchend'])doc.addEventListener(event,announceSelection);
+        observers.push(()=>{for(const event of ['selectionchange','pointerup','touchend'])doc.removeEventListener(event,announceSelection)});
+       }
       if(c.document?.body)observers.push(observeTextColumnChanges(c.document.body,()=>requestAnimationFrame(()=>auditRef.current())));
      }
     });
@@ -199,6 +209,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={onBack}
   onNext={()=>turn(1)} onPrevious={()=>turn(-1)} safeMode={safeMode}
   chapters={chapters.length?chapters.map((entry,i)=>({...entry,page:chapterPageNumbers[i]})):undefined} currentChapter={currentChapter}
+   quoteSelection={()=>captureEpubQuote(rendition.current?.getContents?.()||[],{chapter:view.index,page:view.page-1,fraction:progress/100,cfi:view.cfi,updatedAt:Date.now()})}
   onChapter={index=>{const item=chapters[index];if(item)enqueue(()=>rendition.current.display(item.href));}}
   position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}}
   progress={progress} caption={safeMode?'Режим прокрутки':`Страница ${globalPage||view.page} из ${totalPages||view.total}`}
