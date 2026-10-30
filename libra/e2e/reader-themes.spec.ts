@@ -4,7 +4,7 @@ const fixture='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'
  '<description><title-info><book-title>Единая тема</book-title></title-info></description>'+
  '<body><section><p>Весь текст должен быть виден на ровном фоне.</p></section></body></FictionBook>';
 const themes=[
- {name:'paper',background:'rgb(246, 243, 236)',meta:'#F6F3EC',status:'default'},
+ {name:'paper',background:'rgb(247, 244, 239)',meta:'#F7F4EF',status:'default'},
  {name:'white',background:'rgb(255, 255, 255)',meta:'#FFFFFF',status:'default'},
  {name:'night',background:'rgb(29, 31, 30)',meta:'#1D1F1E',status:'black-translucent'},
  {name:'oled',background:'rgb(0, 0, 0)',meta:'#000000',status:'black-translucent'}

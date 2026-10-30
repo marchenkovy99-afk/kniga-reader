@@ -13,30 +13,30 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  const input=useRef<HTMLInputElement>(null);
  const [tab,setTab]=useState<'library'|'bookmarks'|'settings'>('library');
  const [query,setQuery]=useState('');
+ const [filter,setFilter]=useState<'all'|'reading'|'finished'>('all');
  const [order,setOrder]=useState<LibraryOrder>('recent');
  const sorted=[...books].sort((a,b)=>(b.lastOpenedAt||b.importedAt)-(a.lastOpenedAt||a.importedAt));
  const continueBook=sorted.find(b=>b.position)||sorted[0];
  const savedPlaces=sorted.flatMap(book=>book.bookmarks.map((position,index)=>({book,position,index})));
- const shown=sortLibraryBooks(sorted.filter(b=>(b.title+' '+b.author).toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))),order);
+ const shown=sortLibraryBooks(sorted.filter(b=>(b.title+' '+b.author).toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))&&(filter==='all'||(filter==='reading'?(b.position?.fraction||0)>0&&(b.position?.fraction||0)<1:(b.position?.fraction||0)>=1))),order);
  return <div className="library-shell">
-  <header className="library-header"><div className="library-brand"><img src="./icon-180.png" width="40" height="40" alt="" aria-hidden="true"/><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div></div>
+  <header className="library-header"><div className="library-brand"><Icon name="book" size={30}/><div><span className="brand-eyebrow">Читалка</span><h1>LIBRA</h1></div></div>
   <div className="library-header-actions"><button className="library-account" aria-label={cloud.session?'Облачный аккаунт':'Войти в облако'} onClick={()=>{setTab('settings');requestAnimationFrame(()=>document.getElementById('cloud-title')?.scrollIntoView({block:'start',behavior:'smooth'}))}}><Icon name="cloud" size={19}/><span>{cloud.session?'Аккаунт':'Войти'}</span></button>
-  <button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></div></header>
+  </div></header>
   <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<main className="library-main">
-    <div className="library-greeting">Ваша библиотека · FB2 и EPUB</div>
+    <div className="library-page-title"><h2>Библиотека</h2><button className="round-action" title="Добавить книгу" aria-label="Добавить книгу" onClick={()=>input.current?.click()}><Icon name="plus"/></button></div>
     {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги аккаунта сохранены на устройстве. Войдите в него в настройках, чтобы открыть библиотеку.</p>}
     {continueBook&&<section className="continue-section">
-      <div className="section-heading"><h2>Продолжить</h2></div>
+      <div className="section-heading"><h2>Продолжить чтение</h2></div>
       <button className="continue-card" onClick={()=>onOpen(continueBook)}>
         <BookCover book={continueBook} large/>
         <span className="continue-info"><strong>{continueBook.title}</strong><span className="continue-author">{continueBook.author}</span>
-        <span className="continue-line"><span style={{width:Math.round((continueBook.position?.fraction||0)*100)+'%'}}/></span>
-        <span className="continue-footer">Читать <span>→</span></span></span>
+        <span className="continue-progress-label">{Math.round((continueBook.position?.fraction||0)*100)}% прочитано</span><span className="continue-line"><span style={{width:Math.round((continueBook.position?.fraction||0)*100)+'%'}}/></span>
+        <span className="continue-footer">Читать <span>→</span></span></span><span className="continue-cta">Продолжить чтение <span>→</span></span>
       </button>
     </section>}
     <section className="all-books">
-      <div className="section-heading"><h2>Все книги <em>{books.length}</em></h2></div>
       <div className="library-filters">
        <div className="search-wrap"><Icon name="search" size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название или автор" aria-label="Поиск книг"/></div>
        <label className="library-sort-label">Сортировка
@@ -48,11 +48,13 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
         </select>
        </label>
       </div>
+      <div className="library-state-tabs" role="group" aria-label="Статус чтения">{([{id:'all',label:'Все книги'},{id:'reading',label:'Читаю'},{id:'finished',label:'Прочитано'}] as const).map(item=><button key={item.id} aria-pressed={filter===item.id} onClick={()=>setFilter(item.id)}>{item.label}</button>)}</div>
+      <div className="section-heading"><h2>Мои книги <em>{shown.length}</em></h2></div>
       {shown.length?<div className="book-grid">{shown.map(book=>
         <div key={book.id} className="book-tile"><button className="book-tile-open" onClick={()=>onOpen(book)}><BookCover book={book}/><strong>{book.title}</strong><small>{book.author}</small><span className="book-tile-meta">
          <span>{book.format.toUpperCase()}</span><span>{book.position?Math.round(Math.max(0,Math.min(1,book.position.fraction))*100)+'% прочитано':'Не начата'}</span>
         </span></button>
-        <button title="Удалить книгу" className="book-remove" onClick={()=>onDelete(book)}><Icon name="trash" size={15}/></button></div>)}</div>:
+        <button title="Удалить книгу" className="book-remove" onClick={()=>onDelete(book)}><Icon name="trash" size={18}/></button></div>)}</div>:
         <div className="empty-library"><Icon name="book" size={38}/><strong>{books.length?'Книги не найдены':'Пока здесь тихо'}</strong><p>{books.length?'Попробуйте другой запрос.':'Добавьте первую книгу в формате FB2 или EPUB.'}</p><button onClick={()=>input.current?.click()}>Добавить книгу</button></div>}
     </section>
     </main>}

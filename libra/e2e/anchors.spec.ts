@@ -43,7 +43,7 @@ test('font adjustment and reopen preserve source position and all text',async({p
  await expect(page.locator('.continue-card')).toBeVisible();
  await page.locator('.continue-card').click();
  await expect(page.locator('.book-flow')).toBeVisible();
- await expect.poll(async()=>page.locator('.book-flow').evaluate(el=>el.getAttribute('style')||'')).toContain('translate3d');
+ await expect.poll(async()=>page.locator('.book-flow').evaluate(el=>el.getAttribute('style')||'')).toContain('translateX');
  const after=await page.locator('.book-flow').innerText();
  for(let i=0;i<260;i++)expect(after).toContain('Фрагмент '+i+'.');
 });

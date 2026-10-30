@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const source='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сквозные страницы</book-title></title-info></description><body>'+[35,9,1].map((n,c)=>'<section><title><p>Глава '+(c+1)+'</p></title>'+Array.from({length:n},(_,i)=>'<p>Абзац '+i+'. '+('Равномерный текст без пропусков сохраняется на каждой странице книги. '.repeat(7))+'</p>').join('')+'<p>КОНЕЦ_ГЛАВЫ_'+(c+1)+'</p></section>').join('')+'</body></FictionBook>';
-test('whole-book slider, page jump, compact footer and restored final character',async({page})=>{
+test('whole-book slider, page jump, hidden footer and restored final character',async({page})=>{
  await page.goto('/');
  await page.locator('input[type=file]').setInputFiles({name:'navigation.fb2',mimeType:'application/xml',buffer:Buffer.from(source)});
  await page.locator('.continue-card').click();
@@ -38,8 +38,8 @@ test('whole-book slider, page jump, compact footer and restored final character'
  await slider.focus();await slider.press('End');
  await page.keyboard.press('Escape');
  const bounds=await page.locator('.page-viewport').evaluate(el=>{
-  const r=el.getBoundingClientRect(),footer=document.querySelector('.reading-status')!.getBoundingClientRect();
-  return {textBottom:r.bottom,footerTop:footer.top,height:r.height};
+  const r=el.getBoundingClientRect(),footer=document.querySelector('.reading-root')!.getBoundingClientRect();
+  return {textBottom:r.bottom,footerTop:footer.bottom,height:r.height};
  });
  expect(bounds.textBottom).toBeLessThanOrEqual(bounds.footerTop);
  expect(bounds.height).toBeGreaterThan(page.viewportSize()!.height-90);

@@ -6,8 +6,8 @@ describe('EPUB live appearance',()=>{
   const changes=new Map<string,string>();
   const themes={override:(key:string,value:string)=>{changes.set(key,value)}};
   applyEpubAppearance(themes,{...DEFAULT_SETTINGS,theme:'paper'});
-  expect(changes.get('background-color')).toBe('#F6F3EC');
-  expect(changes.get('color')).toBe('#222321');
+  expect(changes.get('background-color')).toBe('#F7F4EF');
+  expect(changes.get('color')).toBe('#262522');
   applyEpubAppearance(themes,{...DEFAULT_SETTINGS,theme:'oled',fontSize:24,lineHeight:1.65,margin:12});
   expect(changes.get('background-color')).toBe('#000000');
   expect(changes.get('color')).toBe('#F2F2EF');
