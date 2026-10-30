@@ -6,7 +6,7 @@ const fixture='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'
 const themes=[
  {name:'paper',background:'rgb(247, 244, 239)',meta:'#F7F4EF',status:'default'},
  {name:'white',background:'rgb(255, 255, 255)',meta:'#FFFFFF',status:'default'},
- {name:'night',background:'rgb(29, 31, 30)',meta:'#1D1F1E',status:'black'},
+ {name:'night',background:'rgb(25, 28, 27)',meta:'#191C1B',status:'black'},
  {name:'oled',background:'rgb(0, 0, 0)',meta:'#000000',status:'black'}
 ] as const;
 

@@ -45,11 +45,11 @@ describe('reader typography normalization',()=>{
   expect(reset.animation).toBe('none');
  });
  it('softens dark ink without reducing light-theme contrast',()=>{
-  expect(normalizeSettings({}).textContrast).toBe(84);
-  expect(normalizeSettings({textContrast:Infinity} as any).textContrast).toBe(84);
+  expect(normalizeSettings({}).textContrast).toBe(80);
+  expect(normalizeSettings({textContrast:Infinity} as any).textContrast).toBe(80);
   expect(normalizeSettings({textContrast:2} as any).textContrast).toBe(60);
-  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled'})).toBe('#CBCBC9');
-  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled',textContrast:100})).toBe('#F2F2EF');
+  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled'})).toBe('#9A9B96');
+  expect(readingInk({...DEFAULT_SETTINGS,theme:'oled',textContrast:100})).toBe('#C0C2BC');
   expect(readingInk({...DEFAULT_SETTINGS,theme:'paper',textContrast:60})).toBe('#262522');
  });
  it('offers zero inset density and balanced gutters without destroying preferences',()=>{

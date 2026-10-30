@@ -108,8 +108,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .theme-swatch.chosen{outline:2px solid var(--accent);outline-offset:2px}
 .theme-swatch[data-option=paper]{--swatch-bg:#F6F3EC;--swatch-fg:#222321}
 .theme-swatch[data-option=white]{--swatch-bg:#FFFFFF;--swatch-fg:#242824}
-.theme-swatch[data-option=night]{--swatch-bg:#1D1F1E;--swatch-fg:#F2F0E9}
-.theme-swatch[data-option=oled]{--swatch-bg:#000000;--swatch-fg:#F2F2EF}
+.theme-swatch[data-option=night]{--swatch-bg:#191C1B;--swatch-fg:#C6C8C1}
+.theme-swatch[data-option=oled]{--swatch-bg:#000000;--swatch-fg:#C0C2BC}
 .settings-themes{margin-top:27px}
 .setting-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
 .setting-row button{background:none;border:0;color:var(--accent);font-size:13px}
