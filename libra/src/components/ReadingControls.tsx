@@ -37,7 +37,10 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  useEffect(()=>{setQuoteMode(false);setQuoteCapture(null)},[book.id]);
  useEffect(()=>{
   if(!quoteMode||!quoteSelection)return;
-  const check=()=>{const next=quoteSelection();if(next)setQuoteCapture(next)};
+  const check=()=>{const next=quoteSelection();if(next)setQuoteCapture(old=>old?.text===next.text&&old.rect.top===next.rect.top&&old.rect.left===next.rect.left?old:next)};
+  // WebKit's EPUB iframe can miss forwarded selectionchange events. Poll only
+  // while quote mode is active, without triggering rerenders for stable ranges.
+  const poll=window.setInterval(check,200);
   document.addEventListener('selectionchange',check);
   window.addEventListener('pointerup',check);
   window.addEventListener('keyup',check);
@@ -47,6 +50,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    window.removeEventListener('pointerup',check);
    window.removeEventListener('keyup',check);
    window.removeEventListener('libra-quote-selection',check);
+   window.clearInterval(poll);
   };
  },[quoteMode,quoteSelection]);
  const closeQuoteMode=()=>{setQuoteMode(false);setQuoteCapture(null);window.getSelection()?.removeAllRanges();
