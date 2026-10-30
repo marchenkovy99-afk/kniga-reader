@@ -1,16 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
- <defs>
-  <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
-   <stop stop-color="#303534"/><stop offset="1" stop-color="#161A1A"/>
-  </linearGradient>
-  <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
-   <stop stop-color="#FFF8E9"/><stop offset="1" stop-color="#E9D7BC"/>
-  </linearGradient>
- </defs>
- <rect width="512" height="512" rx="112" fill="url(#ink)"/>
- <path d="M147 126h57v221c18-11 38-17 60-19v50c-42 3-81 20-117 38V126Z" fill="url(#paper)"/>
- <path d="M221 313c47-39 95-49 145-35 14 4 28 10 43 20v71c-57-30-113-31-188 14v-70Z" fill="#D1AA7E"/>
- <path d="M221 313c47-39 95-49 145-35 14 4 28 10 43 20v34c-61-32-120-25-188 20v-39Z" fill="#FFF8E9"/>
- <path d="M222 388c63-36 127-45 187-18" stroke="#F5E8D2" stroke-width="9" fill="none" stroke-linecap="round"/>
- <path d="M222 349c57-43 116-50 174-25" stroke="#89654B" stroke-opacity=".55" stroke-width="3" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LIBRA">
+<rect width="512" height="512" rx="106" fill="#FAF7F1"/>
+<path d="M84 158Q84 148 96 146C168 135 217 158 256 208C295 158 344 135 416 146Q428 148 428 158V362Q428 372 416 371C340 363 298 384 256 427C214 384 172 363 96 371Q84 372 84 362Z" fill="none" stroke="#102039" stroke-width="25" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M256 208V427" stroke="#102039" stroke-width="20" stroke-linecap="round"/>
+<path d="M313 172V313L341 290L369 313V157Q340 159 313 172Z" fill="#D6A444"/>
 </svg>
