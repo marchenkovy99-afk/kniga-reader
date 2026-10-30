@@ -12,10 +12,10 @@ type Props={
   position:ReaderPosition; progress:number; caption:string;
   pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
   chapters?:{title:string;page?:number}[]; currentChapter?:number; onChapter?:(index:number)=>void;
-  quoteSelection?:()=>QuoteCapture|null;
+  quoteSelection?:()=>QuoteCapture|null; onQuotesChange?:(quotes:SavedQuote[])=>void;
   children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection,onQuotesChange}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
@@ -60,8 +60,8 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
   if(quoteBusy||!quoteCapture)return;
   setQuoteBusy(true);
   try{
-   const quote:SavedQuote={id:crypto.randomUUID(),text:quoteCapture.text,position:quoteCapture.position,createdAt:Date.now()};
-   await addQuote(book.id,quote);closeQuoteMode();setQuoteNotice('Цитата сохранена');
+   const quote:SavedQuote={id:crypto.randomUUID(),text:quoteCapture.text,position:quoteCapture.position,endAnchor:quoteCapture.endAnchor,createdAt:Date.now()};
+   const updated=await addQuote(book.id,quote);onQuotesChange?.(updated);closeQuoteMode();setQuoteNotice('Цитата сохранена и выделена цветом');
   }catch(e){setQuoteNotice('Не удалось сохранить цитату: '+String(e))}
   finally{setQuoteBusy(false)}
  }
