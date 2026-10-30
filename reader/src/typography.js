@@ -1,5 +1,6 @@
 export function applyTypography(element,s,width){
- const margin=Math.min(s.margin,Math.max(0,(width-150)/2));
+ const requestedMargin=Number(s.margin);
+ const margin=Math.min(Number.isFinite(requestedMargin)?Math.max(0,requestedMargin):24,Math.max(0,(width-150)/2));
  // A first-line indent must leave room for actual letters at the chosen
  // font size. Extreme combinations of margin, font and indent used to push
  // the very first glyph outside the page and make pagination fail entirely.
