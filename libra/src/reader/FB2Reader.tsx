@@ -30,6 +30,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [measuredKey,setMeasuredKey]=useState('');
  const [mediaVersion,setMediaVersion]=useState(0);
+ const [reflowing,setReflowing]=useState(false);
  const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
  const viewport=useRef<HTMLDivElement>(null);
  const flow=useRef<HTMLDivElement>(null);
@@ -64,6 +65,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  useLayoutEffect(()=>{
   if(!flow.current||!geometry.width||!geometry.height)return;
   let active=true;
+  // A font/margin change is a re-layout, not a page turn. Animating from
+  // the old column origin causes Safari to clip content mid-transition.
+  // Regular user-initiated page flips retain their optional animation.
+  setReflowing(true);
+  const animationTimer=window.setTimeout(()=>{if(active)setReflowing(false)},360);
   const compute=()=>{
    if(!active||!flow.current)return;
    const current=flow.current;
@@ -87,7 +93,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   };
   const frame=requestAnimationFrame(compute);
   void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
-  return ()=>{active=false;cancelAnimationFrame(frame)};
+  return ()=>{active=false;clearTimeout(animationTimer);cancelAnimationFrame(frame)};
  },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion]);
  const ready=Boolean(chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
  useEffect(()=>{
@@ -141,7 +147,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapters={chapters} currentChapter={chapter} onChapter={index=>switchChapter(index)} interactiveContent>
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingInline:settings.margin}}>
    <div className="page-viewport" ref={viewport} style={style}>
-    {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'?'no-animation':'')}
+    {actualChapter&&geometry.width>0?<div ref={flow} key={chapter} data-column-stride={stride||geometry.width+GAP} className={'book-flow '+(settings.animation==='none'||reflowing?'no-animation':'')}
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       transform:'translate3d(-'+(page*(stride||geometry.width+GAP))+'px,0,0)'}}>
      {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}

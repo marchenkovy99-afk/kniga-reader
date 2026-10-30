@@ -77,6 +77,9 @@ test('changing margins never pushes Russian text outside page, including mid-boo
   await page.locator('.sheet-settings input[type=range]').first().fill(String(font));
   await page.getByRole('button',{name:'Закрыть'}).click();
   await expect.poll(async()=>{const v=await geometry(page);return v.margin===margin&&Math.abs(v.width-v.contentWidth)<=1}).toBe(true);
+  // A transition is visual movement, not pagination: inspect settled
+  // coordinates after reflow and animation suppression have completed.
+  await page.waitForTimeout(430);
   const audit=await geometry(page);
   expect(audit.errors,'Margins '+margin+' font '+font+': '+audit.errors.join('; ')).toEqual([]);
   expect(audit.visible,'Blank page after margin/font change').toBeGreaterThan(0);
