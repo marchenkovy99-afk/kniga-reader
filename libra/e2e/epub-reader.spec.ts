@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** Stored ZIP writer: minimum EPUB2 fixture, no external services or fixtures. */
-export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=140,clipped=false):Buffer{
+export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=140,clipped=false,publisherJustified=false):Buffer{
  const chapterParagraphs=Array.from({length:paragraphCount},(_,i)=>
   '<p'+(clipped&&i===0?' style="height:10px;overflow:hidden"':'')+'>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
@@ -12,6 +12,12 @@ export function epubFixture(complex=false,title='EPUB fixture',paragraphCount=14
   ['OEBPS/one.xhtml','<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Opening</title></head><body><h1>FIRST CHAPTER</h1>'+chapterParagraphs+'<p>END OF BOOK</p></body></html>']
  ];
 
+ if(publisherJustified){
+  const xhtml=files.find(x=>x[0]==='OEBPS/one.xhtml')!;
+  xhtml[1]=xhtml[1]
+    .replace('</head>', '<style type="text/css">p {text-align:justify!important;word-spacing:21px!important} span {word-spacing:13px!important}</style></head>')
+    .replace('<p>Passage 0 ', '<p style="text-align:justify!important;word-spacing:18px!important">Passage 0 ');
+ }
  if(complex){
   const opf=files.find(x=>x[0]==='OEBPS/content.opf')!;
   opf[1]=opf[1]
@@ -293,4 +299,32 @@ test('near-end EPUB stays in reading filter until actual last page',async({page}
  await expect(page.locator('.reading-progress strong')).toHaveText('100%');
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Прочитано',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(1);
+});
+
+test('publisher justified EPUB is rendered with equal word gaps and keeps original text',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'publisher-justify.epub',mimeType:'application/epub+zip',
+  buffer:epubFixture(false,'Publisher justified EPUB',18,false,true)
+ });
+ await page.locator('.continue-card').click();
+ const frame=page.frameLocator('.epub-mount iframe');
+ const first=frame.locator('body p').first();
+ await expect(first).toContainText('Passage 0',{timeout:20000});
+ const original=await frame.locator('body').innerText();
+ const check=async()=>first.evaluate(element=>{
+  const s=getComputedStyle(element);
+  return {align:s.textAlign,last:s.textAlignLast,spacing:s.wordSpacing};
+ });
+ await expect.poll(async()=>(await check()).align).toBe('left');
+ await expect.poll(async()=>(await check()).spacing).toBe('0px');
+ await page.locator('.reading-zones').click({position:{x:190,y:240}});
+ await page.getByRole('button',{name:'Текст'}).click();
+ await page.locator('.sheet-settings input[type=range]').nth(3).fill('2.5');
+ await page.getByRole('button',{name:'Закрыть'}).click();
+ await expect.poll(async()=>(await check()).spacing).toBe('2.5px');
+ expect(await frame.locator('body').innerText()).toBe(original);
+ await page.reload();
+ await page.locator('.continue-card').click();
+ await expect.poll(async()=>(await page.frameLocator('.epub-mount iframe').locator('body p').first().evaluate(el=>getComputedStyle(el).wordSpacing))).toBe('2.5px');
 });

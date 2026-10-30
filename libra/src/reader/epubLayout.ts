@@ -1,8 +1,46 @@
 import type {ReaderSettings} from '../domain';
 import {applyEpubAppearance} from './epubAppearance';
 export const epubTypographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.lineHeight,s.fontFamily,s.align,s.wordSpacing,s.letterSpacing,s.paragraphSpacing,s.paragraphIndent,s.fontWeight,s.hyphenation]);
+/**
+ * Publisher CSS often forces text-align:justify and overrides the body theme,
+ * producing extremely wide gaps on narrow iPhone columns. Keep the source
+ * text and EPUB CFI nodes untouched; only override the rendering styles.
+ */
+export function enforceEpubUniformSpacing(doc:Document):void{
+ if(!doc.head||!doc.body)return;
+ let lock=doc.getElementById('libra-uniform-spaces') as HTMLStyleElement|null;
+ if(!lock){
+  lock=doc.createElement('style');
+  lock.id='libra-uniform-spaces';
+  doc.head.appendChild(lock);
+ }
+ lock.textContent=`
+  html body, html body :is(p,div,section,article,blockquote,li,dd,dt) {
+    text-align:left!important;
+    text-align-last:auto!important;
+    text-justify:auto!important;
+    word-spacing:var(--libra-word-spacing,0px)!important;
+  }
+  html body :is(p,div,section,article,blockquote,li,dd,dt) :is(span,em,strong,b,i,a,small) {
+    word-spacing:inherit!important;
+  }
+ `;
+ // Inline !important beats even a strong injected stylesheet. Neutralize
+ // only the authored justification and custom spacing on prose nodes.
+ // Mutation does not remove or insert text, preserving EPUB CFI references.
+ for(const element of Array.from(doc.body.querySelectorAll<HTMLElement>('[style]'))){
+  if(element.closest('pre,code,math,svg'))continue;
+  const style=element.style;
+  if(/^(justify|justify-all)$/i.test(style.textAlign.trim()))style.setProperty('text-align','left','important');
+  if(style.wordSpacing)style.setProperty('word-spacing','var(--libra-word-spacing,0px)','important');
+  if(/^(justify|justify-all)$/i.test(style.textAlignLast.trim()))style.setProperty('text-align-last','auto','important');
+ }
+}
 export const EPUB_OPTIONS={flow:'paginated',spread:'none',gap:0,allowScriptedContent:false,snap:false};
 export function configureEpub(rend:any,settings:ReaderSettings){
+ // Register on both the visible rendition and hidden measuring rendition so
+ // page counts always use the same line composition as the user sees.
+ rend.hooks.content.register((content:any)=>enforceEpubUniformSpacing(content.document));
  rend.themes.default({
   'html,body,body *':{filter:'none!important','backdrop-filter':'none!important','-webkit-backdrop-filter':'none!important','mask-image':'none!important','-webkit-mask-image':'none!important','text-shadow':'none!important'},
   body:{margin:'0',padding:'0','overflow-wrap':'anywhere'},

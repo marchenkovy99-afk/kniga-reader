@@ -543,3 +543,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 :is(.book-flow,.book-measure-flow){color:var(--reading-ink,var(--fg));opacity:1}
 .reading-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .reading-presets button{min-width:0;min-height:42px}
+
+/* Uniform spaces for FB2: never distribute leftover line width between words.
+   Keep this identical in visible and hidden measurement flows. */
+:is(.book-flow,.book-measure-flow) :is(.book-paragraph,.book-heading,.book-verse){
+  text-align:left!important;
+  text-align-last:auto!important;
+  text-justify:auto!important;
+  word-spacing:var(--word-spacing,0px)!important;
+}

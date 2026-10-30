@@ -15,6 +15,7 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'font-family':fontStack(settings.fontFamily),
   'text-align':'left',
   'word-spacing':settings.wordSpacing+'px',
+  '--libra-word-spacing':settings.wordSpacing+'px',
   'letter-spacing':settings.letterSpacing+'px',
   '--libra-paragraph-gap':settings.paragraphSpacing+'px',
   '--libra-paragraph-indent':settings.paragraphIndent+'em',
