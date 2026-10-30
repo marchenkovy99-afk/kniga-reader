@@ -51,6 +51,8 @@ jobs:
             const response=await page.goto(url,{waitUntil:'networkidle',timeout:30000});
             if(response?.status()!==200)throw new Error('Public page HTTP '+response?.status());
             await page.locator('.library-header h1').waitFor({state:'visible',timeout:15000});
+            const eyebrow=await page.locator('.brand-eyebrow').innerText();
+            if(eyebrow.trim()!=='Читалка')throw new Error('Stale LIBRA build: '+eyebrow);
             const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'+
               '<description><title-info><book-title>Публичная проверка</book-title></title-info></description>'+
               '<body><section><p>ТЕКСТ КНИГИ ДОСТУПЕН</p></section></body></FictionBook>';
@@ -63,6 +65,26 @@ jobs:
             const text=await page.locator('.book-flow').innerText();
             if(!text.includes('ТЕКСТ КНИГИ ДОСТУПЕН'))
               throw new Error('Imported book content missing');
+            // Verify that the production deployment includes the new margin
+            // geometry fix, not merely the previous cached app shell.
+            await page.locator('.reading-zones').click({position:{x:190,y:240}});
+            await page.getByRole('button',{name:'Текст'}).click();
+            await page.locator('.sheet-settings input[type=range]').nth(2).fill('36');
+            await page.getByRole('button',{name:'Закрыть'}).click();
+            await page.waitForTimeout(460);
+            const geometry=await page.locator('.book-flow').evaluate(el=>{
+              const viewport=el.closest('.page-viewport');
+              const region=el.closest('.page-region');
+              return {
+                width:viewport?.clientWidth||0,
+                flowWidth:el.getBoundingClientRect().width,
+                margin:parseFloat(getComputedStyle(region).paddingLeft)
+              };
+            });
+            if(geometry.margin!==36||geometry.width<200||Math.abs(geometry.width-geometry.flowWidth)>1)
+              throw new Error('Margin geometry failure: '+JSON.stringify(geometry));
+            if(!(await page.locator('.book-flow').innerText()).includes('ТЕКСТ КНИГИ ДОСТУПЕН'))
+              throw new Error('Text missing after changing margins');
             if(errors.length)throw new Error('Page JavaScript errors: '+errors.join(' | '));
             console.log('PUBLIC_BROWSER_OK: rendered FB2 on public LIBRA URL');
             await context.close();
