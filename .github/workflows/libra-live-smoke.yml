@@ -50,6 +50,7 @@ jobs:
         run: |
           node --input-type=module <<'SCRIPT'
           import { chromium } from '@playwright/test';
+          import {readFile} from 'node:fs/promises';
           const browser=await chromium.launch({headless:true});
           try{
             const context=await browser.newContext({
@@ -122,6 +123,17 @@ jobs:
             await tile.waitFor({state:'visible'});
             if(!(await tile.innerText()).includes('FB2'))
               throw new Error('New library metadata not deployed');
+            await page.getByRole('button',{name:'Настройки'}).click();
+            const [download]=await Promise.all([
+              page.waitForEvent('download'),
+              page.getByRole('button',{name:'Скачать копию библиотеки'}).click()
+            ]);
+            const snapshot=JSON.parse((await readFile(await download.path())).toString('utf8'));
+            if(snapshot.format!=='LIBRA_BACKUP'||snapshot.version!==1||snapshot.books.length!==1)
+              throw new Error('Invalid production backup archive');
+            if(!Buffer.from(snapshot.books[0].bytesBase64,'base64').toString('utf8').includes('ТЕКСТ КНИГИ ДОСТУПЕН'))
+              throw new Error('Export did not include original book bytes');
+            console.log('PUBLIC_BACKUP_OK: complete library archive downloaded');
             if(errors.length)throw new Error('Page JavaScript errors: '+errors.join(' | '));
             console.log('PUBLIC_BROWSER_OK: rendered FB2 on public LIBRA URL');
             await context.close();
