@@ -10,6 +10,7 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'background-color':palette.background,
   color:palette.text,
   'font-size':settings.fontSize+'px',
+  'font-weight':String(settings.fontWeight),
   'line-height':String(settings.lineHeight),
   'font-family':fontStack(settings.fontFamily),
   'text-align':'left',
@@ -17,8 +18,8 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'letter-spacing':settings.letterSpacing+'px',
   '--libra-paragraph-gap':settings.paragraphSpacing+'px',
   '--libra-paragraph-indent':settings.paragraphIndent+'em',
-  padding:settings.verticalMargin+'px '+settings.margin+'px',
-  hyphens:'auto'
+  padding:settings.verticalMargin+'px '+settings.marginRight+'px '+settings.bottomMargin+'px '+settings.margin+'px',
+  hyphens:settings.hyphenation
  };
  for(const [key,value] of Object.entries(overrides))themes.override(key,value);
 }

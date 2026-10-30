@@ -23,12 +23,16 @@ export function normalizeSettings(saved:Partial<ReaderSettings>|undefined):Reade
   fontFamily:family,
   align:'left',
   animation:source.animation==='none'?'none':'slide',
-  fontSize:bounded(source.fontSize,14,32,DEFAULT_SETTINGS.fontSize),
-  lineHeight:bounded(source.lineHeight,1.15,2,DEFAULT_SETTINGS.lineHeight),
-  margin:bounded(source.margin,10,40,DEFAULT_SETTINGS.margin),
-  verticalMargin:bounded(source.verticalMargin,0,32,DEFAULT_SETTINGS.verticalMargin),
+  fontSize:bounded(source.fontSize,12,36,DEFAULT_SETTINGS.fontSize),
+  lineHeight:bounded(source.lineHeight,1.1,2.2,DEFAULT_SETTINGS.lineHeight),
+  margin:bounded(source.margin,6,52,DEFAULT_SETTINGS.margin),
+  marginRight:bounded(source.marginRight,6,52,bounded(source.margin,6,52,DEFAULT_SETTINGS.margin)),
+  verticalMargin:bounded(source.verticalMargin,0,52,DEFAULT_SETTINGS.verticalMargin),
+  bottomMargin:bounded(source.bottomMargin,0,52,bounded(source.verticalMargin,0,52,DEFAULT_SETTINGS.verticalMargin)),
+  fontWeight:bounded(source.fontWeight,400,600,DEFAULT_SETTINGS.fontWeight),
+  hyphenation:source.hyphenation==='none'?'none':'auto',
   paragraphIndent:bounded(source.paragraphIndent,0,2.5,DEFAULT_SETTINGS.paragraphIndent),
-  paragraphSpacing:bounded(source.paragraphSpacing,0,20,DEFAULT_SETTINGS.paragraphSpacing),
+  paragraphSpacing:bounded(source.paragraphSpacing,0,24,DEFAULT_SETTINGS.paragraphSpacing),
   wordSpacing:bounded(source.wordSpacing,0,5,DEFAULT_SETTINGS.wordSpacing),
   letterSpacing:bounded(source.letterSpacing,-0.5,1.5,DEFAULT_SETTINGS.letterSpacing)
  };
@@ -41,3 +45,8 @@ export const fontStack=(family:ReaderSettings['fontFamily'])=>{
   default: return '-apple-system,BlinkMacSystemFont,Arial,sans-serif';
  }
 };
+
+/** Restore the typography preset without altering the selected theme. */
+export function resetTypography(current:ReaderSettings):ReaderSettings{
+ return {...DEFAULT_SETTINGS,theme:current.theme,animation:current.animation};
+}

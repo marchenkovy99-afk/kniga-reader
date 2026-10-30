@@ -11,6 +11,10 @@ export type ReaderSettings = {
   letterSpacing: number;
   paragraphSpacing: number;
   verticalMargin: number;
+  marginRight: number;
+  bottomMargin: number;
+  fontWeight: number;
+  hyphenation: 'auto' | 'none';
   align: 'justify' | 'left';
   animation: 'none' | 'slide';
 };
@@ -18,7 +22,8 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'paper', fontSize: 18, lineHeight: 1.45,
   margin: 20, paragraphIndent: 1.2,
   fontFamily: 'serif', align: 'left', animation: 'slide',
-  wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 12
+  wordSpacing: 0, letterSpacing: 0, paragraphSpacing: 0, verticalMargin: 12,
+  marginRight: 20, bottomMargin: 12, fontWeight: 400, hyphenation: 'auto'
 };
 export type ReaderPosition = {
   chapter: number;

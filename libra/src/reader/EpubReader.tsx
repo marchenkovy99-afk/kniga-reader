@@ -67,7 +67,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  },[book.id,book.file]);
  useEffect(()=>{
    if(rendition.current)applyEpubAppearance(rendition.current.themes,settings);
- },[settings.theme,settings.fontSize,settings.lineHeight,settings.fontFamily,settings.margin,settings.align,settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.paragraphIndent,settings.verticalMargin]);
+ },[settings.theme,settings.fontSize,settings.lineHeight,settings.fontFamily,settings.margin,settings.align,settings.wordSpacing,settings.letterSpacing,settings.paragraphSpacing,settings.paragraphIndent,settings.verticalMargin,settings.marginRight,settings.bottomMargin,settings.fontWeight,settings.hyphenation]);
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack}
   onNext={()=>{void rendition.current?.next().catch((e:unknown)=>setError(String(e)))}}
   onPrevious={()=>{void rendition.current?.prev().catch((e:unknown)=>setError(String(e)))}}

@@ -244,3 +244,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .backup-panel .backup-footnote{font-size:12px}
 .backup-panel .backup-feedback{color:var(--fg);font-weight:550}
 .backup-panel .backup-error{color:#B44741}
+
+/* Typography refinements: never let a long token or compact headings
+   escape a page. Both text and actual page margin calculations reflow. */
+.book-flow{font-weight:var(--font-weight,400);hyphens:var(--hyphenation,auto);
+  -webkit-hyphens:var(--hyphenation,auto)}
+.book-paragraph,.book-verse,.book-heading{overflow-wrap:anywhere;word-break:normal;
+  hyphens:var(--hyphenation,auto);-webkit-hyphens:var(--hyphenation,auto)}
+.book-verse{max-width:100%}
+.book-figure{max-width:100%;min-width:0}
+.book-figure img{max-height:calc(var(--page-height) - 40px)}
+.book-table td{word-break:normal;overflow-wrap:anywhere}
+.type-preview{border:1px solid var(--border);border-radius:12px;background:var(--bg);
+ color:var(--fg);padding:16px 18px;min-height:112px;max-height:210px;overflow:auto;
+ font-size:18px;overflow-wrap:anywhere}
+.typography-reset{background:transparent;color:var(--muted);border:1px solid var(--border);
+ border-radius:9px;min-height:41px;font:500 12px -apple-system,BlinkMacSystemFont,sans-serif}
