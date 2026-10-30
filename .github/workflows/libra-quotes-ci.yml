@@ -1,0 +1,40 @@
+name: LIBRA quote selection checks
+on:
+  push:
+    branches: ['feature/libra-comfort-dark-release', 'codex/libra-quotes-toc']
+    paths:
+      - 'libra/**'
+      - '.github/workflows/libra-quotes-ci.yml'
+  workflow_dispatch:
+concurrency:
+  group: libra-quote-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  quote-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --prefix .pw --no-save --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
+          mkdir -p node_modules/@playwright
+          ln -s ../../.pw/node_modules/@playwright/test node_modules/@playwright/test
+      - name: Install browsers
+        run: .pw/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Quote selection browser tests
+        run: .pw/node_modules/.bin/playwright test e2e/quote-selection.spec.ts e2e/book-navigation.spec.ts e2e/epub-reader.spec.ts --grep 'quote|FB2 contents|EPUB2 NCX' --config playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: quote-browser-results
+          path: libra/test-results
+          if-no-files-found: ignore

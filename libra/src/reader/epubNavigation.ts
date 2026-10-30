@@ -1,3 +1,4 @@
+import {chapterStartPages} from '../bookPagination';
 /**
  * EPUB2 (NCX) and EPUB3 (nav.xhtml) both expose nested epub.js toc entries.
  * Keep the full href for navigation and a readable, flat chapter list for UI.
@@ -35,4 +36,19 @@ export function chapterForHref(href:unknown,chapters:EpubChapter[]):number{
   found=chapters.findIndex(c=>pathOnly(c.href).split('/').at(-1)===base);
  }
  return Math.max(0,found);
+}
+
+/** Use only the measured physical page at each EPUB TOC anchor. */
+export function epubTocStartPages(
+ spine:readonly {index:number}[],counts:Record<number,number>,
+ anchors:Record<number,{index:number;page:number}>,chapterCount:number
+):Array<number|undefined>{
+ const starts=chapterStartPages(spine.map(section=>counts[section.index]||0));
+ return Array.from({length:chapterCount},(_,chapter)=>{
+  const anchor=anchors[chapter];if(!anchor)return undefined;
+  const section=spine.findIndex(item=>item.index===anchor.index);
+  if(section<0||starts[section]===undefined||!Number.isSafeInteger(anchor.page)||
+    anchor.page<1||anchor.page>counts[anchor.index])return undefined;
+  return starts[section]!+anchor.page-1;
+ });
 }

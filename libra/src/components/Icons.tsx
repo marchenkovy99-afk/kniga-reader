@@ -1,5 +1,5 @@
 import type { SVGProps, ReactNode } from 'react';
-type IconName='plus'|'search'|'book'|'bookmark'|'settings'|'back'|'list'|'type'|'more'|'check'|'trash'|'close'|'sun'|'cloud';
+type IconName='plus'|'search'|'book'|'bookmark'|'settings'|'back'|'list'|'type'|'more'|'check'|'trash'|'close'|'sun'|'cloud'|'quote';
 export function Icon({name,size=22,...props}:{name:IconName,size?:number}&SVGProps<SVGSVGElement>){
  const paths:Record<IconName,ReactNode>={
  plus:<path d="M12 5v14M5 12h14"/>,search:<><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
@@ -13,6 +13,7 @@ export function Icon({name,size=22,...props}:{name:IconName,size?:number}&SVGPro
  check:<path d="m4 12 5 5L20 6"/>,trash:<><path d="M4 7h16M8 7V4h8v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></>,
  close:<path d="M5 5l14 14M19 5 5 19"/>,
  sun:<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></>,
+ quote:<><path d="M11 6H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h4V9H7M20 6h-5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h4V9h-3"/></>,
  cloud:<><path d="M7 18a5 5 0 0 1-.2-10 6.5 6.5 0 0 1 12.2 2A4 4 0 0 1 18 18z"/></>
  };
  return <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" {...props}>{paths[name]}</svg>;

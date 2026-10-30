@@ -109,6 +109,12 @@ test('EPUB2 NCX navigation opens later chapter with wide table and inline image'
  await page.locator('.reading-zones').click({position:{x:190,y:240}});
  await page.getByRole('button',{name:'Оглавление'}).click();
  await expect(page.locator('.chapter-menu button')).toHaveCount(2);
+ await expect.poll(async()=>{
+  const labels=await page.locator('.chapter-menu .chapter-page').allTextContents();
+  return labels.length===2&&labels.every(value=>Number.isInteger(Number(value))&&Number(value)>0)?labels.map(Number):[];
+ }).toEqual([1,expect.any(Number)]);
+ const startPages=(await page.locator('.chapter-menu .chapter-page').allTextContents()).map(Number);
+ expect(startPages[1]).toBeGreaterThan(1);
  await page.getByRole('button',{name:'Вторая глава'}).click();
  const frame=page.frameLocator('.epub-mount iframe');
  await expect(frame.locator('body')).toContainText('SECOND CHAPTER',{timeout:15000});

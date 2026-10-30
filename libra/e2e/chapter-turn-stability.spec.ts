@@ -20,7 +20,7 @@ test('chapter boundary keeps page geometry fixed and does not animate across the
  const status=page.getByRole('button',{name:'Показать управление чтением'});
  await status.click();
  await page.getByRole('button',{name:'Оглавление'}).click();
- await page.getByRole('button',{name:'Глава два',exact:true}).click();
+ await page.getByRole('button',{name:/^Глава два(?:\s|$)/}).click();
  await expect(flow).toContainText('КОНЕЦ_Глава_два');
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true',{timeout:20000});
  // The transition must finish in a stable state. WebKit and Chromium

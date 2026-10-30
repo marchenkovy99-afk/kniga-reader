@@ -1,4 +1,4 @@
-import type { ReaderSettings, ReaderPosition, StoredBook } from './domain';
+import type { ReaderSettings, ReaderPosition, StoredBook, SavedQuote } from './domain';
 import {sameBookmark} from './bookmarks';
 
 /**
@@ -19,7 +19,7 @@ function queue(tx:IDBTransaction,key:string,deleted=false){
  const owner=activeOwner,store=tx.objectStore('cloud'),id=owner+'|'+key,req=store.get(id);
  req.onsuccess=()=>{const old=req.result as CloudEntry|undefined;if(old?.deleted&&!deleted)return;store.put({id,owner,key,revision:old?.revision??0,pending:true,generation:(old?.generation??0)+1,deleted} satisfies CloudEntry)};
 }
-type ReadingState={id:string;position?:ReaderPosition;bookmarks:ReaderPosition[];lastOpenedAt?:number};
+type ReadingState={id:string;position?:ReaderPosition;bookmarks:ReaderPosition[];quotes?:SavedQuote[];lastOpenedAt?:number};
 let handle:Promise<IDBDatabase>|undefined;
 
 function db():Promise<IDBDatabase>{
@@ -77,7 +77,7 @@ function hydrate(record:PersistedBook|StoredBook,state?:ReadingState):StoredBook
    return {...metadata,file:new Blob([fileBytes],{type:fileType||'application/octet-stream'})};
   })();
  return {...original,position:state?.position??original.position,
-  bookmarks:state?.bookmarks??original.bookmarks??[],
+  bookmarks:state?.bookmarks??original.bookmarks??[],quotes:state?.quotes??original.quotes??[],
   lastOpenedAt:state?.lastOpenedAt??original.lastOpenedAt};
 }
 export async function listBooks():Promise<StoredBook[]>{
@@ -166,6 +166,19 @@ export async function toggleBookmark(id:string,position:ReaderPosition):Promise<
  return updated.bookmarks;
 }
 
+/** Quotes live with the book's lightweight reading state, not the binary book file. */
+export async function addQuote(id:string,quote:SavedQuote):Promise<SavedQuote[]>{
+ if(!quote.text.trim()||quote.text.length>5000)throw Error('Выделите фрагмент до 5000 символов');
+ const updated=await updateReading(id,old=>({
+  ...old,quotes:[...(old.quotes||[]).filter(saved=>saved.id!==quote.id),quote].slice(-2000)
+ }));
+ return updated.quotes||[];
+}
+export async function removeQuote(id:string,quoteId:string):Promise<SavedQuote[]>{
+ const updated=await updateReading(id,old=>({...old,quotes:(old.quotes||[]).filter(quote=>quote.id!==quoteId)}));
+ return updated.quotes||[];
+}
+
 /**
  * Additive, atomic restore: never overwrite local books, reading state or
  * preferences. The caller validates checksums before starting the transaction.
@@ -187,7 +200,7 @@ export async function mergeBackupBooks(books:StoredBook[]):Promise<{added:number
     const {meta,bytes,mime}=record;
     bookStore.add({...meta,fileBytes:bytes,fileType:mime} satisfies PersistedBook);
     stateStore.put({id:meta.id,position:meta.position,
-     bookmarks:meta.bookmarks||[],lastOpenedAt:meta.lastOpenedAt} satisfies ReadingState);
+     bookmarks:meta.bookmarks||[],quotes:meta.quotes||[],lastOpenedAt:meta.lastOpenedAt} satisfies ReadingState);
     queue(tx,'book:'+meta.id);
     added++;
    };
@@ -220,7 +233,7 @@ export async function attachLocalLibrary(owner:string){
    if(owner!==activeOwner)return;
    if(owned.result!==undefined){queue(tx,'settings');return}
    const anonymous=preferences.get('reader');
-   anonymous.onsuccess=()=>{if(owner!==activeOwner)return;if(anonymous.result!==undefined)preferences.put(anonymous.result,'reader:'+owner);queue(tx,'settings')};
+   anonymous.onsuccess=()=>{if(owner!==activeOwner)return;if(anonymous.result!==undefined){preferences.put(anonymous.result,'reader:'+owner);queue(tx,'settings')}};
   };
  }
  tx.oncomplete=()=>{changed();resolve()};tx.onerror=()=>reject(tx.error)});
@@ -241,7 +254,7 @@ export async function applyCloudRecord(owner:string,key:string,revision:number,b
  const bytes=book?await book.file.arrayBuffer():undefined,database=await db();
  return new Promise<boolean>((resolve,reject)=>{const tx=database.transaction(['books','reading','preferences','cloud'],'readwrite'),store=tx.objectStore('cloud'),id=owner+'|'+key,req=store.get(id);let applied=false;
  req.onsuccess=()=>{if(owner!==activeOwner)return;const old=req.result as CloudEntry|undefined;if(old?.pending&&old.generation!==expectedGeneration)return;if(old?.deleted)return;
- if(book){const {file,...meta}=book;tx.objectStore('books').put({...meta,fileBytes:bytes!,fileType:file.type});tx.objectStore('reading').put({id:book.id,position:book.position,bookmarks:book.bookmarks,lastOpenedAt:book.lastOpenedAt})}
+ if(book){const {file,...meta}=book;tx.objectStore('books').put({...meta,fileBytes:bytes!,fileType:file.type});tx.objectStore('reading').put({id:book.id,position:book.position,bookmarks:book.bookmarks,quotes:book.quotes||[],lastOpenedAt:book.lastOpenedAt})}
  if(settings)tx.objectStore('preferences').put(settings,'reader:'+owner);
  store.put({id,owner,key,revision,pending:false,generation:old?.generation??0} satisfies CloudEntry);applied=true};
  tx.oncomplete=()=>resolve(applied);tx.onerror=()=>reject(tx.error)});

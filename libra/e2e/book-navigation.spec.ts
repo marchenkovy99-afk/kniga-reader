@@ -52,3 +52,19 @@ test('whole-book slider, page jump, hidden footer and restored final character',
  await expect(page.locator('.page-viewport > .book-flow')).toContainText('КОНЕЦ_ГЛАВЫ_3');
  await expect(status).toContainText('100%');
 });
+
+test('FB2 contents show the exact start page of every measured chapter',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'chapters.fb2',mimeType:'application/xml',buffer:Buffer.from(source)});
+ await page.locator('.continue-card').click();
+ await page.getByRole('button',{name:'Показать управление чтением'}).click();
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled();
+ await page.getByRole('button',{name:'Оглавление'}).click();
+ await expect(page.locator('.chapter-menu .chapter-page')).toHaveCount(3);
+ const starts=(await page.locator('.chapter-menu .chapter-page').allTextContents()).map(Number);
+ expect(starts[0]).toBe(1);
+ expect(starts[1]).toBeGreaterThan(starts[0]);
+ expect(starts[2]).toBeGreaterThan(starts[1]);
+ await page.locator('.chapter-menu button').nth(1).click();
+ await expect(page.locator('.reading-status')).toContainText(starts[1]+' /');
+});

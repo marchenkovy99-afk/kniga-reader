@@ -1,4 +1,4 @@
-import type {ReaderPosition,ReaderSettings,StoredBook,Format} from './domain';
+import type {ReaderPosition,ReaderSettings,StoredBook,Format,SavedQuote} from './domain';
 import {normalizeSettings} from './readerSettings';
 
 const FORMAT='LIBRA_BACKUP' as const;
@@ -7,7 +7,7 @@ export const MAX_BACKUP_JSON_BYTES=150*1024*1024;
 
 export type BackupBook={
  id:string;filename:string;title:string;author:string;format:Format;importedAt:number;
- cover?:string;position?:ReaderPosition;lastOpenedAt?:number;bookmarks:ReaderPosition[];
+ cover?:string;position?:ReaderPosition;lastOpenedAt?:number;bookmarks:ReaderPosition[];quotes?:SavedQuote[];
  mediaType:string;bytesBase64:string;sha256:string
 };
 export type BackupFile={
@@ -68,7 +68,7 @@ export async function createBackup(books:StoredBook[],settings:ReaderSettings):P
   }
   archived.push({id:book.id,filename:book.filename,title:book.title,author:book.author,
    format:book.format,importedAt:book.importedAt,cover:book.cover,position:book.position,
-   lastOpenedAt:book.lastOpenedAt,bookmarks:book.bookmarks||[],
+   lastOpenedAt:book.lastOpenedAt,bookmarks:book.bookmarks||[],quotes:book.quotes||[],
    mediaType:book.file.type,bytesBase64:parts.join(''),sha256:await sha256(buffer)});
  }
  const data:BackupFile={format:FORMAT,version:1,createdAt:new Date().toISOString(),
@@ -113,13 +113,20 @@ export async function parseBackup(file:Blob):Promise<RestoredArchive>{
    throw Error('Некорректная обложка: '+title);
   if(b.mediaType!==undefined&&typeof b.mediaType!=='string')throw Error('Неверный MIME-тип');
   if(!Array.isArray(b.bookmarks)||b.bookmarks.length>10000)throw Error('Некорректные закладки');
+   if(b.quotes!==undefined&&(!Array.isArray(b.quotes)||b.quotes.length>2000))throw Error('Некорректные цитаты');
+   const quotes=(b.quotes||[]).map((item:SavedQuote)=>{
+    const id=requiredString(item.id,'quote id',128),text=requiredString(item.text,'quote text',5000);
+    const createdAt=natural(item.createdAt,'quote date'),where=position(item.position);
+    if(!where)throw Error('Цитата без позиции');
+    return {id,text,createdAt,position:where};
+   });
   const bytes=decodeBase64(b.bytesBase64);
   total+=bytes.length;
   if(total>MAX_BACKUP_SOURCE_BYTES)throw Error('Архив содержит слишком много данных');
   const verifiedBuffer=Uint8Array.from(bytes).buffer;
   if(await sha256(verifiedBuffer)!==b.sha256)throw Error('Проверка целостности не пройдена: '+title);
   restored.push({id,filename,title,author,format,importedAt,lastOpenedAt,cover:b.cover,
-   position:position(b.position),bookmarks:b.bookmarks.map(p=>{
+   position:position(b.position),quotes,bookmarks:b.bookmarks.map(p=>{
     const checked=position(p);if(!checked)throw Error('Некорректная закладка');return checked;
    }),file:new Blob([verifiedBuffer],{type:b.mediaType||'application/octet-stream'})});
  }

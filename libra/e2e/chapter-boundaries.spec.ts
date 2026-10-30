@@ -25,7 +25,7 @@ test('switching between chapters preserves last page and all body content',async
  for(let i=0;i<75;i++)expect(await flow.innerText()).toContain('Первая глава: строка '+i+'.');
  await page.locator('.reading-zones').click({position:{x:190,y:220}});
  await page.getByRole('button',{name:'Оглавление'}).click();
- await page.getByRole('button',{name:'Вторая глава',exact:true}).click();
+ await page.getByRole('button',{name:/^Вторая глава(?:\s|$)/}).click();
  await expect(flow).toContainText('КОНЕЦ_ВТОРОЙ_ГЛАВЫ');
  await expect(page.locator('.page-viewport')).toHaveAttribute('data-ready','true');
  await expect(page.locator('.chapter-page-freeze')).toHaveCount(0);
