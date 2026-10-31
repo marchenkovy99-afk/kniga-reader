@@ -20,7 +20,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const lastConfirmed=useRef<ReaderPosition|undefined>(book.position);
  const nextPositionTime=()=>Math.max(Date.now(),(lastConfirmed.current?.updatedAt??0)+1);
  const queue=useRef<Promise<unknown>>(Promise.resolve());
- const userNavigationPending=useRef(false);
+ const userNavigationPending=useRef(0);
  const settledKey=useRef('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
  const [geometry,setGeometry]=useState({width:0,height:0});
@@ -37,9 +37,9 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const keyRef=useRef(layoutKey);keyRef.current=layoutKey;
  const commitRef=useRef<(loc:any,confirmed?:boolean)=>void>(()=>{}),auditRef=useRef<()=>void>(()=>{});
  const enqueue=(task:()=>Promise<unknown>|void,confirmedNavigation=false)=>{
-  if(confirmedNavigation)userNavigationPending.current=true;
+  if(confirmedNavigation)userNavigationPending.current++;
   queue.current=queue.current.catch(()=>{}).then(async()=>{
-   if(!live.current||!rendition.current)return;
+   if(!live.current||!rendition.current){if(confirmedNavigation)userNavigationPending.current--;return;}
    busy.current=true;
    try{
     await task();
@@ -51,7 +51,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
     busy.current=false;
     commitRef.current(rendition.current.currentLocation(),confirmedNavigation);
     auditRef.current();
-   }finally{busy.current=false;if(confirmedNavigation)userNavigationPending.current=false;}
+   }finally{busy.current=false;if(confirmedNavigation)userNavigationPending.current--;}
   }).catch(e=>{if(live.current)setError(e instanceof Error?e.message:String(e))});
  };
  commitRef.current=(location:any,confirmedNavigation=false)=>{
@@ -226,7 +226,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  },true);
  // Finish in-flight EPUB turns before unmounting, including fast exit taps.
  const leaveBook=()=>{
-  if(!userNavigationPending.current){onBack();return;}
+  if(userNavigationPending.current===0){onBack();return;}
   void queue.current.finally(()=>{
    if(live.current&&rendition.current)
     commitRef.current(rendition.current.currentLocation(),true);
@@ -235,7 +235,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  };
  const flushRef=useRef<()=>void>(()=>{});
  flushRef.current=()=>{
-  if(userNavigationPending.current&&live.current&&rendition.current)
+  if(userNavigationPending.current>0&&live.current&&rendition.current)
    commitRef.current(rendition.current.currentLocation(),true);
  };
  useEffect(()=>{
