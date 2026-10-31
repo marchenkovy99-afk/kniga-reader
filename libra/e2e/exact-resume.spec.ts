@@ -157,6 +157,7 @@ test('iPhone: the last of two rapid real page turns survives a complete reload',
  expect(last?.globalPage).toBe(base+2);
  await page.reload();
  await expect(status).toContainText((base+2)+' /',{timeout:60000});
+ await status.click();
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.locator('.continue-card').click();
  await expect(status).toContainText((base+2)+' /',{timeout:60000});
