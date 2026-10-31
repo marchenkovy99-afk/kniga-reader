@@ -11,6 +11,7 @@ import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber 
 import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
 import { ClippingAlert } from '../components/ClippingAlert';
 import {captureFB2Quote} from '../quoteSelection';
+import {traceReading} from '../readingDiagnostics';
 
 const GAP=24;
 function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
@@ -200,6 +201,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     firstRestore?clampPage(saved!.page,count):
     saved?.layoutKey===layoutKey?clampPage(saved.page,count):
     anchored??(saved?clampPage(saved.page,count):0));
+   traceReading('fb2.layout',{id:book.id,chapter,savedPage:saved?.page,savedGlobal:saved?.globalPage,
+    selectedPage:selected,anchorPage:anchored??undefined,firstRestore,explicitPage,
+    layoutMatches:saved?.layoutKey===layoutKey,columns:count,width:geometry.width,
+    height:geometry.height,fontStatus:document.fonts.status});
    requestedPage.current=undefined;
    restoringSavedPage.current=false;
    const navigation=chapterCommit.current;
@@ -220,6 +225,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
      pageCounts:indexed?allCounts:lastPosition.current?.pageCounts
     };
     chapterCommit.current=null;
+    traceReading('fb2.chapter.commit',{id:book.id,chapter,page:position.page,
+     globalPage:position.globalPage,updatedAt:position.updatedAt});
     lastPosition.current=position;
     void savePosition(book.id,position).catch(console.error);
    }
@@ -322,6 +329,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
       previous.globalPage+safe-previous.page:undefined),
    pageCounts:fullyIndexed?allCounts:previous?.pageCounts};
   lastPosition.current=position;
+  traceReading('fb2.page.turn',{id:book.id,chapter,page:safe,globalPage:position.globalPage,
+   updatedAt:position.updatedAt});
   void savePosition(book.id,position).catch(console.error);
   setPage(safe);
  };
@@ -334,6 +343,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const cached=pageIndex.key===key?pageIndex.counts[nextChapter]:undefined;
   const target=requestedPage.current??(toLast?Math.max(0,(cached||1)-1):0);
   chapterCommit.current={chapter:nextChapter,requestedBookPage};
+  traceReading('fb2.chapter.request',{id:book.id,from:chapter,to:nextChapter,target});
   previous.current=toLast;
   returnToChapterEnd.current=toLast;
   anchorRef.current=undefined;
