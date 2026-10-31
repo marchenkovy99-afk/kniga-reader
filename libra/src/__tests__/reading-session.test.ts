@@ -106,3 +106,32 @@ it('checkpoints an actual page flip after the iOS reading-session flag was clear
  expect(storage.activateReadingSession(id,old)).toEqual(latest);
  storage.deactivateReadingSession();
 });
+
+it('the last explicitly confirmed page survives newer background re-pagination',async()=>{
+ const id='reader-confirmed-guard-test';
+ await storage.saveBook({id,filename:'guard.fb2',format:'fb2',title:'Guard',
+  author:'Reader',file:new Blob(['test']),importedAt:50,bookmarks:[]});
+ const page289:ReaderPosition={chapter:2,page:18,globalPage:289,fraction:.73,
+  layoutKey:'old-layout',updatedAt:20001,anchor:{block:22,textNode:0,offset:14}};
+ const fakeReflow:ReaderPosition={...page289,page:16,globalPage:287,
+  updatedAt:20002,layoutKey:'new-layout'};
+ storage.activateReadingSession(id,page289);
+ await storage.confirmReadingPosition(id,page289);
+ await storage.savePosition(id,fakeReflow);
+ // A background writer may win IndexedDB, but the explicit guard wins resume.
+ expect(storage.readConfirmedPosition(id)).toEqual(page289);
+ expect(storage.freshestPosition(id,fakeReflow)).toEqual(page289);
+ storage.deactivateReadingSession();
+ expect(storage.activateReadingSession(id,fakeReflow)).toEqual(page289);
+ expect((await storage.getBook(id))?.position).toEqual(page289);
+ storage.deactivateReadingSession();
+});
+
+it('only an explicit later reading action can replace the last-page guard',async()=>{
+ const id='reader-confirmed-guard-test';
+ const first=storage.readConfirmedPosition(id)!;
+ const page290={...first,page:19,globalPage:290,updatedAt:first.updatedAt+10};
+ await storage.confirmReadingPosition(id,page290);
+ expect(storage.readConfirmedPosition(id)).toEqual(page290);
+ expect((await storage.getBook(id))?.position).toEqual(page290);
+});
