@@ -35,7 +35,6 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
  }),order);
  const featured=shown.find(b=>b.id===continueBook?.id)??shown[0];
  const remaining=shown.filter(b=>b.id!==featured?.id);
- const sortLabel=order==='recent'?'Недавно добавленные':order==='title'?'По названию':order==='author'?'По автору':'По прогрессу';
  const open=(b:StoredBook,p?:ReaderPosition)=>{setMenu(null);onOpen(b,p)};
  const deleteQuote=async(book:StoredBook,id:string)=>{
   try{await removeQuote(book.id,id);await onBackupImported();setQuoteMessage('Цитата удалена')}
@@ -63,7 +62,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
     </div>
     {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги аккаунта сохранены на устройстве. Войдите в него в настройках, чтобы открыть библиотеку.</p>}
     <section className="all-books" aria-label="Мои книги">
-     <div className="library-section-heading"><h2>Мои книги <small>{shown.length}</small></h2><span className="sort-caption">{sortLabel} <span aria-hidden="true">⌄</span></span></div>
+     <div className="library-section-heading"><h2>Мои книги <small>{shown.length}</small></h2></div>
      {featured?<div className="reference-feature book-tile">
       <div className="reference-feature-top">
        <button type="button" className="continue-card book-tile-open" onClick={()=>open(featured)}>
