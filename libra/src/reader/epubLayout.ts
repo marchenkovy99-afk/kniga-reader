@@ -48,6 +48,10 @@ export function enforceEpubUniformSpacing(doc:Document):void{
     hyphens:none!important;
     -webkit-hyphens:none!important;
   }
+  html body, html body :is(p,div,section,article,blockquote,li,dd,dt,h1,h2,h3,h4,h5,h6),
+  html body :is(p,div,section,article,blockquote,li,dd,dt) :is(span,em,strong,b,i,a,small) {
+    font-family:var(--libra-font,serif)!important;
+  }
   html body :is(p,div,section,article,blockquote,li,dd,dt) :is(span,em,strong,b,i,a,small) {
     word-spacing:inherit!important;
   }
