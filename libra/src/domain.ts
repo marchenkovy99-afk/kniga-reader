@@ -36,6 +36,8 @@ export type ReaderPosition = {
   cfi?: string;
   anchor?: import('./anchors').FB2Anchor;
   updatedAt: number;
+  /** FB2 page layout fingerprint, for exact same-viewport restoration. */
+  layoutKey?: string;
 };
 export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };
 export type ImageBlock = { kind: 'image'; src: string; alt: string };
