@@ -63,3 +63,25 @@ export function rebaseFB2Position<T extends {page:number;globalPage?:number;layo
 ):T{
  return position.page===physicalPage?position:{...position,page:physicalPage};
 }
+
+/**
+ * Some checkpoints produced before book-wide progress was made durable contain
+ * chapter/page and the completed chapter-count snapshot, but no globalPage.
+ * Recover the displayed number from THAT snapshot, not from a new WebKit
+ * pagination pass (which can differ by two pages in a standalone iOS PWA).
+ */
+export function restoreLogicalFB2Position<T extends {
+ chapter:number;page:number;globalPage?:number;pageCounts?:number[]
+}>(saved:T|undefined):T|undefined{
+ if(!saved||Number.isSafeInteger(saved.globalPage)&&saved.globalPage!>0)return saved;
+ const counts=saved.pageCounts;
+ if(!counts?.length||saved.chapter>=counts.length||saved.chapter<0||
+  !counts.every(n=>Number.isSafeInteger(n)&&n>0)||saved.page<0||
+  saved.page>=counts[saved.chapter])return saved;
+ return {...saved,globalPage:bookPageNumber(counts,saved.chapter,saved.page)};
+}
+
+/** Explicit user pagination always advances the confirmed number by one. */
+export function nextLogicalFB2Page(current:number,delta:-1|1):number|undefined{
+ return Number.isSafeInteger(current)&&current>0?Math.max(1,current+delta):undefined;
+}
