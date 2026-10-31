@@ -195,3 +195,80 @@ test('iPhone: restores the confirmed book page while the chapter index is incomp
  });
  expect(last?.globalPage).toBe(target);
 });
+
+test('installed iPhone PWA: saved page wins over an anchor pointing two pages back',async({page})=>{
+ test.setTimeout(120000);
+ await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,value:true}));
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({
+  name:'standalone-anchor.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await page.locator('.continue-card').click();
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await expect(status).toBeVisible();
+ await status.click();
+ const slider=page.getByRole('slider',{name:'Прогресс чтения'});
+ await expect(slider).toBeEnabled({timeout:60000});
+ const total=Number(/из ([0-9]+)/.exec(await page.locator('.reading-progress span').innerText())?.[1]);
+ const target=Math.min(20,total-4);
+ await page.getByRole('button',{name:'Страница',exact:true}).click();
+ await page.getByRole('spinbutton').fill(String(target));
+ await page.getByRole('button',{name:'Перейти',exact:true}).click();
+ await expect(status).toContainText(target+' /');
+ const before=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const book=(await storage.listBooks())[0],position=book.position!;
+  const flow=document.querySelector<HTMLElement>('.book-flow')!;
+  const {getPageAnchor}=await import('/src/anchors.ts');
+  const geometry={width:flow.clientWidth,gap:24,stride:Number(flow.dataset.columnStride)};
+  const expected=getPageAnchor(flow,position.page,geometry);
+  const outdated=getPageAnchor(flow,Math.max(0,position.page-2),geometry);
+  if(!expected||!outdated||position.page<2)throw Error('Fixture did not reach two columns');
+  await storage.savePosition(book.id,{...position,anchor:outdated,updatedAt:position.updatedAt+10});
+  return {chapter:position.chapter,page:position.page,expected};
+ });
+ await page.reload();
+ await expect(status).toContainText(target+' /',{timeout:60000});
+ const result=await page.evaluate(async()=>{
+  const {getPageAnchor}=await import('/src/anchors.ts');
+  const flow=document.querySelector<HTMLElement>('.book-flow')!;
+  const raw=flow.style.transform;
+  const offset=Number(/translateX\(-([\d.]+)px\)/.exec(raw)?.[1]||0);
+  const stride=Number(flow.dataset.columnStride);
+  const actualPage=Math.round(offset/stride);
+  return {page:actualPage,anchor:getPageAnchor(flow,actualPage,{width:flow.clientWidth,gap:24,stride})};
+ });
+ expect(result.page).toBe(before.page);
+ expect(result.anchor).toEqual(before.expected);
+});
+
+test('standalone iPhone: migrate a legacy book checkpoint without a saved global number',async({page})=>{
+ test.setTimeout(120000);
+ await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,value:true}));
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({
+  name:'legacy-standalone.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await page.locator('.continue-card').click();
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await expect(status).toBeVisible();
+ await status.click();
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled({timeout:60000});
+ const original=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts'),book=(await storage.listBooks())[0];
+  return book.position?.pageCounts;
+ });
+ const total=Number(/из ([0-9]+)/.exec(await page.locator('.reading-progress span').innerText())?.[1]);
+ expect(original?.length).toBeGreaterThan(1);
+ const target=Math.min(total-3,(original?.[0]||5)+3);
+ await page.getByRole('button',{name:'Страница',exact:true}).click();
+ await page.getByRole('spinbutton').fill(String(target));
+ await page.getByRole('button',{name:'Перейти',exact:true}).click();
+ await expect(status).toContainText(target+' /');
+ await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts'),book=(await storage.listBooks())[0],position=book.position!;
+  await storage.savePosition(book.id,{...position,globalPage:undefined,updatedAt:position.updatedAt+100});
+ });
+ await page.reload();
+ await expect(status).toContainText(target+' /',{timeout:60000});
+});
