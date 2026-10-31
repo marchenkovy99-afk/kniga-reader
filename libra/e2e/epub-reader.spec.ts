@@ -361,3 +361,37 @@ test('EPUB2 NCX: restart preserves the user-selected CFI without reflow writes',
  expect(after?.chapter).toBe(before?.chapter);
  expect(after?.page).toBe(before?.page);
 });
+
+test('installed iPhone EPUB: two rapid turns and immediate library exit keep the latest CFI',async({page})=>{
+ test.setTimeout(120000);
+ await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,value:true}));
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'epub-two-turns.epub',mimeType:'application/epub+zip',
+  buffer:epubFixture(false,'EPUB quick close',140)
+ });
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:30000});
+ await page.locator('.reading-zones').click({position:{x:340,y:240}});
+ await page.locator('.reading-zones').click({position:{x:340,y:240}});
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await status.click();
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await expect(page.locator('.continue-card')).toBeVisible({timeout:60000});
+ const committed=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const book=(await storage.listBooks())[0];
+  return storage.readBookCheckpoint(book.id);
+ });
+ expect(committed?.cfi).toBeTruthy();
+ expect(committed?.page).toBeGreaterThanOrEqual(2);
+ await page.reload();
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:30000});
+ const after=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  return (await storage.listBooks())[0]?.position;
+ });
+ expect(after?.cfi).toBe(committed?.cfi);
+ expect(after?.page).toBe(committed?.page);
+});
