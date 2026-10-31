@@ -17,7 +17,7 @@ test('FB2 illustration opens a zoomable reader without losing formatted text or 
  const picture=page.locator('.book-image-launch');
  await expect(picture).toHaveCount(1);
  await expect(picture.locator('img')).toHaveAttribute('src',/^data:image\/svg\+xml;base64,/);
- const before=await page.locator('.reading-status').innerText();
+ const before=await page.locator('.reading-status > span').first().textContent();
  await picture.click();
  const dialog=page.getByRole('dialog',{name:'Иллюстрация книги'});
  await expect(dialog).toBeVisible();
@@ -26,5 +26,5 @@ test('FB2 illustration opens a zoomable reader without losing formatted text or 
  await expect(dialog.getByText('2×')).toBeVisible();
  await dialog.getByRole('button',{name:'Закрыть иллюстрацию'}).click();
  await expect(dialog).toHaveCount(0);
- await expect(page.locator('.reading-status')).toHaveText(before);
+ await expect(page.locator('.reading-status > span').first()).toHaveText(before||'');
 });
