@@ -864,3 +864,6 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
  .portrait-orientation-notice p{font-size:19px;font-weight:600;line-height:1.4;margin:0 0 8px}
  .portrait-orientation-notice small{color:#a9a7a4;font-size:13px;line-height:1.6}
 }
+
+/* Approved Libra mark: ivory open-book outline and muted gold bookmark. */
+.library-shell .reference-header .brand-mark{display:block;width:36px;height:28px;object-fit:contain;margin:0 0 12px 1px;object-position:left center}
