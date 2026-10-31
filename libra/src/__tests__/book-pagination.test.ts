@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {epubTocStartPages} from '../reader/epubNavigation';
-import {bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position} from '../bookPagination';
+import {bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position,restoreLogicalFB2Position,nextLogicalFB2Page} from '../bookPagination';
 describe('whole-book page navigation',()=>{
  it('maps boundaries and the final page without losing a chapter',()=>{
   expect(bookPageLocation([3,1,6],1)).toEqual({chapter:0,page:0});
@@ -71,5 +71,29 @@ describe('iOS layout reflow preserves the last confirmed page',()=>{
   const first=rebaseFB2Position(saved,restoredFB2Page(saved,'new-layout',287,286));
   expect(restoredFB2Page(first,'new-layout',300,288,true)).toBe(288);
   expect(stableBookPageNumber(rebaseFB2Position(first,288),[300],0,288)).toBe(289);
+ });
+});
+
+describe('standalone iPhone checkpoint is independent of repagination',()=>{
+ it('migrates a 289-page legacy checkpoint using the original chapter counts',()=>{
+  const old={chapter:2,page:8,updatedAt:11,pageCounts:[150,130,22]};
+  const normalized=restoreLogicalFB2Position(old);
+  expect(normalized?.globalPage).toBe(289);
+  expect(stableBookPageNumber(normalized,[149,129,22],2,8)).toBe(289);
+  expect(nextLogicalFB2Page(normalized!.globalPage!,1)).toBe(290);
+  expect(nextLogicalFB2Page(290,-1)).toBe(289);
+ });
+ it('never overwrites a confirmed number with a re-indexed -2 value',()=>{
+  const old={chapter:2,page:8,updatedAt:99,globalPage:289,pageCounts:[150,130,22]};
+  const normalized=restoreLogicalFB2Position(old);
+  expect(normalized).toEqual(old);
+  expect(stableBookPageNumber(normalized,[149,129,22],2,8)).toBe(289);
+ });
+ it('does not manufacture a page number from incomplete saved counts',()=>{
+  expect(restoreLogicalFB2Position({chapter:2,page:8,pageCounts:[0,130,22]}))
+   .not.toHaveProperty('globalPage');
+ });
+ it('prefers a confirmed physical page to an inconsistent anchor on first PWA render',()=>{
+  expect(restoredFB2Page({page:288,layoutKey:'old-layout'},'old-layout',320,286,false)).toBe(288);
  });
 });
