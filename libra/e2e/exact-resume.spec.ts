@@ -277,3 +277,44 @@ test('standalone iPhone: migrate a legacy book checkpoint without a saved global
  await page.reload();
  await expect(status).toContainText(target+' /',{timeout:60000});
 });
+
+test('iPhone Home Screen: independent guard restores page 289 after a newer false page 287',async({page})=>{
+ test.setTimeout(120000);
+ await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,value:true}));
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({
+  name:'verified.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await page.locator('.continue-card').click();
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await status.click();
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled({timeout:60000});
+ const total=Number(/из ([0-9]+)/.exec(await page.locator('.reading-progress span').innerText())?.[1]);
+ const target=Math.min(20,total-4);
+ await page.getByRole('button',{name:'Страница',exact:true}).click();
+ await page.getByRole('spinbutton').fill(String(target));
+ await page.getByRole('button',{name:'Перейти',exact:true}).click();
+ await expect(status).toContainText(target+' /');
+ const guard=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const book=(await storage.listBooks())[0],saved=storage.readConfirmedPosition(book.id)!;
+  if(!saved||saved.globalPage===undefined)throw Error('Confirmed checkpoint not written');
+  // Reproduce a background WebKit reflow that incorrectly writes page -2
+  // with a newer timestamp than the last actual reader action.
+  await storage.savePosition(book.id,{...saved,page:Math.max(0,saved.page-2),
+   globalPage:saved.globalPage-2,updatedAt:saved.updatedAt+100,
+   layoutKey:'background-iphone-layout'});
+  return saved;
+ });
+ await page.reload();
+ await expect(status).toContainText(target+' /',{timeout:60000});
+ await expect(page.locator('.reader-page-check')).toContainText('Позиция проверена');
+ const resolved=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  return {book:(await storage.listBooks())[0].position,confirmed:storage.readConfirmedPosition((await storage.listBooks())[0].id)};
+ });
+ expect(resolved.confirmed?.globalPage).toBe(target);
+ expect(resolved.book?.globalPage).toBe(target);
+ expect(resolved.book?.chapter).toBe(guard.chapter);
+ expect(resolved.book?.page).toBe(guard.page);
+});
