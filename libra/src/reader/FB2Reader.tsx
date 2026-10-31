@@ -7,7 +7,7 @@ import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, p
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack,readingInk } from '../readerSettings';
-import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position } from '../bookPagination';
+import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position,restoreLogicalFB2Position,nextLogicalFB2Page } from '../bookPagination';
 import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
 import { ClippingAlert } from '../components/ClippingAlert';
 import {captureFB2Quote} from '../quoteSelection';
@@ -109,7 +109,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const returnToChapterEnd=useRef(false);
  const chapterCommit=useRef<{chapter:number;requestedBookPage?:number}|null>(null);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
- const lastPosition=useRef<ReaderPosition|undefined>(book.position);
+ const lastPosition=useRef<ReaderPosition|undefined>(restoreLogicalFB2Position(book.position));
  // The initial saved physical page wins over a premature Safari reflow.
  const restoringSavedPage=useRef(Boolean(book.position));
  // Rebase only the column index after an asynchronous WebKit reflow.
@@ -199,9 +199,11 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    const firstRestore=restoringSavedPage.current&&Boolean(saved);
    const savedChapterPages=saved?.pageCounts?.[chapter];
    const pageCountChanged=Boolean(savedChapterPages&&savedChapterPages!==count);
-   const anchorPreferred=Boolean(saved&&(restoreByAnchor.current||
-    (firstRestore&&anchored!==null)||saved.layoutKey!==layoutKey||
-    saved.page>=count||pageCountChanged));
+   // Only translate to a source anchor when the layout actually changed.
+   // An initial WebKit paint can report an earlier anchor even with exactly
+   // the same settings; the saved physical page must win in that case.
+   const anchorPreferred=Boolean(saved&&(saved.layoutKey!==layoutKey||
+    saved.page>=count));
    const selected=explicitPage??(previous.current?count-1:
     restoredFB2Page(saved,layoutKey,count,anchored,anchorPreferred));
    traceReading('fb2.layout',{id:book.id,chapter,savedPage:saved?.page,savedGlobal:saved?.globalPage,
@@ -334,9 +336,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const position:ReaderPosition={chapter,page:safe,
    fraction:progressOf(chapter,safe,pages,chapters.length)/100,
    anchor:anchorRef.current,layoutKey,updatedAt:nextPositionTime(),
-   globalPage:requestedBookPage??(fullyIndexed?stableBookPageNumber(previous,allCounts,chapter,safe):
-    previous?.chapter===chapter&&previous.globalPage?
-      previous.globalPage+safe-previous.page:undefined),
+   globalPage:requestedBookPage??(previous?.chapter===chapter&&previous.globalPage?
+    previous.globalPage+safe-previous.page:
+    fullyIndexed?stableBookPageNumber(previous,allCounts,chapter,safe):undefined),
    pageCounts:fullyIndexed?allCounts:previous?.pageCounts};
   lastPosition.current=position;
   traceReading('fb2.page.turn',{id:book.id,chapter,page:safe,globalPage:position.globalPage,
@@ -364,14 +366,14 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  function next(){
   if(clipIssue){if(chapter<chapters.length-1)void switchChapter(chapter+1);return;}
   if(!ready)return;
-  if(page<pages-1)setReaderPage(page+1);
-  else if(chapter<chapters.length-1)switchChapter(chapter+1);
+  if(page<pages-1)setReaderPage(page+1,nextLogicalFB2Page(globalPage,1));
+  else if(chapter<chapters.length-1)switchChapter(chapter+1,false,nextLogicalFB2Page(globalPage,1));
  }
  function prev(){
   if(clipIssue){if(chapter>0)void switchChapter(chapter-1,true);return;}
   if(!ready)return;
-  if(page>0)setReaderPage(page-1);
-  else if(chapter>0)switchChapter(chapter-1,true);
+  if(page>0)setReaderPage(page-1,nextLogicalFB2Page(globalPage,-1));
+  else if(chapter>0)switchChapter(chapter-1,true,nextLogicalFB2Page(globalPage,-1));
  }
  const style={
   '--font-size':settings.fontSize+'px',
