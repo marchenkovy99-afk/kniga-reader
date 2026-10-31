@@ -14,16 +14,17 @@ import {captureFB2Quote} from '../quoteSelection';
 import {traceReading} from '../readingDiagnostics';
 
 const GAP=24;
-function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
+function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable,onOpenImage}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void;onOpenImage:(src:string,alt:string)=>void}){
  const oversized=block.kind==='table'&&(forceTableDialog||block.rows.length>9||block.rows.some(row=>row.join(' ').length>300)||block.rows.flat().join(' ').length>1100);
- if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
+ if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<button className="book-image-launch" type="button" aria-label="Увеличить иллюстрацию" onClick={()=>onOpenImage(block.src,block.alt)}><img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/></button>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
  if(block.kind==='table'){
   if(oversized)return <button data-block-index={index} className="book-table-launch" onClick={()=>onOpenTable(block.rows)}>Большая таблица · {block.rows.length} строк <span>Открыть полностью ↗</span></button>;
   return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
  }
- if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{block.text}</h2>;
- if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
- return <p data-block-index={index} className="book-paragraph">{block.text}</p>;
+ const content=block.html?<span dangerouslySetInnerHTML={{__html:block.html}}/>:block.text;
+ if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{content}</h2>;
+ if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{content}</div>;
+ return <p data-block-index={index} className="book-paragraph">{content}</p>;
 }
 /** Measure one chapter per frame using exactly the visible page's typography.
  * This probe is inert, offscreen and never part of the accessibility tree. */
@@ -50,7 +51,7 @@ function ChapterMeasure({chapter,width,height,style,onCount}:{chapter:Chapter;wi
  },[chapter,width,height,style,tables,onCount]);
  return <div className="chapter-measure" aria-hidden="true" inert style={style}>
   <div className="book-measure-flow" ref={ref} lang="ru" style={{width,height,columnWidth:width,columnGap:GAP}}>
-   {chapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={tables.has(index)} onMediaLoaded={()=>{}} onOpenTable={()=>{}}/>)}
+   {chapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={tables.has(index)} onMediaLoaded={()=>{}} onOpenTable={()=>{}} onOpenImage={()=>{}}/>)}
   </div>
  </div>;
 }
@@ -81,6 +82,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  });
  const requestedPage=useRef<number|undefined>(undefined);
  const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
+ const [expandedImage,setExpandedImage]=useState<{src:string;alt:string}|null>(null);
+ const [imageZoom,setImageZoom]=useState(1);
  // Some table rows are unbreakable in WebKit columns. Move a row that is
  // taller than the reading column into the full-content table viewer.
  const [tableLayout,setTableLayout]=useState<{key:string;indices:Set<number>}>(()=>({key:'',indices:new Set()}));
@@ -529,7 +532,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapterTitle={actualChapter?.title}
   caption={clipIssue?'Глава с прокруткой':ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters.map((item,i)=>({title:item.title,page:chapterPages[i]}))} currentChapter={chapter}
-   quoteSelection={()=>captureFB2Quote(flow.current,position)} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
+   quoteSelection={()=>captureFB2Quote(flow.current,position)} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable||expandedImage)}>
   {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
    top:`calc(var(--reader-safe-top) + var(--reader-top-clearance, 8px) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
@@ -539,11 +542,22 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       visibility:ready||Boolean(clipIssue)?'visible':'hidden',
       transform:'translateX(-'+(page*(stride||geometry.width+GAP))+'px)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable} onOpenImage={(src,alt)=>{setImageZoom(1);setExpandedImage({src,alt})}}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}
   {probeChapter>=0&&<ChapterMeasure key={indexKey+':'+probeChapter} chapter={chapters[probeChapter]} width={geometry.width} height={geometry.height} style={style} onCount={count=>acceptCount(probeChapter,count)}/>}
+  {expandedImage&&<div className="book-image-overlay" role="presentation">
+    <section className="book-image-panel" role="dialog" aria-modal="true" aria-label="Иллюстрация книги">
+     <header><strong>Иллюстрация</strong><div className="book-image-actions">
+      <button type="button" onClick={()=>setImageZoom(z=>Math.max(1,z-1))} disabled={imageZoom===1} aria-label="Уменьшить изображение">−</button>
+      <span aria-live="polite">{imageZoom}×</span>
+      <button type="button" onClick={()=>setImageZoom(z=>Math.min(4,z+1))} disabled={imageZoom===4} aria-label="Увеличить изображение">+</button>
+      <button type="button" onClick={()=>setExpandedImage(null)} aria-label="Закрыть иллюстрацию">Готово</button>
+     </div></header>
+     <div className="book-image-pan"><img src={expandedImage.src} alt={expandedImage.alt||'Иллюстрация книги'} style={{width:(imageZoom*100)+'%'}}/></div>
+    </section>
+   </div>}
   {expandedTable&&<div className="book-table-overlay" role="presentation">
    <section className="book-table-panel" role="dialog" aria-modal="true" aria-label="Таблица книги">
     <header><strong>Таблица · {expandedTable.length} строк</strong><button onClick={()=>setExpandedTable(null)} aria-label="Закрыть таблицу">Готово</button></header>
