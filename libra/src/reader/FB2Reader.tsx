@@ -197,13 +197,15 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    // Restore the source text if Safari's column count has changed.
    // The absolute page number must NOT fall by the reflow difference.
    const firstRestore=restoringSavedPage.current&&Boolean(saved);
+   const savedChapterPages=saved?.pageCounts?.[chapter];
+   const pageCountChanged=Boolean(savedChapterPages&&savedChapterPages!==count);
    const anchorPreferred=Boolean(saved&&(restoreByAnchor.current||
-    saved.layoutKey!==layoutKey||saved.page>=count));
+    saved.layoutKey!==layoutKey||saved.page>=count||pageCountChanged));
    const selected=explicitPage??(previous.current?count-1:
     restoredFB2Page(saved,layoutKey,count,anchored,anchorPreferred));
    traceReading('fb2.layout',{id:book.id,chapter,savedPage:saved?.page,savedGlobal:saved?.globalPage,
     selectedPage:selected,anchorPage:anchored??undefined,firstRestore,explicitPage,
-    layoutMatches:saved?.layoutKey===layoutKey,anchorPreferred,columns:count,width:geometry.width,
+    layoutMatches:saved?.layoutKey===layoutKey,anchorPreferred,pageCountChanged,columns:count,width:geometry.width,
     height:geometry.height,fontStatus:document.fonts.status});
    requestedPage.current=undefined;
    restoringSavedPage.current=false;
