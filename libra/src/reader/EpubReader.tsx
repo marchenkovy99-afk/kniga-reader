@@ -35,8 +35,8 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const pageIndexRef=useRef(pageIndex);pageIndexRef.current=pageIndex;
  const layoutKey=[geometry.width,geometry.height,epubTypographyKey(settings)].join(':');
  const keyRef=useRef(layoutKey);keyRef.current=layoutKey;
- const commitRef=useRef<(loc:any,confirmed?:boolean)=>void>(()=>{}),auditRef=useRef<()=>void>(()=>{});
- const enqueue=(task:()=>Promise<unknown>|void,confirmedNavigation=false)=>{
+ const commitRef=useRef<(loc:any,confirmed?:boolean,exactGlobal?:number)=>void>(()=>{}),auditRef=useRef<()=>void>(()=>{});
+ const enqueue=(task:()=>Promise<unknown>|void,confirmedNavigation=false,requestedBookPage?:number)=>{
   if(confirmedNavigation)userNavigationPending.current++;
   queue.current=queue.current.catch(()=>{}).then(async()=>{
    if(!live.current||!rendition.current){if(confirmedNavigation)userNavigationPending.current--;return;}
@@ -45,16 +45,16 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
     await task();
     if(!live.current)return;
     // Durable checkpoint before settling WebKit iframes / fonts.
-    if(confirmedNavigation)commitRef.current(rendition.current.currentLocation(),true);
+    if(confirmedNavigation)commitRef.current(rendition.current.currentLocation(),true,requestedBookPage);
     await settleEpub(rendition.current);
     if(!live.current)return;
     busy.current=false;
-    commitRef.current(rendition.current.currentLocation(),confirmedNavigation);
+    commitRef.current(rendition.current.currentLocation(),confirmedNavigation,requestedBookPage);
     auditRef.current();
    }finally{busy.current=false;if(confirmedNavigation)userNavigationPending.current--;}
   }).catch(e=>{if(live.current)setError(e instanceof Error?e.message:String(e))});
  };
- commitRef.current=(location:any,confirmedNavigation=false)=>{
+ commitRef.current=(location:any,confirmedNavigation=false,requestedBookPage?:number)=>{
   const selected=physicalPage(location);if(!selected.cfi||!live.current)return;
   lastCfi.current=selected.cfi;
   setView({...selected,href:location?.start?.href||''});
@@ -73,9 +73,14 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   const total=order.reduce((n,s)=>n+(cached.values[s.index]||0),0);
   const fraction=indexed?Math.min(1,(before+selected.page)/Math.max(1,total)):(book.position?.fraction||0);
   if(confirmedNavigation){
-   if(lastConfirmed.current?.cfi===selected.cfi)return;
+   const previous=lastConfirmed.current;
+   const absolute=requestedBookPage??(previous?.chapter===selected.index&&
+    previous.globalPage?previous.globalPage+(selected.page-1-previous.page):
+    indexed?before+selected.page:undefined);
+   if(previous?.cfi===selected.cfi&&previous.globalPage===absolute)return;
    const position:ReaderPosition={chapter:selected.index,page:selected.page-1,
-    fraction,cfi:selected.cfi,updatedAt:nextPositionTime()};
+    fraction,cfi:selected.cfi,globalPage:absolute,updatedAt:nextPositionTime(),
+    pageCounts:indexed?order.map(section=>cached.values[section.index]):previous?.pageCounts};
    lastConfirmed.current=position;
    traceReading('epub.page.navigation',{id:book.id,chapter:position.chapter,
     page:position.page,updatedAt:position.updatedAt});
@@ -203,17 +208,23 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const chapterPageNumbers=epubTocStartPages(spine,values,tocLocations.key===layoutKey?tocLocations.values:{},chapters.length);
  const indexed=spine.length>0&&spine.every(s=>values[s.index]>0);
  const totalPages=indexed?spine.reduce((n,s)=>n+values[s.index],0):0;
- const globalPage=indexed?spine.filter(s=>s.index<view.index).reduce((n,s)=>n+values[s.index],0)+view.page:0;
+ // Reindexing previous sections must not change the book-wide page number
+ // stored for this visible CFI.
+ const saved=lastConfirmed.current;
+ const confirmedGlobal=saved?.chapter===view.index&&saved.globalPage?
+  Math.max(1,saved.globalPage+view.page-1-saved.page):0;
+ const globalPage=confirmedGlobal||(indexed?spine.filter(s=>s.index<view.index)
+  .reduce((n,s)=>n+values[s.index],0)+view.page:0);
  const progress=indexed?(globalPage>=totalPages?100:Math.min(99,Math.round(globalPage/Math.max(1,totalPages)*100))):Math.round((book.position?.fraction||0)*100);
  // Reflow and pagination indexing are not user navigation.
  // Never timestamp or write progress from either operation.
- const go=(index:number,targetPage:number)=>enqueue(async()=>{
+ const go=(index:number,targetPage:number,requestedBookPage?:number)=>enqueue(async()=>{
   const r=rendition.current,section=spineRef.current.find(s=>s.index===index);if(!r||!section)return;
   await r.display(section.href);await settleEpub(r);
   const here=physicalPage(r.currentLocation());
   const selected=targetPage===Infinity?here.total:Math.max(1,Math.min(here.total,targetPage));
   r.moveTo({left:(selected-1)*r.layout().delta,top:0});r.reportLocation();
- },true);
+ },true,requestedBookPage);
  const turn=(direction:number)=>enqueue(async()=>{
   const r=rendition.current,loc=physicalPage(r.currentLocation()),order=spineRef.current;
   const offset=order.findIndex(s=>s.index===loc.index);
@@ -246,6 +257,18 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   return ()=>{document.removeEventListener('visibilitychange',onHidden);
    window.removeEventListener('pagehide',onPageHide)};
  },[]);
+ // Upgrade old CFI-only EPUB checkpoints after background indexing completes.
+ useEffect(()=>{
+  const prior=lastConfirmed.current;
+  if(!loaded||!indexed||!globalPage||!prior||prior.globalPage||!prior.cfi)return;
+  const upgraded:ReaderPosition={...prior,globalPage,
+   pageCounts:spine.map(section=>values[section.index]),
+   updatedAt:nextPositionTime()};
+  lastConfirmed.current=upgraded;
+  traceReading('epub.global.migrated',{id:book.id,globalPage,chapter:upgraded.chapter,
+   page:upgraded.page});
+  void savePosition(book.id,upgraded).catch(console.error);
+ },[loaded,indexed,globalPage,spine,layoutKey]);
  const retryPages=()=>{setIssue(null);setSafeMode(false);setRetry(v=>v+1)};
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;
  return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={leaveBook}
@@ -259,7 +282,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   chapterTitle={chapters[currentChapter]?.title}
   onPage={indexed&&!safeMode?number=>{
    let offset=Math.max(0,Math.min(totalPages-1,Math.floor(number)-1));
-   for(const section of spine){if(offset<values[section.index]){go(section.index,offset+1);return;}offset-=values[section.index];}
+   for(const section of spine){if(offset<values[section.index]){go(section.index,offset+1,number);return;}offset-=values[section.index];}
   }:undefined}>
   {issue&&<ClippingAlert issue={issue} onRetry={retryPages}/>}
   {error?<div className="reader-message">{error}</div>:<div className="epub-mount" ref={host} style={frameStyle}/>}
