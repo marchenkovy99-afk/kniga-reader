@@ -1,3 +1,4 @@
+declare const __LIBRA_BUILD__: string;
 import {useRef,useState} from 'react';
 import type {ReaderPosition,ReaderSettings,StoredBook} from '../domain';
 import {bookmarkLocationLabel} from '../bookmarks';
@@ -115,6 +116,9 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
    <div className="section-heading" style={{marginTop:30}}><h2>Тема чтения</h2></div><p className="setting-hint">Выберите оформление страниц книги. Библиотека остаётся тёмной.</p>
    <div className="theme-options settings-themes">{(['paper','white','night','oled'] as const).map(t=><button key={t} className={'theme-swatch '+(settings.theme===t?'chosen':'')} data-option={t} onClick={()=>onSettings({...settings,theme:t})}><span>{t==='paper'?'Бумага':t==='white'?'Белая':t==='night'?'Ночь':'OLED'}</span></button>)}</div>
    <BackupPanel settings={settings} onSettings={onSettings} onImported={onBackupImported}/><CloudPanel cloud={cloud}/>
+    <p className="setting-hint" aria-label="Версия Libra" style={{fontSize:11,opacity:.65,marginTop:26}}>
+     Версия Libra: {__LIBRA_BUILD__} · {window.matchMedia('(display-mode: standalone)').matches||(navigator as Navigator & {standalone?:boolean}).standalone?'Приложение iPhone':'Браузер'}
+    </p>
   </main>}
   {loading&&<div className="import-status" role="status">Импорт книги…</div>}
   <nav className="app-tabbar" aria-label="Разделы приложения">
