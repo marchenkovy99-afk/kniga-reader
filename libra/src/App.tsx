@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
-import { listBooks, getBook, loadReadingSession, activateReadingSession, deactivateReadingSession, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover } from './storage';
+import { listBooks, getBook, loadReadingSession, activateReadingSession, deactivateReadingSession, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover, confirmReadingPosition, readConfirmedPosition } from './storage';
 import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
@@ -113,7 +113,11 @@ export default function App(){
    const session=await loadReadingSession();
    const restored=session?.bookId===latest.id&&session.position &&
     session.position.updatedAt>=(latest.position?.updatedAt??0)?session.position:latest.position;
-   const position=requested??restored;
+   const guard=readConfirmedPosition(latest.id);
+   const position=requested?{...requested,
+    updatedAt:Math.max(Date.now(),(guard?.updatedAt??0)+1)}:restored;
+   // User-chosen bookmarks/quotes replace the guard; simple resume does not.
+   if(requested)void confirmReadingPosition(latest.id,position).catch(console.error);
    const recovered=activateReadingSession(latest.id,position);
    traceReading('app.open.book',{id:latest.id,page:recovered?.page,
     globalPage:recovered?.globalPage,updatedAt:recovered?.updatedAt});
