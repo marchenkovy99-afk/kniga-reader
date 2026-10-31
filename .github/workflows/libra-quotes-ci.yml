@@ -28,6 +28,11 @@ jobs:
           npm install --prefix .pw --no-save --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
           mkdir -p node_modules/@playwright
           ln -s ../../.pw/node_modules/@playwright/test node_modules/@playwright/test
+      - name: Typecheck, unit regressions and build
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
       - name: Install browsers
         run: .pw/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Quote selection browser tests
