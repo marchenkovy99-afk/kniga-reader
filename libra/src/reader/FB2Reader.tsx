@@ -180,8 +180,12 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    // must not undo an explicit chapter-boundary jump. Reuse the last page
    // until a precise source anchor is available.
    const explicitPage=requestedPage.current;
-   const selected=explicitPage??(previous.current?count-1:anchored??(
-    lastPosition.current?.chapter===chapter?clampPage(lastPosition.current.page,count):0));
+   const saved=lastPosition.current?.chapter===chapter?lastPosition.current:undefined;
+   // Identical geometry and typography must restore the exact physical page.
+   // Only translate the text anchor when the layout has actually changed.
+   const selected=explicitPage??(previous.current?count-1:
+    saved?.layoutKey===layoutKey?clampPage(saved.page,count):
+    anchored??(saved?clampPage(saved.page,count):0));
    requestedPage.current=undefined;
    if(previous.current||explicitPage!==undefined){
     lastPosition.current={chapter,page:clampPage(selected,count),fraction:lastPosition.current?.fraction||0,updatedAt:Date.now()};
@@ -269,7 +273,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const fullyIndexed=allCounts.every(n=>n>0);
   const fraction=fullyIndexed?bookPageNumber(allCounts,chapter,page)/allCounts.reduce((a,b)=>a+b,0):progressOf(chapter,page,pages,chapters.length)/100;
   const position:ReaderPosition={chapter,page,fraction,
-   anchor:anchorRef.current,updatedAt:Date.now()};
+   anchor:anchorRef.current,layoutKey,updatedAt:Date.now()};
   lastPosition.current=position;
   // A small independent IndexedDB record is cheap enough to persist immediately.
   // Saving on each page flip avoids losing progress when iOS suspends the PWA.
@@ -280,6 +284,13 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const safe=clampPage(target,pages);
   const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
+  if(safe===page)return;
+  // Save synchronously at the tap, not only in the post-render effect.
+  const position:ReaderPosition={chapter,page:safe,
+   fraction:progressOf(chapter,safe,pages,chapters.length)/100,
+   anchor:anchorRef.current,layoutKey,updatedAt:Date.now()};
+  lastPosition.current=position;
+  void savePosition(book.id,position).catch(console.error);
   setPage(safe);
  };
  const switchChapter=async(nextChapter:number,toLast=false)=>{
