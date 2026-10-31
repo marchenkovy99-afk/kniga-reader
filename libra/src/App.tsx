@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
-import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover } from './storage';
+import { listBooks, getBook, loadReadingSession, activateReadingSession, deactivateReadingSession, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover } from './storage';
 import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
@@ -23,11 +23,21 @@ export default function App(){
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
  const [hydrated,setHydrated]=useState(false);
  const coverAttempts=useRef(new Set<string>());
- const cloud=useCloudSync(async()=>{const [stored,preferences]=await Promise.all([listBooks(),loadSettings()]);setBooks(stored);setSettings(normalizeSettings(preferences??DEFAULT_SETTINGS))},()=>setOpened(null));
+ const cloud=useCloudSync(async()=>{const [stored,preferences]=await Promise.all([listBooks(),loadSettings()]);setBooks(stored);setSettings(normalizeSettings(preferences??DEFAULT_SETTINGS))},()=>{deactivateReadingSession();setOpened(null)});
  useEffect(()=>{
   let live=true;
-  Promise.all([listBooks(),loadSettings()]).then(([stored,preferences])=>{
-   if(!live)return;setBooks(stored);if(preferences)setSettings(normalizeSettings(preferences));setHydrated(true);
+  Promise.all([listBooks(),loadSettings()]).then(async([stored,preferences])=>{
+   const session=await loadReadingSession();
+   if(!live)return;
+   setBooks(stored);if(preferences)setSettings(normalizeSettings(preferences));
+   const latest=session&&stored.find(book=>book.id===session.bookId&&book.format!=='pdf');
+   if(latest){
+    const position=session!.position&&session!.position.updatedAt>=(latest.position?.updatedAt??0)
+     ?session!.position:latest.position;
+    activateReadingSession(latest.id,position);
+    setOpened({...latest,position});
+   }else if(session){deactivateReadingSession()}
+   setHydrated(true);
   }).catch(e=>{if(live)setError('Не удалось открыть локальную библиотеку: '+String(e))});
   return ()=>{live=false};
  },[]);
@@ -92,7 +102,19 @@ export default function App(){
   try{await deleteBook(book.id);forgetParsedFB2(book.id);await refresh()}catch(e){setError(String(e))}
  }
  async function toggleFavorite(book:StoredBook){try{await setBookFavorite(book.id,!book.isFavorite);await refresh()}catch(e){setError('Не удалось обновить избранное: '+String(e))}}
- function back(){setOpened(null);void refresh()}
+ function back(){deactivateReadingSession();setOpened(null);void refresh()}
+ async function openBook(book:StoredBook,requested?:ReaderPosition){
+  try{
+   const latest=await getBook(book.id);
+   if(!latest||latest.format==='pdf')return;
+   const session=await loadReadingSession();
+   const restored=session?.bookId===latest.id&&session.position &&
+    session.position.updatedAt>=(latest.position?.updatedAt??0)?session.position:latest.position;
+   const position=requested??restored;
+   activateReadingSession(latest.id,position);
+   setOpened({...latest,position});
+  }catch(e){setError('Не удалось восстановить позицию чтения: '+String(e))}
+ }
  function update(s:ReaderSettings){
   const next=normalizeSettings(s);
   setSettings(next);
@@ -103,8 +125,15 @@ export default function App(){
  return <>
   {opened&&opened.format!=='pdf'?(opened.format==='fb2'?<FB2Reader book={opened} settings={settings} onSettings={update} onBack={back}/>:
    <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
-   <Library cloud={cloud} books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{if(book.format!=='pdf')setOpened(position?{...book,position}:book)}} onImport={files=>void importFiles(files)}
+   <Library cloud={cloud} books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{
+      // Browsers that permit an installed PWA to lock orientation can do so here.
+      try{void screen.orientation?.lock?.('portrait').catch(()=>{})}catch{}
+      void openBook(book,position);
+     }} onImport={files=>void importFiles(files)}
      onDelete={book=>void remove(book)} onFavorite={book=>void toggleFavorite(book)} onBackupImported={refresh} loading={loading}/>}
+  <div className="portrait-orientation-notice" role="status">
+   <div><span aria-hidden="true">↻</span><p>Поверните устройство вертикально</p><small>Для чтения Libra используется портретная ориентация.</small></div>
+  </div>
   {error&&<div className="app-error" role="alert">{error}<button onClick={()=>setError('')}>Закрыть</button></div>}
  </>;
 }
