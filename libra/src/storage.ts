@@ -25,6 +25,26 @@ type ReadingSession={bookId:string;position?:ReaderPosition};
 let activeReadingId:string|null=null;
 let activeReadingKey:string|null=null;
 const readingSessionKey=()=> 'libra-last-reading-v1:'+encodeURIComponent(activeOwner||'guest');
+const checkpointKey=(id:string)=>'libra-book-position-v2:'+encodeURIComponent(activeOwner||'guest')+':'+encodeURIComponent(id);
+function validPosition(p:ReaderPosition):boolean{
+ return Number.isSafeInteger(p.chapter)&&p.chapter>=0&&
+  Number.isSafeInteger(p.page)&&p.page>=0&&Number.isFinite(p.updatedAt);
+}
+/** Per-book synchronous checkpoint, retained when the reader goes back to the library. */
+export function readBookCheckpoint(id:string):ReaderPosition|undefined{
+ try{
+  const raw=localStorage.getItem(checkpointKey(id));
+  const value=raw?JSON.parse(raw) as ReaderPosition:null;
+  return value&&validPosition(value)?value:undefined;
+ }catch{return undefined}
+}
+function writeBookCheckpoint(id:string,position:ReaderPosition){
+ try{localStorage.setItem(checkpointKey(id),JSON.stringify(position))}catch{}
+}
+export function freshestPosition(id:string,persisted?:ReaderPosition):ReaderPosition|undefined{
+ const local=readBookCheckpoint(id);
+ return local&&(!persisted||local.updatedAt>=persisted.updatedAt)?local:persisted;
+}
 function readSession():ReadingSession|null{
  try{
   const value=localStorage.getItem(readingSessionKey());
@@ -32,7 +52,7 @@ function readSession():ReadingSession|null{
   const session=JSON.parse(value) as ReadingSession;
   if(typeof session.bookId!=='string'||!session.bookId||session.bookId.length>200)return null;
   const p=session.position;
-  if(p&&(!Number.isSafeInteger(p.chapter)||p.chapter<0||!Number.isSafeInteger(p.page)||p.page<0||!Number.isFinite(p.updatedAt)))return null;
+  if(p&&!validPosition(p))return null;
   return session;
  }catch{return null}
 }
@@ -40,9 +60,12 @@ function writeSession(session:ReadingSession){
  try{localStorage.setItem(readingSessionKey(),JSON.stringify(session))}catch{/* IndexedDB remains the durable fallback. */}
 }
 export async function loadReadingSession():Promise<ReadingSession|null>{await db();return readSession()}
-export function activateReadingSession(id:string,position?:ReaderPosition){
+export function activateReadingSession(id:string,position?:ReaderPosition):ReaderPosition|undefined{
  activeReadingId=id;activeReadingKey=readingSessionKey();
- writeSession({bookId:id,position});
+ const current=freshestPosition(id,position);
+ if(current)writeBookCheckpoint(id,current);
+ writeSession({bookId:id,position:current});
+ return current;
 }
 export function deactivateReadingSession(){
  activeReadingId=null;
@@ -105,7 +128,7 @@ function hydrate(record:PersistedBook|StoredBook,state?:ReadingState):StoredBook
    const {fileBytes,fileType,...metadata}=record as PersistedBook;
    return {...metadata,file:new Blob([fileBytes],{type:fileType||'application/octet-stream'})};
   })();
- return {...original,position:state?.position??original.position,
+ return {...original,position:freshestPosition(original.id,state?.position??original.position),
   bookmarks:state?.bookmarks??original.bookmarks??[],quotes:state?.quotes??original.quotes??[],
   lastOpenedAt:state?.lastOpenedAt??original.lastOpenedAt};
 }
@@ -133,6 +156,8 @@ export async function saveBook(book:StoredBook):Promise<void>{
 }
 /** Delete both file and reading state as one atomic operation. */
 export function deleteBook(id:string):Promise<void>{
+ // A deleted book must not be resurrected by a stale reading checkpoint.
+ try{localStorage.removeItem(checkpointKey(id))}catch{}
  return db().then(database=>new Promise((resolve,reject)=>{
   const tx=database.transaction(['books','reading','cloud'],'readwrite');
   tx.objectStore('books').delete(id);
@@ -181,8 +206,10 @@ export function savePosition(id:string,position:ReaderPosition){
  // Commit immediately on the navigation event, before any asynchronous IDB work.
  // Never let a delayed write from a previously closed book change the active session.
  if(activeReadingId===id){
-  const previous=readSession();
-  if(previous?.bookId!==id||!previous.position||previous.position.updatedAt<=position.updatedAt){
+  const session=readSession();
+  const previous=freshestPosition(id,session?.bookId===id?session.position:undefined);
+  if(!previous||previous.updatedAt<=position.updatedAt){
+   writeBookCheckpoint(id,position);
    writeSession({bookId:id,position});
   }
  }

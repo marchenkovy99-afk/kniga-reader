@@ -68,7 +68,14 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [measuredKey,setMeasuredKey]=useState('');
  const [mediaVersion,setMediaVersion]=useState(0);
  const [reflowing,setReflowing]=useState(false);
- const [pageIndex,setPageIndex]=useState<{key:string;counts:Record<number,number>}>({key:'',counts:{}});
+ // Reuse the saved book-wide pagination when reopening the same layout.
+ // Otherwise background reindexing can make page 288 display as 286.
+ const [pageIndex,setPageIndex]=useState<{key:string;counts:Record<number,number>}>(()=>{
+  const saved=book.position;
+  if(!saved?.layoutKey||!saved.pageCounts?.length)return {key:'',counts:{}};
+  return {key:saved.layoutKey.slice(saved.layoutKey.indexOf(':')+1),
+   counts:Object.fromEntries(saved.pageCounts.map((count,i)=>[i,count]))};
+ });
  const requestedPage=useRef<number|undefined>(undefined);
  const [expandedTable,setExpandedTable]=useState<string[][]|null>(null);
  // Some table rows are unbreakable in WebKit columns. Move a row that is
@@ -272,8 +279,13 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const allCounts=chapters.map((_,i)=>i===chapter?pages:measuredCounts[i]||0);
   const fullyIndexed=allCounts.every(n=>n>0);
   const fraction=fullyIndexed?bookPageNumber(allCounts,chapter,page)/allCounts.reduce((a,b)=>a+b,0):progressOf(chapter,page,pages,chapters.length)/100;
+  // Do not let a stale effect from background pagination undo a page tap.
+  if(lastPosition.current?.chapter===chapter&&lastPosition.current.page!==page&&
+     lastPosition.current.layoutKey===layoutKey)return;
   const position:ReaderPosition={chapter,page,fraction,
-   anchor:anchorRef.current,layoutKey,updatedAt:Date.now()};
+   anchor:anchorRef.current,layoutKey,updatedAt:Date.now(),
+   pageCounts:fullyIndexed?allCounts:lastPosition.current?.layoutKey===layoutKey?
+    lastPosition.current?.pageCounts:undefined};
   lastPosition.current=position;
   // A small independent IndexedDB record is cheap enough to persist immediately.
   // Saving on each page flip avoids losing progress when iOS suspends the PWA.
@@ -288,7 +300,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   // Save synchronously at the tap, not only in the post-render effect.
   const position:ReaderPosition={chapter,page:safe,
    fraction:progressOf(chapter,safe,pages,chapters.length)/100,
-   anchor:anchorRef.current,layoutKey,updatedAt:Date.now()};
+   anchor:anchorRef.current,layoutKey,updatedAt:Date.now(),
+   pageCounts:lastPosition.current?.layoutKey===layoutKey?lastPosition.current?.pageCounts:undefined};
   lastPosition.current=position;
   void savePosition(book.id,position).catch(console.error);
   setPage(safe);

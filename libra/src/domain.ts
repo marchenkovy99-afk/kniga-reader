@@ -38,6 +38,8 @@ export type ReaderPosition = {
   updatedAt: number;
   /** FB2 page layout fingerprint, for exact same-viewport restoration. */
   layoutKey?: string;
+  /** Snapshot of chapter page counts for stable book-wide numbering across sessions. */
+  pageCounts?: number[];
 };
 export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };
 export type ImageBlock = { kind: 'image'; src: string; alt: string };
