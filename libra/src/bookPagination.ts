@@ -38,3 +38,28 @@ export function stableBookPageNumber(
  }
  return bookPageNumber(Array.from(counts),chapter,page);
 }
+
+
+/**
+ * Reopen on the same source text, even if iOS Safari fits fewer columns after
+ * restoring the standalone PWA. A stored physical page is authoritative only
+ * while the measured layout still matches and contains that page.
+ */
+export function restoredFB2Page(
+ saved:{page:number;layoutKey?:string}|undefined,
+ layoutKey:string,count:number,anchorPage:number|null,
+ anchorPreferred=false
+):number{
+ const clamp=(n:number)=>Math.max(0,Math.min(Math.max(0,count-1),Math.floor(n)));
+ if(!saved)return clamp(anchorPage??0);
+ if((anchorPreferred||saved.layoutKey!==layoutKey||saved.page>=count)&&anchorPage!==null)
+  return clamp(anchorPage);
+ return clamp(saved.page);
+}
+
+/** Keep the book-wide number fixed when the same text moves between columns. */
+export function rebaseFB2Position<T extends {page:number;globalPage?:number;layoutKey?:string}>(
+ position:T,physicalPage:number
+):T{
+ return position.page===physicalPage?position:{...position,page:physicalPage};
+}
