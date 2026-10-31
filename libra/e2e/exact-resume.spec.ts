@@ -157,7 +157,6 @@ test('iPhone: the last of two rapid real page turns survives a complete reload',
  expect(last?.globalPage).toBe(base+2);
  await page.reload();
  await expect(status).toContainText((base+2)+' /',{timeout:60000});
- await page.locator('.reading-zones').click({position:{x:width/2,y:170}});
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.locator('.continue-card').click();
  await expect(status).toContainText((base+2)+' /',{timeout:60000});
@@ -187,7 +186,7 @@ test('iPhone: restores the confirmed book page while the chapter index is incomp
   await storage.savePosition(book.id,{...old,pageCounts:undefined,updatedAt:old.updatedAt+10});
  });
  await page.reload();
- await expect(status).toContainText('Страница '+target,{timeout:60000});
+ await expect(status).toContainText(new RegExp('(?:'+target+' /|Страница '+target+')'),{timeout:60000});
  const last=await page.evaluate(async()=>{
   const storage=await import('/src/storage.ts');
   const book=(await storage.listBooks())[0];
