@@ -21,7 +21,7 @@ function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable,onOpe
   if(oversized)return <button data-block-index={index} className="book-table-launch" onClick={()=>onOpenTable(block.rows)}>Большая таблица · {block.rows.length} строк <span>Открыть полностью ↗</span></button>;
   return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
  }
- const content=block.html?<span dangerouslySetInnerHTML={{__html:block.html}}/>:block.text;
+ const content=block.html&&/<[a-z]/i.test(block.html)?<span dangerouslySetInnerHTML={{__html:block.html}}/>:block.text;
  if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{content}</h2>;
  if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{content}</div>;
  return <p data-block-index={index} className="book-paragraph">{content}</p>;
