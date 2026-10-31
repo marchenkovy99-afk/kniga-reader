@@ -145,10 +145,15 @@ test('iPhone: the last of two rapid real page turns survives a complete reload',
  await page.getByRole('button',{name:'Перейти',exact:true}).click();
  await expect(status).toContainText(base+' /');
  const width=await page.locator('.reading-zones').evaluate(el=>el.getBoundingClientRect().width);
- for(let step=1;step<=2;step++){
-  await page.locator('.reading-zones').click({position:{x:width-10,y:170}});
-  await expect(status).toContainText((base+step)+' /');
- }
+ // Both clicks are dispatched within one JS task, before React can render
+ // the intermediate page. The second must use the first event's checkpoint.
+ await page.locator('.reading-zones').evaluate(el=>{
+  const box=el.getBoundingClientRect();
+  for(let index=0;index<2;index++)el.dispatchEvent(new MouseEvent('click',{
+   bubbles:true,clientX:box.right-10,clientY:box.top+170
+  }));
+ });
+ await expect(status).toContainText((base+2)+' /');
  const last=await page.evaluate(async()=>{
   const storage=await import('/src/storage.ts');
   const id=(await storage.listBooks())[0].id;
