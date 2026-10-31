@@ -125,3 +125,73 @@ test('iPhone: two-column Safari reflow restores the original text and page numbe
  // Restoration must not write a fabricated "page turn" over the checkpoint.
  expect(persisted?.globalPage).toBe(target);
 });
+
+test('iPhone: the last of two rapid real page turns survives a complete reload',async({page})=>{
+ test.setTimeout(120000);
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({
+  name:'two-turns.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await page.locator('.continue-card').click();
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await expect(status).toBeVisible();
+ await status.click();
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled({timeout:60000});
+ const total=Number(/из ([0-9]+)/.exec(await page.locator('.reading-progress span').innerText())?.[1]);
+ const base=Math.min(20,total-5);
+ expect(base).toBeGreaterThan(5);
+ await page.getByRole('button',{name:'Страница',exact:true}).click();
+ await page.getByRole('spinbutton').fill(String(base));
+ await page.getByRole('button',{name:'Перейти',exact:true}).click();
+ await expect(status).toContainText(base+' /');
+ const width=await page.locator('.reading-zones').evaluate(el=>el.getBoundingClientRect().width);
+ for(let step=1;step<=2;step++){
+  await page.locator('.reading-zones').click({position:{x:width-10,y:170}});
+  await expect(status).toContainText((base+step)+' /');
+ }
+ const last=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const id=(await storage.listBooks())[0].id;
+  return storage.readBookCheckpoint(id);
+ });
+ expect(last?.globalPage).toBe(base+2);
+ await page.reload();
+ await expect(status).toContainText((base+2)+' /',{timeout:60000});
+ await page.locator('.reading-zones').click({position:{x:width/2,y:170}});
+ await page.getByRole('button',{name:'В библиотеку'}).click();
+ await page.locator('.continue-card').click();
+ await expect(status).toContainText((base+2)+' /',{timeout:60000});
+});
+
+test('iPhone: restores the confirmed book page while the chapter index is incomplete',async({page})=>{
+ test.setTimeout(120000);
+ await page.goto('/');
+ await page.locator('input[type=file]').first().setInputFiles({
+  name:'indexing.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+ });
+ await page.locator('.continue-card').click();
+ const status=page.getByRole('button',{name:'Показать управление чтением'});
+ await expect(status).toBeVisible();
+ await status.click();
+ await expect(page.getByRole('slider',{name:'Прогресс чтения'})).toBeEnabled({timeout:60000});
+ const total=Number(/из ([0-9]+)/.exec(await page.locator('.reading-progress span').innerText())?.[1]);
+ const target=Math.min(20,total-5);
+ await page.getByRole('button',{name:'Страница',exact:true}).click();
+ await page.getByRole('spinbutton').fill(String(target));
+ await page.getByRole('button',{name:'Перейти',exact:true}).click();
+ await expect(status).toContainText(target+' /');
+ await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const book=(await storage.listBooks())[0];
+  const old=book.position!;
+  await storage.savePosition(book.id,{...old,pageCounts:undefined,updatedAt:old.updatedAt+10});
+ });
+ await page.reload();
+ await expect(status).toContainText('Страница '+target,{timeout:60000});
+ const last=await page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  const book=(await storage.listBooks())[0];
+  return storage.readBookCheckpoint(book.id);
+ });
+ expect(last?.globalPage).toBe(target);
+});
