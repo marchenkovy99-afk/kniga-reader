@@ -20,6 +20,35 @@ function queue(tx:IDBTransaction,key:string,deleted=false){
  req.onsuccess=()=>{const old=req.result as CloudEntry|undefined;if(old?.deleted&&!deleted)return;store.put({id,owner,key,revision:old?.revision??0,pending:true,generation:(old?.generation??0)+1,deleted} satisfies CloudEntry)};
 }
 type ReadingState={id:string;position?:ReaderPosition;bookmarks:ReaderPosition[];quotes?:SavedQuote[];lastOpenedAt?:number};
+/** Synchronous reading checkpoint for iOS, where background IDB writes may be suspended. */
+type ReadingSession={bookId:string;position?:ReaderPosition};
+let activeReadingId:string|null=null;
+let activeReadingKey:string|null=null;
+const readingSessionKey=()=> 'libra-last-reading-v1:'+encodeURIComponent(activeOwner||'guest');
+function readSession():ReadingSession|null{
+ try{
+  const value=localStorage.getItem(readingSessionKey());
+  if(!value)return null;
+  const session=JSON.parse(value) as ReadingSession;
+  if(typeof session.bookId!=='string'||!session.bookId||session.bookId.length>200)return null;
+  const p=session.position;
+  if(p&&(!Number.isSafeInteger(p.chapter)||p.chapter<0||!Number.isSafeInteger(p.page)||p.page<0||!Number.isFinite(p.updatedAt)))return null;
+  return session;
+ }catch{return null}
+}
+function writeSession(session:ReadingSession){
+ try{localStorage.setItem(readingSessionKey(),JSON.stringify(session))}catch{/* IndexedDB remains the durable fallback. */}
+}
+export async function loadReadingSession():Promise<ReadingSession|null>{await db();return readSession()}
+export function activateReadingSession(id:string,position?:ReaderPosition){
+ activeReadingId=id;activeReadingKey=readingSessionKey();
+ writeSession({bookId:id,position});
+}
+export function deactivateReadingSession(){
+ activeReadingId=null;
+ try{localStorage.removeItem(activeReadingKey||readingSessionKey())}catch{}
+ activeReadingKey=null;
+}
 let handle:Promise<IDBDatabase>|undefined;
 
 function db():Promise<IDBDatabase>{
@@ -149,6 +178,14 @@ export function newestReadingPosition(current:ReaderPosition|undefined,next:Read
  return current && current.updatedAt>next.updatedAt?current:next;
 }
 export function savePosition(id:string,position:ReaderPosition){
+ // Commit immediately on the navigation event, before any asynchronous IDB work.
+ // Never let a delayed write from a previously closed book change the active session.
+ if(activeReadingId===id){
+  const previous=readSession();
+  if(previous?.bookId!==id||!previous.position||previous.position.updatedAt<=position.updatedAt){
+   writeSession({bookId:id,position});
+  }
+ }
  return updateReading(id,old=>{
   if(old.position && old.position.updatedAt>position.updatedAt)return old;
   return {...old,position:newestReadingPosition(old.position,position),
