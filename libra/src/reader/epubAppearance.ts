@@ -13,6 +13,11 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'font-weight':String(settings.fontWeight),
   'line-height':String(settings.lineHeight),
   'font-family':fontStack(settings.fontFamily),
+  '--libra-font-family':fontStack(settings.fontFamily),
+  '--libra-font-size':settings.fontSize+'px',
+  '--libra-line-height':String(settings.lineHeight),
+  '--libra-letter-spacing':settings.letterSpacing+'px',
+  '--libra-ink':readingInk(settings),
   'text-align':settings.align,
   '--libra-text-align':settings.align,
   '--libra-hyphens':settings.hyphenation,
@@ -25,7 +30,7 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   padding:'0px',
   hyphens:settings.hyphenation
  };
- for(const [key,value] of Object.entries(overrides))themes.override(key,value,key==='padding');
+ for(const [key,value] of Object.entries(overrides))themes.override(key,value,true);
 }
 
 /** Change only page ink on an existing EPUB rendition without repagination. */
@@ -33,4 +38,5 @@ export function applyEpubInk(themes:EpubThemes,settings:ReaderSettings):void{
  const palette=PALETTES[settings.theme];
  themes.override('background-color',palette.background);
  themes.override('color',readingInk(settings));
+ themes.override('--libra-ink',readingInk(settings));
 }

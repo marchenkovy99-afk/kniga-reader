@@ -11,6 +11,7 @@ import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
 import {extractEpubCover,coverDataUrl} from './covers';
+import {waitForEpub} from './reader/epubLifecycle';
 
 const supported=(name:string):Format|null=>{
  const ext=name.split('.').pop()?.toLowerCase();
@@ -74,11 +75,15 @@ export default function App(){
          try{
            const {default:ePub}=await import('epubjs');
            const epub=ePub(await file.arrayBuffer());
-           const meta=await epub.loaded.metadata;
-           title=meta.title||title;author=meta.creator||author;
-           try{cover=await coverDataUrl(await epub.coverUrl())}catch{}
-           epub.destroy();
-         }catch{/* The file is validated again at opening; metadata is optional. */}
+           try{
+            // Metadata resolves before navigation and image/CSS replacement.
+            // Destroying here earlier invalidated those still-running tasks.
+            await waitForEpub(epub);
+            const meta=await epub.loaded.metadata;
+            title=meta.title||title;author=meta.creator||author;
+            try{cover=await coverDataUrl(await epub.coverUrl())}catch{}
+           }finally{epub.destroy()}
+         }catch(error){throw error instanceof Error?error:new Error('Не удалось прочитать EPUB')}
        }
        const book:StoredBook={id,filename:file.name,title,author,format,file:blob,cover,
          importedAt:Date.now(),bookmarks:[]};

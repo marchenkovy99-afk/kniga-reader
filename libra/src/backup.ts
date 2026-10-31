@@ -43,13 +43,14 @@ function position(value:unknown):ReaderPosition|undefined{
  natural(p.chapter,'chapter');natural(p.page,'page');
  if(typeof p.fraction!=='number'||!Number.isFinite(p.fraction)||p.fraction<0||p.fraction>1)throw Error('Недопустимый прогресс книги');
  if(p.cfi!==undefined&&(typeof p.cfi!=='string'||p.cfi.length>4096))throw Error('Недопустимый EPUB CFI');
+ if(p.layout!==undefined&&(typeof p.layout!=='string'||p.layout.length>2048))throw Error('Недопустимая вёрстка EPUB');
  if(p.anchor!==undefined){
   natural(p.anchor?.block,'anchor block');
   if(!Number.isSafeInteger(p.anchor?.textNode)||p.anchor.textNode< -1)throw Error('Недопустимый текстовый якорь');
   natural(p.anchor?.offset,'anchor offset');
  }
  natural(p.updatedAt,'updatedAt');
- return {chapter:p.chapter,page:p.page,fraction:p.fraction,cfi:p.cfi,anchor:p.anchor,updatedAt:p.updatedAt};
+ return {chapter:p.chapter,page:p.page,fraction:p.fraction,cfi:p.cfi,layout:p.layout,anchor:p.anchor,updatedAt:p.updatedAt};
 }
 /** Entire snapshot includes original binary books, positions, bookmarks and settings. */
 export async function createBackup(books:StoredBook[],settings:ReaderSettings):Promise<Blob>{

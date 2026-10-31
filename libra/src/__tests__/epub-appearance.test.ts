@@ -39,6 +39,27 @@ describe('EPUB live appearance',()=>{
 });
 
 describe('publisher spacing normalization',()=>{
+ it('keeps nested symbol glyphs outside the prose-font override',()=>{
+  const frame=document.createElement('iframe');document.body.append(frame);const doc=frame.contentDocument!;
+  doc.body.innerHTML='<span style="font-family:Wingdings"><strong style="font-family:Wingdings">A</strong></span><p>Text</p>';
+  enforceEpubUniformSpacing(doc);
+  const strong=doc.querySelector('strong') as HTMLElement;
+  expect(strong.style.fontFamily).toBe('Wingdings');
+  expect(doc.getElementById('libra-uniform-spaces')!.textContent).toContain(':not([data-libra-symbol-font] *)');
+  frame.remove();
+ });
+ it('neutralizes publisher inline !important prose fonts without altering symbol or SVG fonts',()=>{
+  const doc=document.implementation.createHTMLDocument('font lock');
+  doc.body.innerHTML='<p style="font:italic 12pt Georgia!important">До <span style="font-family:serif!important;font-size:8px!important">после</span></p><span class="symbol" style="font-family:Wingdings!important">A</span><svg><text style="font-family:serif">Figure</text></svg>';
+  const text=doc.body.textContent,first=doc.querySelector('p')!.firstChild;
+  enforceEpubUniformSpacing(doc);
+  expect((doc.querySelector('p') as HTMLElement).style.fontFamily).toBe('var(--libra-font-family)');
+  expect((doc.querySelector('p span') as HTMLElement).style.fontFamily).toBe('var(--libra-font-family)');
+  expect((doc.querySelector('p span') as HTMLElement).style.fontSize).toBe('inherit');
+  expect((doc.querySelector('.symbol') as HTMLElement).style.fontFamily).toBe('Wingdings');
+  expect(doc.querySelector('svg text')!.getAttribute('style')).toContain('serif');
+  expect(doc.querySelector('p')!.firstChild).toBe(first);expect(doc.body.textContent).toBe(text);
+ });
  it('overrides publisher !important justification without rewriting EPUB text nodes',()=>{
   const doc=document.implementation.createHTMLDocument('publisher');
   doc.body.innerHTML='<p style="text-align:justify!important;word-spacing:18px!important">Первое <strong>второе</strong> третье.</p><p>Ещё текст.</p><pre style="word-spacing:15px!important">a   b</pre>';

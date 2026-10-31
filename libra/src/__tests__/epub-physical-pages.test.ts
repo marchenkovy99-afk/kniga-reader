@@ -1,6 +1,13 @@
 import {describe,it,expect} from 'vitest';
-import {physicalPage} from '../reader/epubLayout';
+import {physicalPage,restoreEpubPhysicalPage} from '../reader/epubLayout';
 describe('EPUB physical screens',()=>{
+ it('restores an illustration-only screen by physical page only when its layout matches',()=>{
+  const saved={chapter:2,page:4,fraction:.5,cfi:'epubcfi(saved)',updatedAt:1,layout:'390:700:font'};
+  expect(restoreEpubPhysicalPage(saved,'390:700:font',2,10)).toBe(4);
+  expect(restoreEpubPhysicalPage(saved,'390:700:newfont',2,10)).toBeNull();
+  expect(restoreEpubPhysicalPage(saved,'390:700:font',1,10)).toBeNull();
+  expect(restoreEpubPhysicalPage({...saved,page:99},saved.layout,2,10)).toBeNull();
+ });
  it('increments for every rendered screen even within one old text location',()=>{
   const make=(page:number)=>({start:{index:2,location:7,displayed:{page,total:20},cfi:'cfi-'+page}});
   expect(physicalPage(make(1)).page).toBe(1);

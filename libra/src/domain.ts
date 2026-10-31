@@ -34,15 +34,18 @@ export type ReaderPosition = {
   page: number;
   fraction: number;
   cfi?: string;
+  /** Physical EPUB screen is reusable only under identical viewport/typography. */
+  layout?:string;
   anchor?: import('./anchors').FB2Anchor;
   updatedAt: number;
 };
-export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };
+export type InlineRun = {text:string;strong?:boolean;emphasis?:boolean;strike?:boolean;sup?:boolean;sub?:boolean;note?:string};
+export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string; inline?:InlineRun[]; listItem?:boolean };
 export type ImageBlock = { kind: 'image'; src: string; alt: string };
 export type TableBlock = { kind: 'table'; rows: string[][] };
 export type Block = TextBlock | ImageBlock | TableBlock;
 export type Chapter = { id: string; title: string; blocks: Block[] };
-export type ParsedFB2 = { title: string; author: string; cover?: string; chapters: Chapter[]; fullText: string };
+export type ParsedFB2 = { title: string; author: string; cover?: string; chapters: Chapter[]; fullText: string; notes?:Record<string,string> };
 export type StoredBook = {
   id: string; filename: string; title: string; author: string; format: Format;
   file: Blob; cover?: string; importedAt: number; position?: ReaderPosition;

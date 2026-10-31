@@ -225,6 +225,7 @@ test('EPUB slider reaches final glyph and persists progress without rounded keyb
  await page.getByRole('button',{name:'Текст',exact:true}).click();
  await page.getByRole('slider',{name:/Размер текста/}).press('End');
  await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ await expect(slider).toBeEnabled();
  await slider.press('End');
  await expect(page.locator('.reading-progress strong')).toHaveText('100%');
  await expect.poll(()=>page.locator('.epub-mount').evaluate(host=>{
@@ -298,6 +299,7 @@ test('near-end EPUB stays in reading filter until actual last page',async({page}
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.getByRole('button',{name:'Читаю',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(1);
  await page.getByRole('button',{name:'Прочитано',exact:true}).click();await expect(page.locator('.book-tile')).toHaveCount(0);
+ await page.getByRole('button',{name:/^Все книги/}).first().click();
  await page.locator('.continue-card').click();
  await expect(page.locator('.epub-mount iframe')).toBeVisible();
  await page.getByRole('button',{name:'Показать управление чтением'}).click();
@@ -332,5 +334,5 @@ test('publisher justified EPUB is rendered with equal word gaps and keeps origin
  expect(await frame.locator('body').innerText()).toBe(original);
  await page.reload();
  await page.locator('.continue-card').click();
- await expect.poll(async()=>(await page.frameLocator('.epub-mount iframe').locator('body p').first().evaluate(el=>getComputedStyle(el).wordSpacing))).toBe('2.5px');
+ await expect.poll(async()=>{try{return await page.frameLocator('.epub-mount iframe').locator('body p').first().evaluate(el=>getComputedStyle(el).wordSpacing)}catch{return 'opening'}}).toBe('2.5px');
 });

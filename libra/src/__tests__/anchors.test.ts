@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
-import {collectTextUnits,getPageAnchor,getAnchorPage,columnAtOffset} from '../anchors';
+import {collectTextUnits,getPageAnchor,getAnchorPage,columnAtOffset,resolveFB2Point} from '../anchors';
 
 describe('content-based FB2 anchors',()=>{
+ it('restores legacy flat paragraph offsets after adding semantic inline formatting',()=>{
+  const block=document.createElement('p');block.innerHTML='До <em>курсив</em> после';
+  const point=resolveFB2Point(block,{block:0,textNode:0,offset:11});
+  expect(point?.node.textContent).toBe(' после');expect(point?.offset).toBe(2);
+  const modern=resolveFB2Point(block,{block:0,textNode:1,offset:2});
+  expect(modern?.node.textContent).toBe('курсив');expect(modern?.offset).toBe(2);
+ });
  it('never assigns a fractional Safari column start to the previous page',()=>{
   const geo={width:366,gap:24,stride:388.8};
   expect(columnAtOffset(0,geo)).toBe(0);

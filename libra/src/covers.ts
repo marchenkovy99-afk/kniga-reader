@@ -1,3 +1,4 @@
+import {waitForEpub} from './reader/epubLifecycle';
 /** Convert ephemeral epub.js blob: cover links into portable, safe image data. */
 const MAX_COVER_BYTES=1_500_000;
 export async function coverDataUrl(url:string|undefined):Promise<string|undefined>{
@@ -22,6 +23,6 @@ export async function extractEpubCover(file:Blob):Promise<string|undefined>{
  if(file.size>50_000_000)return;
  const {default:ePub}=await import('epubjs');
  const book=ePub(await file.arrayBuffer());
- try{await book.loaded.metadata;return await coverDataUrl(await book.coverUrl())}
+ try{await waitForEpub(book);return await coverDataUrl(await book.coverUrl())}
  finally{book.destroy()}
 }

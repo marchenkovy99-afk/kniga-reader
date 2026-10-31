@@ -959,3 +959,25 @@ html[data-theme="oled"] ::highlight(libra-saved-quote){background-color:rgba(197
  .library-shell .reference-feature .continue-card .continue-info{min-height:180px}
  .library-shell .reference-feature .continue-info>strong{font-size:23px}
 }
+
+/* Book artwork always uses original ink on a light surface. */
+.book-figure{margin:.25em 0 .5em;line-height:0;break-inside:avoid;max-width:100%}
+.book-figure img{display:block;margin-inline:auto;max-width:100%;max-height:calc(var(--page-height) - 3em);width:auto;height:auto;object-fit:contain;background:#fff;color-scheme:light;filter:none!important;mix-blend-mode:normal;opacity:1;cursor:zoom-in}
+.reading-interactive .book-figure img,.reading-interactive .book-note-link{pointer-events:auto}
+.book-note-link{display:inline;border:0;padding:0 .08em;background:transparent;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
+.book-list-item{padding-left:1em;text-indent:-.8em}
+.book-list-item::before{content:'• ';font-family:system-ui,sans-serif}
+.book-note-dialog{position:absolute;inset:0;z-index:40;background:var(--bg);color:var(--fg);padding:calc(var(--reader-safe-top) + 16px) 20px calc(var(--reader-safe-bottom) + 20px);overflow:auto;pointer-events:auto}
+.book-note-dialog header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.book-note-dialog button{min-height:44px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--accent);padding:8px 12px}
+.book-note-dialog p{white-space:pre-wrap;font:18px/1.6 var(--reading-font,system-ui);overflow-wrap:anywhere}
+.illustration-viewer{position:absolute;inset:0;z-index:45;display:flex;flex-direction:column;min-height:0;background:#fff!important;color:#171717!important;color-scheme:light;pointer-events:auto;padding:var(--reader-safe-top) 0 var(--reader-safe-bottom);font:15px/1.4 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+.illustration-viewer header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid #ddd;flex-shrink:0}
+.illustration-viewer button{border:1px solid #ccc;border-radius:9px;background:#fff;color:#171717;min-width:44px;min-height:44px;padding:8px 12px;font:inherit;cursor:pointer}
+.illustration-viewer button:disabled{opacity:.4;cursor:default}
+.illustration-tools{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px;flex-shrink:0}
+.illustration-tools output{min-width:4ch;text-align:center;font-variant-numeric:tabular-nums}
+.illustration-stage{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:none;background:#fff;cursor:grab;user-select:none}
+.illustration-stage:active{cursor:grabbing}
+.illustration-stage img{display:block;max-width:none;max-height:none;object-fit:contain;background:#fff;filter:none!important;mix-blend-mode:normal;opacity:1;pointer-events:none}
+.reading-modal-open .reading-zones{display:none}

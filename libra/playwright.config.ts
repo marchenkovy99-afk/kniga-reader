@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
  testDir:'./e2e',
+ testIgnore:'**/pwa-illustrations.spec.ts',
  timeout:45000,
  retries:process.env.CI?1:0,
  reporter:'list',

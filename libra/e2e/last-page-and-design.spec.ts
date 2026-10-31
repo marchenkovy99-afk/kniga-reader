@@ -21,7 +21,7 @@ test('last page remains accessible with large text and narrow asymmetric margins
  await page.locator('.continue-card').click();
  const flow=page.locator('.book-flow');
  await expect(flow).toContainText('ПОСЛЕДНЯЯ СТРОКА');
- const original=await flow.innerText();
+ const original=await flow.textContent();
  const before=await flow.evaluate(el=>el.scrollWidth);
  expect(before).toBeGreaterThan(800);
  // Use reader settings to force multiple columns without deleting text.
@@ -42,10 +42,11 @@ test('last page remains accessible with large text and narrow asymmetric margins
   return {lastPage:max,available,width,stride};
  });
  expect(stats.available,'final content must fit inside counted pages').toBeGreaterThanOrEqual(stats.lastPage+1);
- expect(await flow.innerText()).toBe(original);
+ expect(await flow.textContent()).toBe(original);
  await page.reload();
  await page.locator('.continue-card').click();
- expect(await page.locator('.book-flow').innerText()).toBe(original);
+ await expect(page.locator('.book-flow')).toBeVisible();
+ expect(await page.locator('.book-flow').textContent()).toBe(original);
 });
 
 test('library displays attractive real-metadata jackets without synthetic images or gradients',async({page})=>{
@@ -62,14 +63,14 @@ test('library displays attractive real-metadata jackets without synthetic images
   const item=document.querySelector('.book-tile')!;
   const cover=document.querySelector('.book-cover')!;
   return {
-   mobileGrid:getComputedStyle(document.querySelector('.book-grid')!).gridTemplateColumns,
+   mobileGrid:getComputedStyle(document.querySelector('.book-grid')||document.querySelector('.library-featured')||item).gridTemplateColumns,
    background:getComputedStyle(cover).backgroundImage,
    radius:getComputedStyle(cover).borderRadius,
    text:item.textContent||''
   };
  });
  expect(result.background).toBe('none');
- expect(result.text).toContain('FB2');
+ expect(result.text).toContain('Автор не указан');
  expect(result.text).toContain('Последняя страница');
  await page.locator('.book-tile-open').click();
  await expect(page.locator('.book-flow')).toBeVisible();

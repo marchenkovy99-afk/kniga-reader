@@ -1,9 +1,24 @@
-import type { Block, Chapter, ParsedFB2 } from './domain';
+import type { Block, Chapter, ParsedFB2, InlineRun, TextBlock } from './domain';
 
 const xmlText=(node:Element|null|undefined)=>node?.textContent?.replace(/\s+/g,' ').trim()||'';
 const child=(node:Element,name:string)=>Array.from(node.children).find(e=>e.localName===name);
 const children=(node:Element,name:string)=>Array.from(node.children).filter(e=>e.localName===name);
-const href=(node:Element)=>node.getAttribute('l:href')||node.getAttribute('xlink:href')||node.getAttribute('href')||'';
+const href=(node:Element)=>node.getAttributeNS('http://www.w3.org/1999/xlink','href')||node.getAttribute('l:href')||node.getAttribute('xlink:href')||node.getAttribute('href')||'';
+
+function normalizedRuns(raw:InlineRun[]):InlineRun[]{
+ const runs:InlineRun[]=[];let space:InlineRun|undefined;
+ const append=(text:string,marks:InlineRun)=>{
+  const {text:_,...flags}=marks,last=runs[runs.length-1];
+  if(last&&last.strong===flags.strong&&last.emphasis===flags.emphasis&&last.strike===flags.strike&&last.sup===flags.sup&&last.sub===flags.sub&&last.note===flags.note)last.text+=text;
+  else runs.push({...flags,text});
+ };
+ for(const run of raw)for(const character of run.text){
+  if(/\s/.test(character)){if(runs.length)space=run;continue;}
+  if(space){append(' ',space);space=undefined;}
+  append(character,run);
+ }
+ return runs;
+}
 
 export function parseFB2(xml:string):ParsedFB2{
   const doc=new DOMParser().parseFromString(xml,'application/xml');
@@ -30,6 +45,12 @@ export function parseFB2(xml:string):ParsedFB2{
 
   const blocks: Block[]=[];
   const chapters:Chapter[]=[];
+  const notes:Record<string,string>=Object.create(null);
+  for(const body of Array.from(root.children).filter(e=>e.localName==='body'&&e.getAttribute('name'))){
+    for(const section of Array.from(body.getElementsByTagName('*')).filter(e=>e.localName==='section'&&e.id)){
+      notes[section.id]=Array.from(section.children).map(xmlText).filter(Boolean).join('\n');
+    }
+  }
   function walk(element:Element,target:Block[]){
     const tag=element.localName;
     if(tag==='image'){
@@ -43,23 +64,35 @@ export function parseFB2(xml:string):ParsedFB2{
         Array.from(row.children).filter(e=>e.localName==='td'||e.localName==='th').map(xmlText));
       target.push({kind:'table',rows});return;
     }
-    if(tag==='p'||tag==='v'||tag==='subtitle'||tag==='text-author'){
-      const kind=tag==='v'?'verse':tag==='subtitle'?'heading':'paragraph';
+    if(tag==='p'||tag==='v'||tag==='subtitle'||tag==='text-author'||tag==='li'||tag==='title'){
+      const kind=tag==='v'?'verse':tag==='subtitle'||tag==='title'?'heading':'paragraph';
       // Inline pictures must survive. Split around image nodes, preserving the
       // complete sequence of text segments and illustrations.
+      let buffer:InlineRun[]=[];
       const hasPicture=Array.from(element.getElementsByTagName('*')).some(el=>el.localName==='image');
-      if(!hasPicture){target.push({kind,text:xmlText(element)});return;}
-      let buffer='';
-      const flush=()=>{const value=buffer.replace(/\s+/g,' ').trim();if(value)target.push({kind,text:value});buffer=''};
-      const visit=(node:Node):void=>{
-        if(node.nodeType===Node.TEXT_NODE){buffer+=node.textContent||'';return;}
+      const flush=(keepEmpty=false)=>{
+        const inline=normalizedRuns(buffer),text=inline.map(run=>run.text).join('');
+        if(text||keepEmpty)target.push({kind,text,...(inline.some(run=>Object.keys(run).length>1)?{inline}:{}),...(tag==='li'?{listItem:true}:{})} satisfies TextBlock);
+        buffer=[];
+      };
+      const visit=(node:Node,marks:Omit<InlineRun,'text'>={}):void=>{
+        if(node.nodeType===Node.TEXT_NODE){buffer.push({...marks,text:node.textContent||''});return;}
         if(node.nodeType!==Node.ELEMENT_NODE)return;
         const nested=node as Element;
         if(nested.localName==='image'){flush();walk(nested,target);return;}
-        for(const child of Array.from(node.childNodes))visit(child);
+        const name=nested.localName;
+        const next={...marks};
+        if(name==='strong'||name==='b')next.strong=true;
+        if(name==='emphasis'||name==='em'||name==='i')next.emphasis=true;
+        if(name==='strikethrough')next.strike=true;
+        if(name==='sup')next.sup=true;
+        if(name==='sub')next.sub=true;
+        const link=href(nested);
+        if(name==='a'&&link.startsWith('#'))next.note=link.slice(1);
+        for(const child of Array.from(node.childNodes))visit(child,next);
       };
       for(const node of Array.from(element.childNodes))visit(node);
-      flush();return;
+      flush(!hasPicture&&tag!=='title');return;
     }
     if(tag==='title'){
       const title=xmlText(element);if(title)target.push({kind:'heading',text:title});return;
@@ -71,7 +104,8 @@ export function parseFB2(xml:string):ParsedFB2{
   function sectionToChapter(section:Element, prefix:string):void{
     const sectionTitle=xmlText(child(section,'title'))||prefix;
     // A section title is visible book content, not merely an entry in the TOC.
-    const material:Block[]=child(section,'title')?[{kind:'heading',text:sectionTitle}]:[];
+    const material:Block[]=[];
+    const title=child(section,'title');if(title){walk(title,material);if(!material.length)material.push({kind:'heading',text:sectionTitle})}
     for(const element of Array.from(section.children)){
       if(element.localName==='title')continue;
       if(element.localName==='section'){
@@ -102,5 +136,5 @@ export function parseFB2(xml:string):ParsedFB2{
   if(chapters.length===0)throw new Error('В FB2 не найден текст книги');
   for(const chapter of chapters)blocks.push(...chapter.blocks);
   return {title:bookTitle||'Без названия',author:author||'Автор не указан',cover,chapters,
-    fullText:blocks.map(b=>b.kind==='image'?'':b.kind==='table'?b.rows.flat().join(' '):b.text).join('\n')};
+    notes,fullText:blocks.map(b=>b.kind==='image'?'':b.kind==='table'?b.rows.flat().join(' '):b.text).join('\n')};
 }

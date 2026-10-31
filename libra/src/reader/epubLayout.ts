@@ -1,6 +1,11 @@
-import type {ReaderSettings} from '../domain';
+import type {ReaderSettings,ReaderPosition} from '../domain';
 import {applyEpubAppearance} from './epubAppearance';
+import {prepareBookMedia,settleBookDocument} from './bookMedia';
 export const epubTypographyKey=(s:ReaderSettings)=>JSON.stringify([s.fontSize,s.lineHeight,s.fontFamily,s.align,s.wordSpacing,s.letterSpacing,s.paragraphSpacing,s.paragraphIndent,s.fontWeight,s.hyphenation]);
+export function restoreEpubPhysicalPage(saved:ReaderPosition|undefined,key:string,index:number,total:number):number|null{
+ if(!saved?.layout||saved.layout!==key||saved.chapter!==index||!Number.isSafeInteger(saved.page)||saved.page<0||saved.page>=total)return null;
+ return saved.page;
+}
 /**
  * Publisher CSS may impose custom word gaps. Standardise narrative
  * justification and hyphenation without changing EPUB source text or CFIs.
@@ -22,6 +27,12 @@ export function enforceEpubUniformSpacing(doc:Document):void{
   doc.body.lang='ru';
  }
 
+ // Detect authored symbol fonts before installing the prose override.
+ for(const element of Array.from(doc.body.querySelectorAll<HTMLElement>('*'))){
+  if(element.closest('svg,math,[data-libra-symbol-font]'))continue;
+  const family=element.style.fontFamily||doc.defaultView?.getComputedStyle(element).fontFamily||'';
+  if(/symbol|wingdings|webdings|dingbat|math|icon/i.test(family))element.setAttribute('data-libra-symbol-font','');
+ }
  let lock=doc.getElementById('libra-uniform-spaces') as HTMLStyleElement|null;
  if(!lock){
   lock=doc.createElement('style');
@@ -29,6 +40,15 @@ export function enforceEpubUniformSpacing(doc:Document):void{
   doc.head.appendChild(lock);
  }
  lock.textContent=`
+  html body {font-size:var(--libra-font-size,18px)!important;line-height:var(--libra-line-height,1.4)!important;}
+  html body *:not(svg):not(svg *):not(math):not(math *):not([data-libra-symbol-font]):not([data-libra-symbol-font] *) {
+    font-family:var(--libra-font-family,serif)!important;
+    color:var(--libra-ink,inherit)!important;
+    letter-spacing:var(--libra-letter-spacing,0px)!important;
+  }
+  html body :is(p,div,section,article,blockquote,li,dd,dt,span,em,strong,b,i,a,small) {
+    font-size:inherit!important;line-height:inherit!important;
+  }
   html body, html body :is(p,div,section,article,blockquote,li,dd,dt) {
     text-align:var(--libra-text-align,justify)!important;
     text-align-last:left!important;
@@ -56,8 +76,18 @@ export function enforceEpubUniformSpacing(doc:Document):void{
  // only the authored justification and custom spacing on prose nodes.
  // Mutation does not remove or insert text, preserving EPUB CFI references.
  for(const element of Array.from(doc.body.querySelectorAll<HTMLElement>('[style]'))){
-  if(element.closest('pre,code,math,svg'))continue;
+  if(element.closest('pre,code,math,svg,[data-libra-symbol-font]'))continue;
   const style=element.style;
+  if(/symbol|wingdings|webdings|dingbat|math|icon/i.test(style.fontFamily)){
+   element.setAttribute('data-libra-symbol-font','');continue;
+  }
+  // Override inline !important and font shorthands, while preserving italic
+  // and bold semantics. No source text nodes are replaced (CFIs stay valid).
+  if(style.fontFamily)style.setProperty('font-family','var(--libra-font-family)','important');
+  if(style.fontSize&&!element.matches('h1,h2,h3,h4,h5,h6'))style.setProperty('font-size','inherit','important');
+  if(style.lineHeight)style.setProperty('line-height','inherit','important');
+  if(style.letterSpacing)style.setProperty('letter-spacing','var(--libra-letter-spacing,0px)','important');
+  if(style.color)style.setProperty('color','var(--libra-ink)','important');
   if(element.matches('h1,h2,h3,h4,h5,h6,pre,code,poem,verse'))continue;
   if(style.textAlign)style.setProperty('text-align','var(--libra-text-align,justify)','important');
   if(style.wordSpacing)style.setProperty('word-spacing','var(--libra-word-spacing,0px)','important');
@@ -68,7 +98,11 @@ export const EPUB_OPTIONS={flow:'paginated',spread:'none',gap:0,allowScriptedCon
 export function configureEpub(rend:any,settings:ReaderSettings){
  // Register on both the visible rendition and hidden measuring rendition so
  // page counts always use the same line composition as the user sees.
- rend.hooks.content.register((content:any)=>enforceEpubUniformSpacing(content.document));
+ rend.hooks.content.register(async(content:any)=>{
+  enforceEpubUniformSpacing(content.document);
+  prepareBookMedia(content.document);
+  await settleBookDocument(content.document);
+ });
  rend.themes.default({
   'html,body,body *':{filter:'none!important','backdrop-filter':'none!important','-webkit-backdrop-filter':'none!important','mask-image':'none!important','-webkit-mask-image':'none!important','text-shadow':'none!important'},
   body:{margin:'0',padding:'0','overflow-wrap':'anywhere'},
@@ -86,8 +120,7 @@ export function configureEpub(rend:any,settings:ReaderSettings){
 export async function settleEpub(rend:any){
  const documents=(rend.getContents?.()||[]).map((c:any)=>c.document as Document);
  await Promise.all(documents.map(async(d:Document)=>{
-  await d.fonts?.ready;
-  await Promise.all(Array.from(d.images).map(image=>image.decode?.().catch(()=>{})));
+  await settleBookDocument(d);
  }));
  await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
 }

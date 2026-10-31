@@ -55,6 +55,22 @@ function indexFor(flow:Element):AnchorIndex{
 /** Explicit invalidation when React replaces blocks without remounting flow. */
 export function invalidateAnchorIndex(flow:Element):void{indexes.delete(flow)}
 
+/** Old FB2 paragraphs had one flat text node. Preserve their saved offsets
+ * when emphasis introduces multiple nodes, including saved quote endpoints. */
+export function resolveFB2Point(block:Element,anchor:FB2Anchor):{node:Text;offset:number}|null{
+ const walker=block.ownerDocument.createTreeWalker(block,NodeFilter.SHOW_TEXT);
+ let node:Node|null,index=0,remaining=Math.max(0,anchor.offset),last:Text|null=null;
+ while((node=walker.nextNode())){
+  const text=node as Text;last=text;
+  if(anchor.textNode===0){
+   if(remaining<=text.length)return {node:text,offset:remaining};
+   remaining-=text.length;
+  }else if(index===anchor.textNode)return {node:text,offset:Math.min(text.length,remaining)};
+  index++;
+ }
+ return anchor.textNode===0&&last?{node:last,offset:last.length}:null;
+}
+
 /** The returned metadata is immutable for the lifetime of the current chapter. */
 export function collectTextUnits(flow:Element):Unit[]{return indexFor(flow).units}
 
@@ -116,14 +132,6 @@ export function getAnchorPage(flow:Element,anchor:FB2Anchor,geo:PageGeometry):nu
   if(!rect.width||!rect.height)return null;
   return columnAtOffset(rect.left-flow.getBoundingClientRect().left,geo);
  }
- const walker=document.createTreeWalker(block,NodeFilter.SHOW_TEXT);
- let node:Node|null,number=0;
- while((node=walker.nextNode())){
-  if(number===anchor.textNode){
-   const target=node as Text;
-   return target.length?positionPage(flow,target,anchor.offset,geo):null;
-  }
-  number++;
- }
- return null;
+ const point=resolveFB2Point(block,anchor);
+ return point?.node.length?positionPage(flow,point.node,point.offset,geo):null;
 }

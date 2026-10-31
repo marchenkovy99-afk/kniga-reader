@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { Block, Chapter, ReaderPosition, ReaderSettings, StoredBook } from '../domain';
+import type { Chapter, ReaderPosition, ReaderSettings, StoredBook } from '../domain';
 import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
 import { loadParsedFB2 } from './parsedFB2Cache';
@@ -13,18 +13,10 @@ import { ClippingAlert } from '../components/ClippingAlert';
 import {captureFB2Quote} from '../quoteSelection';
 import {applyFB2QuoteHighlights,clearQuoteHighlights} from '../quoteHighlights';
 
+import {BookBlock} from './BookBlock';
+import {settleBookDocument} from './bookMedia';
+import {IllustrationViewer,type Illustration} from '../components/IllustrationViewer';
 const GAP=24;
-function BookBlock({block,index,forceTableDialog,onMediaLoaded,onOpenTable}:{block:Block;index:number;forceTableDialog:boolean;onMediaLoaded:()=>void;onOpenTable:(rows:string[][])=>void}){
- const oversized=block.kind==='table'&&(forceTableDialog||block.rows.length>9||block.rows.some(row=>row.join(' ').length>300)||block.rows.flat().join(' ').length>1100);
- if(block.kind==='image')return <figure data-block-index={index} className="book-figure">{block.src?<img src={block.src} alt={block.alt} onLoad={onMediaLoaded} onError={onMediaLoaded}/>:<span className="book-image-missing" role="note">{block.alt}</span>}</figure>;
- if(block.kind==='table'){
-  if(oversized)return <button data-block-index={index} className="book-table-launch" onClick={()=>onOpenTable(block.rows)}>Большая таблица · {block.rows.length} строк <span>Открыть полностью ↗</span></button>;
-  return <table data-block-index={index} className="book-table"><tbody>{block.rows.map((row,i)=><tr key={i}>{row.map((cell,j)=><td key={j}>{cell}</td>)}</tr>)}</tbody></table>;
- }
- if(block.kind==='heading')return <h2 data-block-index={index} className="book-heading">{block.text}</h2>;
- if(block.kind==='verse')return <div data-block-index={index} className="book-verse">{block.text}</div>;
- return <p data-block-index={index} className="book-paragraph">{block.text}</p>;
-}
 /** Measure one chapter per frame using exactly the visible page's typography.
  * This probe is inert, offscreen and never part of the accessibility tree. */
 function ChapterMeasure({chapter,width,height,style,onCount}:{chapter:Chapter;width:number;height:number;style:React.CSSProperties;onCount:(count:number)=>void}){
@@ -43,8 +35,7 @@ function ChapterMeasure({chapter,width,height,style,onCount}:{chapter:Chapter;wi
    onCount(measureRenderedPages(el,width,GAP,stride));
   };
   // Wait for intrinsic image sizes before accepting the page count.
-  const images=Array.from(el.querySelectorAll('img'));
-  void Promise.all([document.fonts.ready,...images.map(img=>img.decode().catch(()=>{}))])
+  void settleBookDocument(document,el)
    .then(()=>{if(active)requestAnimationFrame(measure)});
   return ()=>{active=false};
  },[chapter,width,height,style,tables,onCount]);
@@ -58,6 +49,9 @@ type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings
 export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapters,setChapters]=useState<Chapter[]>([]);
  const [quotes,setQuotes]=useState(book.quotes||[]);
+ const [image,setImage]=useState<Illustration|null>(null);
+ const [notes,setNotes]=useState<Record<string,string>>({});
+ const [note,setNote]=useState<string|null>(null);
  const [error,setError]=useState('');
  const [clipIssue,setClipIssue]=useState<ClipIssue|null>(null);
  const [retryVersion,setRetryVersion]=useState(0);
@@ -123,6 +117,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     setPage(0);
    }
    setChapter(validChapter);
+   setNotes(result.notes||{});
    setChapters(result.chapters);
   }).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть FB2')});
   return ()=>{cancelled=true};
@@ -204,8 +199,9 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     return counts[chapter]===count?old:{key,counts:{...counts,[chapter]:count}};
    });
   };
-  const frame=requestAnimationFrame(compute);
-  void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
+  // Do not commit or save a provisional page before image dimensions exist.
+  let frame=0;
+  void settleBookDocument(document,flow.current).then(()=>{if(active)frame=requestAnimationFrame(compute)});
   return ()=>{active=false;cancelAnimationFrame(frame)};
  },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout,clipIssue,retryVersion]);
  const ready=Boolean(!clipIssue&&chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
@@ -376,7 +372,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   chapterTitle={actualChapter?.title}
   caption={clipIssue?'Глава с прокруткой':ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters.map((item,i)=>({title:item.title,page:chapterPages[i]}))} currentChapter={chapter}
-   quoteSelection={()=>captureFB2Quote(flow.current,position)} onQuotesChange={setQuotes} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable)}>
+   quoteSelection={()=>captureFB2Quote(flow.current,position)} onQuotesChange={setQuotes} onChapter={index=>switchChapter(index)} interactiveContent modalContentOpen={Boolean(expandedTable||image||note)}>
   {clipIssue&&<ClippingAlert issue={clipIssue} onRetry={()=>{if(flow.current)invalidateTextColumnAudit(flow.current);setMeasuredKey('');setClipIssue(null);setRetryVersion(v=>v+1)}}/>}
   {error?<div className="reader-message">{error}</div>:<div className="page-region" style={{paddingLeft:settings.margin,paddingRight:settings.marginRight,
    top:`calc(var(--reader-safe-top) + var(--reader-top-clearance, 8px) + var(--clipping-alert-height, 0px) + ${settings.verticalMargin}px)`,
@@ -386,11 +382,15 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
      lang="ru" style={{width:geometry.width,height:geometry.height,columnWidth:geometry.width,columnGap:GAP,
       visibility:ready||Boolean(clipIssue)?'visible':'hidden',
       transform:'translateX(-'+(page*(stride||geometry.width+GAP))+'px)'}}>
-     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable}/>)}
+     {actualChapter.blocks.map((block,index)=><BookBlock key={index} block={block} index={index} forceTableDialog={!clipIssue&&nonfittingTables.has(index)} onMediaLoaded={()=>setMediaVersion(v=>v+1)} onOpenTable={setExpandedTable} onOpenImage={setImage} onNote={id=>setNote(notes[id]||'Примечание отсутствует в файле книги.')}/>)}
     </div>:<div className="book-loading">Открываем книгу…</div>}
    </div>
   </div>}
   {probeChapter>=0&&<ChapterMeasure key={indexKey+':'+probeChapter} chapter={chapters[probeChapter]} width={geometry.width} height={geometry.height} style={style} onCount={count=>acceptCount(probeChapter,count)}/>}
+  {image&&<IllustrationViewer image={image} onClose={()=>setImage(null)}/>}
+  {note&&<section className="book-note-dialog" role="dialog" aria-modal="true" aria-label="Примечание" onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();setNote(null)}}}>
+   <header><strong>Примечание</strong><button type="button" autoFocus onClick={()=>setNote(null)}>Закрыть примечание</button></header><p>{note}</p>
+  </section>}
   {expandedTable&&<div className="book-table-overlay" role="presentation">
    <section className="book-table-panel" role="dialog" aria-modal="true" aria-label="Таблица книги">
     <header><strong>Таблица · {expandedTable.length} строк</strong><button onClick={()=>setExpandedTable(null)} aria-label="Закрыть таблицу">Готово</button></header>

@@ -1,5 +1,5 @@
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
-import type {ReaderSettings,StoredBook} from '../domain';
+import type {ReaderSettings,StoredBook,ReaderPosition} from '../domain';
 import {savePosition} from '../storage';
 import {ReadingControls} from '../components/ReadingControls';
 import {ClippingAlert} from '../components/ClippingAlert';
@@ -8,7 +8,10 @@ import {applyEpubAppearance,applyEpubInk} from './epubAppearance';
 import {chapterForHref,flattenEpubToc,epubTocStartPages,type EpubChapter} from './epubNavigation';
 import {captureEpubQuote} from '../quoteSelection';
 import {applyEpubQuoteHighlights} from '../quoteHighlights';
-import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub} from './epubLayout';
+import {IllustrationViewer,type Illustration} from '../components/IllustrationViewer';
+import {illustrationFromElement,isIllustrationActivation} from './bookMedia';
+import {waitForEpub} from './epubLifecycle';
+import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub,restoreEpubPhysicalPage} from './epubLayout';
 
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
 type View={index:number;page:number;total:number;cfi:string;href:string};
@@ -17,10 +20,13 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const host=useRef<HTMLDivElement>(null),probeHost=useRef<HTMLDivElement>(null);
  const epub=useRef<any>(null),rendition=useRef<any>(null),live=useRef(false),busy=useRef(false);
  const lastCfi=useRef(book.position?.cfi||''),settingsRef=useRef(settings);settingsRef.current=settings;
+ const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  const queue=useRef<Promise<unknown>>(Promise.resolve());
+ const probeTasks=useRef(new Set<Promise<void>>());
  const settledKey=useRef('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
  const [quotes,setQuotes]=useState(book.quotes||[]);
+ const [image,setImage]=useState<Illustration|null>(null);
  const quotesRef=useRef(quotes);quotesRef.current=quotes;
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [chapters,setChapters]=useState<EpubChapter[]>([]),[spine,setSpine]=useState<Section[]>([]);
@@ -61,7 +67,9 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   const before=order.filter(s=>s.index<selected.index).reduce((n,s)=>n+(cached.values[s.index]||0),0);
   const total=order.reduce((n,s)=>n+(cached.values[s.index]||0),0);
   const fraction=indexed?Math.min(1,(before+selected.page)/Math.max(1,total)):(book.position?.fraction||0);
-  void savePosition(book.id,{chapter:selected.index,page:selected.page-1,fraction,cfi:selected.cfi,updatedAt:Date.now()}).catch(console.error);
+  const position:ReaderPosition={chapter:selected.index,page:selected.page-1,fraction,cfi:selected.cfi,layout:safeRef.current?undefined:keyRef.current,updatedAt:Date.now()};
+  lastPosition.current=position;
+  void savePosition(book.id,position).catch(console.error);
  };
  auditRef.current=()=>{
   if(safeRef.current||!host.current||!rendition.current||busy.current||geometry.width<1||geometry.height<1)return;
@@ -88,8 +96,11 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   async function mount(){
    try{
     const {default:ePub}=await import('epubjs');if(cancelled||!host.current)return;
-    ownBook=ePub(await book.file.arrayBuffer());epub.current=ownBook;
+    const bytes=await book.file.arrayBuffer();if(cancelled)return;
+    ownBook=ePub(bytes);
+    await waitForEpub(ownBook);
     if(cancelled)return;
+    epub.current=ownBook;
     ownRend=ownBook.renderTo(host.current,{...EPUB_OPTIONS,width:'100%',height:'100%'});rendition.current=ownRend;
     configureEpub(ownRend,settingsRef.current);
     ownRend.hooks.content.register((content:any)=>{
@@ -98,11 +109,21 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
      });
     ownRend.on('selected',announceSelection);
     ownRend.on('rendered',()=>{
+      if(cancelled)return;
       applyEpubQuoteHighlights(ownRend.getContents?.()||[],quotesRef.current,settingsRef.current.theme);
      for(const c of ownRend.getContents?.()||[]){
        const doc=c.document as Document|undefined;
        if(doc&&!selectionDocs.has(doc)){
         selectionDocs.add(doc);
+        const openImage=(event:Event)=>{
+         if(!isIllustrationActivation(event))return;
+         const target=event.target as Element|null;
+         const selected=illustrationFromElement(target?.nodeType===1?target:null);
+         if(selected){event.preventDefault();event.stopPropagation();setImage(selected)}
+        };
+        for(const media of Array.from(doc.querySelectorAll('img,svg'))){media.setAttribute('tabindex','0');media.setAttribute('role','button');media.setAttribute('aria-label','Открыть иллюстрацию')}
+        doc.addEventListener('click',openImage,true);doc.addEventListener('keydown',openImage,true);
+        observers.push(()=>{doc.removeEventListener('click',openImage,true);doc.removeEventListener('keydown',openImage,true)});
         for(const event of ['selectionchange','pointerup','touchend'])doc.addEventListener(event,announceSelection);
         observers.push(()=>{for(const event of ['selectionchange','pointerup','touchend'])doc.removeEventListener(event,announceSelection)});
        }
@@ -117,12 +138,26 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
     const toc=flattenEpubToc(navigation?.toc||[]);setChapters(toc);
     const sections=ownBook.spine.spineItems.map((s:any)=>({index:s.index,href:s.href}));
     spineRef.current=sections;setSpine(sections);
+    busy.current=true;
     await ownRend.display(lastCfi.current||undefined);if(cancelled)return;
-    await settleEpub(ownRend);commitRef.current(ownRend.currentLocation());setLoaded(true);
+    await settleEpub(ownRend);
+    const opened=physicalPage(ownRend.currentLocation());
+    const savedPage=restoreEpubPhysicalPage(book.position,keyRef.current,opened.index,opened.total);
+    if(savedPage!==null){ownRend.moveTo({left:savedPage*ownRend.layout().delta,top:0});ownRend.reportLocation();await settleEpub(ownRend)}
+    if(cancelled)return;
+    settledKey.current=keyRef.current;busy.current=false;
+    commitRef.current(ownRend.currentLocation());setLoaded(true);
    }catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Не удалось открыть EPUB');}
   }
-  void mount();
-  return()=>{cancelled=true;live.current=false;observers.forEach(stop=>stop());rendition.current=null;epub.current=null;try{ownRend?.destroy()}catch{}try{ownBook?.destroy()}catch{}};
+  const mounted=mount();
+  return()=>{
+   cancelled=true;live.current=false;observers.forEach(stop=>stop());rendition.current=null;epub.current=null;
+   // epub.js queues startup/display work. Destroying its Book first makes
+   // those callbacks dereference cleared package/spine/locations objects.
+   void Promise.allSettled([mounted,queue.current,...probeTasks.current]).then(()=>{
+    try{ownRend?.destroy()}catch{}try{ownBook?.destroy()}catch{}
+   });
+  };
  },[book.id,book.file]);
  useEffect(()=>{
   if(loaded&&rendition.current)applyEpubInk(rendition.current.themes,settings);
@@ -133,11 +168,15 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  useEffect(()=>{
   const rend=rendition.current;if(!rend||!loaded||geometry.width<1||geometry.height<1)return;
   const restore=lastCfi.current;settledKey.current='';const measuringKey=layoutKey;
+  const savedPosition=lastPosition.current;
   enqueue(async()=>{
    applyEpubAppearance(rend.themes,settingsRef.current);
    rend.clear();rend.resize(geometry.width,geometry.height,restore);
    await rend.display(restore||undefined);
    await settleEpub(rend);
+   const current=physicalPage(rend.currentLocation());
+   const savedPage=restoreEpubPhysicalPage(savedPosition,measuringKey,current.index,current.total);
+   if(savedPage!==null){rend.moveTo({left:savedPage*rend.layout().delta,top:0});rend.reportLocation();await settleEpub(rend)}
    for(const c of rend.getContents?.()||[])if(c.document?.body)invalidateTextColumnAudit(c.document.body);
    settledKey.current=measuringKey;
   });
@@ -179,7 +218,9 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
     }
    }catch(e){if(active)console.error('Не удалось пересчитать страницы EPUB',e);}
   }
-  void measure();return()=>{active=false;try{probe?.destroy()}catch{}};
+  const measuring=measure();probeTasks.current.add(measuring);
+  void measuring.finally(()=>probeTasks.current.delete(measuring));
+  return()=>{active=false;void measuring.finally(()=>{try{probe?.destroy()}catch{}})};
  },[loaded,layoutKey,spine,safeMode,chapters]);
  useEffect(()=>{
   const r=rendition.current;if(!r||!loaded||(!safeMode&&r.settings.flow==='paginated'))return;
@@ -194,8 +235,8 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const globalPage=indexed?spine.filter(s=>s.index<view.index).reduce((n,s)=>n+values[s.index],0)+view.page:0;
  const progress=indexed?(globalPage>=totalPages?100:Math.min(99,Math.round(globalPage/Math.max(1,totalPages)*100))):Math.round((book.position?.fraction||0)*100);
  useEffect(()=>{
-  if(!indexed||!view.cfi)return;
-  void savePosition(book.id,{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}).catch(console.error);
+  if(!indexed||!view.cfi||busy.current||settledKey.current!==layoutKey)return;
+  void savePosition(book.id,{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,layout:safeMode?undefined:layoutKey,updatedAt:Date.now()}).catch(console.error);
  },[indexed,globalPage,totalPages,view.cfi]);
  const go=(index:number,targetPage:number)=>enqueue(async()=>{
   const r=rendition.current,section=spineRef.current.find(s=>s.index===index);if(!r||!section)return;
@@ -217,11 +258,20 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const retryPages=()=>{setIssue(null);setSafeMode(false);setRetry(v=>v+1)};
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;
  return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={onBack}
+  modalContentOpen={Boolean(image)} onContentTap={(x,y)=>{
+   for(const iframe of Array.from(host.current?.querySelectorAll('iframe')||[])){
+    const rect=iframe.getBoundingClientRect(),doc=iframe.contentDocument;
+    if(!doc||x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)continue;
+    const selected=illustrationFromElement(doc.elementFromPoint(x-rect.left,y-rect.top));
+    if(selected){setImage(selected);return true;}
+   }
+   return false;
+  }}
   onNext={()=>turn(1)} onPrevious={()=>turn(-1)} safeMode={safeMode}
   chapters={chapters.length?chapters.map((entry,i)=>({...entry,page:chapterPageNumbers[i]})):undefined} currentChapter={currentChapter}
    onQuotesChange={setQuotes} quoteSelection={()=>captureEpubQuote(rendition.current?.getContents?.()||[],{chapter:view.index,page:view.page-1,fraction:progress/100,cfi:view.cfi,updatedAt:Date.now()})}
   onChapter={index=>{const item=chapters[index];if(item)enqueue(()=>rendition.current.display(item.href));}}
-  position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}}
+  position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,layout:safeMode?undefined:layoutKey,updatedAt:Date.now()}}
   progress={progress} caption={safeMode?'Режим прокрутки':`Страница ${globalPage||view.page} из ${totalPages||view.total}`}
   pageNumber={indexed&&!safeMode?globalPage:undefined} totalPages={indexed&&!safeMode?totalPages:undefined}
   chapterTitle={chapters[currentChapter]?.title}
@@ -232,5 +282,6 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   {issue&&<ClippingAlert issue={issue} onRetry={retryPages}/>}
   {error?<div className="reader-message">{error}</div>:<div className="epub-mount" ref={host} style={frameStyle}/>}
   <div className="epub-page-probe" ref={probeHost} aria-hidden="true" inert style={{width:geometry.width,height:geometry.height}}/>
+  {image&&<IllustrationViewer image={image} onClose={()=>setImage(null)}/>}
  </ReadingControls>;
 }

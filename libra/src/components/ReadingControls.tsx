@@ -14,8 +14,9 @@ type Props={
   chapters?:{title:string;page?:number}[]; currentChapter?:number; onChapter?:(index:number)=>void;
   quoteSelection?:()=>QuoteCapture|null; onQuotesChange?:(quotes:SavedQuote[])=>void;
   children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
+  onContentTap?:(x:number,y:number)=>boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection,onQuotesChange}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection,onQuotesChange,onContentTap}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
@@ -118,7 +119,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
          window.setTimeout(()=>{ignoreClick.current=false},350);
        }
      }}
-     onClick={e=>{if(ignoreClick.current)return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
+     onClick={e=>{if(ignoreClick.current||modalContentOpen)return;if(!sheet&&onContentTap?.(e.clientX,e.clientY))return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
    <button className="reading-status" aria-label="Показать управление чтением" aria-expanded={panels} onClick={()=>setPanels(v=>!v)} disabled={modalContentOpen}>
     <span>{pageNumber&&totalPages?`${pageNumber} / ${totalPages}`:caption}</span><span>{progress}%</span>
     <i aria-hidden="true"><i style={{width:progress+'%'}}/></i>

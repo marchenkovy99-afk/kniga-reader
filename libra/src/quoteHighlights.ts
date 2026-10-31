@@ -1,4 +1,5 @@
 import type {FB2Anchor} from './anchors';
+import {resolveFB2Point} from './anchors';
 import type {SavedQuote,ThemeName} from './domain';
 
 /** Native CSS Highlights paint ink without altering the book DOM or its pagination. */
@@ -23,15 +24,7 @@ function fb2Point(flow:HTMLElement,anchor:FB2Anchor):{node:Text,offset:number}|n
  const block=Array.from(flow.querySelectorAll<HTMLElement>('[data-block-index]'))
   .find(element=>Number(element.dataset.blockIndex)===anchor.block);
  if(!block)return null;
- const walker=flow.ownerDocument.createTreeWalker(block,NodeFilter.SHOW_TEXT);
- let node:Node|null,count=0;
- while((node=walker.nextNode())){
-  if(count++===anchor.textNode){
-   const text=node as Text;
-   return {node:text,offset:Math.min(text.length,Math.max(0,anchor.offset))};
-  }
- }
- return null;
+ return resolveFB2Point(block,anchor);
 }
 function restoreFB2Range(flow:HTMLElement,quote:SavedQuote):Range|null{
  if(!quote.position.anchor)return null;
