@@ -62,7 +62,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
     </div>
     {cloud.hidden&&!cloud.session&&<p className="setting-hint">Книги аккаунта сохранены на устройстве. Войдите в него в настройках, чтобы открыть библиотеку.</p>}
     <section className="all-books" aria-label="Мои книги">
-     <div className="library-section-heading"><h2>Мои книги <small>{shown.length}</small></h2></div>
+     <div className="library-section-heading"><h2>Мои книги</h2></div>
      {featured?<div className="reference-feature book-tile">
       <div className="reference-feature-top">
        <button type="button" className="continue-card book-tile-open" onClick={()=>open(featured)}>
