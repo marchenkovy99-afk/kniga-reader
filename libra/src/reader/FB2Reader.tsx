@@ -106,8 +106,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  };
  const previous=useRef(false);
  const returnToChapterEnd=useRef(false);
- const chapterRequest=useRef(0);
- const pendingChapter=useRef<number|null>(null);
+ const chapterCommit=useRef<{chapter:number;requestedBookPage?:number}|null>(null);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  // The initial saved physical page wins over a premature Safari reflow.
@@ -203,13 +202,26 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     anchored??(saved?clampPage(saved.page,count):0));
    requestedPage.current=undefined;
    restoringSavedPage.current=false;
-   if(previous.current||explicitPage!==undefined||firstRestore){
-    lastPosition.current={...(saved||lastPosition.current),chapter,
-     page:clampPage(selected,count),
-     fraction:lastPosition.current?.fraction||0,layoutKey,
-     updatedAt:nextPositionTime()};
-    const lastAnchor=getPageAnchor(current,clampPage(selected,count),geo);
-    if(lastAnchor)anchorRef.current=lastAnchor;
+   const navigation=chapterCommit.current;
+   if(navigation?.chapter===chapter){
+    // Only explicit navigation can persist progress; reflow and hydration cannot.
+    const indexKey=layoutKey.slice(layoutKey.indexOf(':')+1);
+    const cachedCounts=pageIndex.key===indexKey?pageIndex.counts:{};
+    const allCounts=chapters.map((_,i)=>i===chapter?count:cachedCounts[i]||0);
+    const indexed=allCounts.every(n=>n>0);
+    const anchor=getPageAnchor(current,clampPage(selected,count),geo);
+    if(anchor)anchorRef.current=anchor;
+    const position:ReaderPosition={
+     chapter,page:clampPage(selected,count),
+     fraction:indexed?bookPageNumber(allCounts,chapter,selected)/allCounts.reduce((sum,n)=>sum+n,0):
+      progressOf(chapter,selected,count,chapters.length)/100,
+     anchor:anchorRef.current,layoutKey,updatedAt:nextPositionTime(),
+     globalPage:navigation.requestedBookPage??(indexed?bookPageNumber(allCounts,chapter,selected):undefined),
+     pageCounts:indexed?allCounts:lastPosition.current?.pageCounts
+    };
+    chapterCommit.current=null;
+    lastPosition.current=position;
+    void savePosition(book.id,position).catch(console.error);
    }
    previous.current=false;
    setPages(count);setPage(clampPage(selected,count));setMeasuredKey(layoutKey);
@@ -221,8 +233,14 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     return counts[chapter]===count?old:{key,counts:{...counts,[chapter]:count}};
    });
   };
-  const frame=requestAnimationFrame(compute);
-  void document.fonts.ready.then(()=>{if(active)requestAnimationFrame(compute)});
+  // Initial WebKit layout may still be using fallback fonts or undecoded images.
+  // Do not consume a restored checkpoint in that provisional frame.
+  let frame=0;
+  const images=Array.from(flow.current.querySelectorAll('img'));
+  void Promise.all([document.fonts.ready,...images.map(img=>img.decode().catch(()=>{}))])
+   .then(()=>{if(!active)return;frame=requestAnimationFrame(()=>{
+    if(!active)return;frame=requestAnimationFrame(compute);
+   })});
   return ()=>{active=false;cancelAnimationFrame(frame)};
  },[chapters,chapter,geometry.width,geometry.height,layoutKey,mediaVersion,tableLayout,clipIssue,retryVersion]);
  const ready=Boolean(!clipIssue&&chapters[chapter]&&geometry.width>0&&geometry.height>0&&measuredKey===layoutKey);
@@ -283,30 +301,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   return ()=>cancelAnimationFrame(frame);
  },[clipIssue,chapter]);
 
- useEffect(()=>{
-  if(!ready||clipIssue||!flow.current||(pendingChapter.current!==null&&pendingChapter.current!==chapter))return;
-  // Don't commit the previous render after the tap already checkpointed
-  // the next page synchronously.
-  if(lastPosition.current?.chapter===chapter&&lastPosition.current.page!==page&&
-     lastPosition.current.layoutKey===layoutKey)return;
-  const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
-  if(anchor)anchorRef.current=anchor;
-  const measuredCounts=pageIndex.key===layoutKey.slice(layoutKey.indexOf(':')+1)?pageIndex.counts:{};
-  const allCounts=chapters.map((_,i)=>i===chapter?pages:measuredCounts[i]||0);
-  const fullyIndexed=allCounts.every(n=>n>0);
-  const fraction=fullyIndexed?bookPageNumber(allCounts,chapter,page)/allCounts.reduce((a,b)=>a+b,0):progressOf(chapter,page,pages,chapters.length)/100;
-  const previous=lastPosition.current;
-  const stableGlobal=fullyIndexed?stableBookPageNumber(previous,allCounts,chapter,page):
-   previous?.chapter===chapter&&previous.globalPage?
-    previous.globalPage+page-previous.page:undefined;
-  const position:ReaderPosition={chapter,page,fraction,
-   anchor:anchorRef.current,layoutKey,updatedAt:nextPositionTime(),
-   globalPage:stableGlobal,
-   pageCounts:fullyIndexed?allCounts:previous?.pageCounts};
-  lastPosition.current=position;
-  void savePosition(book.id,position).catch(console.error);
-  // Background chapter indexing is not navigation: don't persist it as one.
- },[ready,book.id,chapter,page,pages,geometry.width,layoutKey,stride]);
+ // Durable progress is written by page turns and measured chapter navigation
+ // only. Background indexing, resizes and initial restoration never write.
  const setReaderPage=(target:number,requestedBookPage?:number)=>{
   if(!ready||!flow.current)return;
   const safe=clampPage(target,pages);
@@ -329,32 +325,18 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   void savePosition(book.id,position).catch(console.error);
   setPage(safe);
  };
- const switchChapter=async(nextChapter:number,toLast=false,requestedBookPage?:number)=>{
+ const switchChapter=(nextChapter:number,toLast=false,requestedBookPage?:number)=>{
   if(!chapters[nextChapter])return;
-  // Capture the outgoing page before any state changes or asynchronous
-  // IndexedDB work. Never reveal the incoming chapter until measured.
+  // Until the new page is rendered, retain the outgoing confirmed checkpoint.
   freezeVisiblePage();
   setReflowing(true);
-  const request=++chapterRequest.current;
-  pendingChapter.current=nextChapter;
   const key=layoutKey.slice(layoutKey.indexOf(':')+1);
   const cached=pageIndex.key===key?pageIndex.counts[nextChapter]:undefined;
   const target=requestedPage.current??(toLast?Math.max(0,(cached||1)-1):0);
-  const pending:ReaderPosition={chapter:nextChapter,page:target,
-   fraction:lastPosition.current?.fraction||0,updatedAt:nextPositionTime(),
-   globalPage:requestedBookPage};
-  // Commit the selected chapter before exposing its text. A reload/iOS
-  // suspension between rendering and column measurement must reopen here.
-  try{await savePosition(book.id,pending)}catch(e){console.error(e)}
-  if(request!==chapterRequest.current)return;
-  lastPosition.current=pending;
+  chapterCommit.current={chapter:nextChapter,requestedBookPage};
   previous.current=toLast;
   returnToChapterEnd.current=toLast;
   anchorRef.current=undefined;
-  // Compute the provisional chapter page BEFORE rendering its columns.
-  // Going backwards must never expose page one of the previous chapter
-  // before jumping to the cached final page.
-  setReflowing(true);
   setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);
   setPage(target);setPages(cached||1);setMeasuredKey('');
  };
