@@ -76,7 +76,7 @@ describe('iOS layout reflow preserves the last confirmed page',()=>{
 
 describe('standalone iPhone checkpoint is independent of repagination',()=>{
  it('migrates a 289-page legacy checkpoint using the original chapter counts',()=>{
-  const old={chapter:2,page:8,updatedAt:11,pageCounts:[150,130,22]};
+  const old:{chapter:number;page:number;updatedAt:number;globalPage?:number;pageCounts:number[]}={chapter:2,page:8,updatedAt:11,pageCounts:[150,130,22]};
   const normalized=restoreLogicalFB2Position(old);
   expect(normalized?.globalPage).toBe(289);
   expect(stableBookPageNumber(normalized,[149,129,22],2,8)).toBe(289);
