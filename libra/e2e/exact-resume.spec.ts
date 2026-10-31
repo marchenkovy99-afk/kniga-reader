@@ -34,6 +34,17 @@ test('iPhone: reopen exact book-wide page after app restart and return to librar
  });
  expect(before?.globalPage).toBe(target);
  const bookChapter=before!.chapter,chapterPage=before!.page;
+ const bookTimestamp=before!.updatedAt;
+ const visibleAnchor=async()=>page.evaluate(async()=>{
+  const {getPageAnchor}=await import('/src/anchors.ts');
+  const {listBooks}=await import('/src/storage.ts');
+  const current=(await listBooks())[0].position!;
+  const root=document.querySelector<HTMLElement>('.book-flow')!;
+  return getPageAnchor(root,current.page,{width:root.clientWidth,gap:24,
+   stride:Number(root.dataset.columnStride)});
+ });
+ const textBefore=await visibleAnchor();
+ expect(textBefore).toBeTruthy();
  // Fully closing and reopening the standalone browser window is represented
  // by a hard page reload with IndexedDB and localStorage retained.
  await page.reload();
@@ -47,10 +58,16 @@ test('iPhone: reopen exact book-wide page after app restart and return to librar
  expect(after?.globalPage).toBe(target);
  expect(after?.chapter).toBe(bookChapter);
  expect(after?.page).toBe(chapterPage);
+ expect(after?.updatedAt).toBe(bookTimestamp);
+ expect(await visibleAnchor()).toEqual(textBefore);
+ await page.waitForTimeout(500);
+ expect((await page.evaluate(async()=>(await (await import('/src/storage.ts')).listBooks())[0].position))?.updatedAt).toBe(bookTimestamp);
  // Also verify the explicit library/back path, which clears the active
  // session but must retain the per-book checkpoint.
  await page.locator('.reading-zones').click({position:{x:170,y:220}});
  await page.getByRole('button',{name:'В библиотеку'}).click();
  await page.locator('.continue-card').click();
  await expect(status).toContainText(target+' /', {timeout:60000});
+ expect((await page.evaluate(async()=>(await (await import('/src/storage.ts')).listBooks())[0].position))?.updatedAt).toBe(bookTimestamp);
+ expect(await visibleAnchor()).toEqual(textBefore);
 });
