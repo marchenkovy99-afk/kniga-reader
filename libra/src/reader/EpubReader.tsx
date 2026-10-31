@@ -20,6 +20,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const lastConfirmed=useRef<ReaderPosition|undefined>(book.position);
  const nextPositionTime=()=>Math.max(Date.now(),(lastConfirmed.current?.updatedAt??0)+1);
  const queue=useRef<Promise<unknown>>(Promise.resolve());
+ const userNavigationPending=useRef(false);
  const settledKey=useRef('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
  const [geometry,setGeometry]=useState({width:0,height:0});
@@ -36,11 +37,21 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const keyRef=useRef(layoutKey);keyRef.current=layoutKey;
  const commitRef=useRef<(loc:any,confirmed?:boolean)=>void>(()=>{}),auditRef=useRef<()=>void>(()=>{});
  const enqueue=(task:()=>Promise<unknown>|void,confirmedNavigation=false)=>{
+  if(confirmedNavigation)userNavigationPending.current=true;
   queue.current=queue.current.catch(()=>{}).then(async()=>{
    if(!live.current||!rendition.current)return;
    busy.current=true;
-   try{await task();if(live.current){await settleEpub(rendition.current);busy.current=false;commitRef.current(rendition.current.currentLocation(),confirmedNavigation);auditRef.current();}}
-   finally{busy.current=false;}
+   try{
+    await task();
+    if(!live.current)return;
+    // Durable checkpoint before settling WebKit iframes / fonts.
+    if(confirmedNavigation)commitRef.current(rendition.current.currentLocation(),true);
+    await settleEpub(rendition.current);
+    if(!live.current)return;
+    busy.current=false;
+    commitRef.current(rendition.current.currentLocation(),confirmedNavigation);
+    auditRef.current();
+   }finally{busy.current=false;if(confirmedNavigation)userNavigationPending.current=false;}
   }).catch(e=>{if(live.current)setError(e instanceof Error?e.message:String(e))});
  };
  commitRef.current=(location:any,confirmedNavigation=false)=>{
@@ -62,6 +73,7 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   const total=order.reduce((n,s)=>n+(cached.values[s.index]||0),0);
   const fraction=indexed?Math.min(1,(before+selected.page)/Math.max(1,total)):(book.position?.fraction||0);
   if(confirmedNavigation){
+   if(lastConfirmed.current?.cfi===selected.cfi)return;
    const position:ReaderPosition={chapter:selected.index,page:selected.page-1,
     fraction,cfi:selected.cfi,updatedAt:nextPositionTime()};
    lastConfirmed.current=position;
@@ -212,9 +224,31 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   }
   if(direction>0)await r.next();else await r.prev();
  },true);
+ // Finish in-flight EPUB turns before unmounting, including fast exit taps.
+ const leaveBook=()=>{
+  if(!userNavigationPending.current){onBack();return;}
+  void queue.current.finally(()=>{
+   if(live.current&&rendition.current)
+    commitRef.current(rendition.current.currentLocation(),true);
+   onBack();
+  });
+ };
+ const flushRef=useRef<()=>void>(()=>{});
+ flushRef.current=()=>{
+  if(userNavigationPending.current&&live.current&&rendition.current)
+   commitRef.current(rendition.current.currentLocation(),true);
+ };
+ useEffect(()=>{
+  const onHidden=()=>{if(document.visibilityState==='hidden')flushRef.current()};
+  const onPageHide=()=>flushRef.current();
+  document.addEventListener('visibilitychange',onHidden);
+  window.addEventListener('pagehide',onPageHide);
+  return ()=>{document.removeEventListener('visibilitychange',onHidden);
+   window.removeEventListener('pagehide',onPageHide)};
+ },[]);
  const retryPages=()=>{setIssue(null);setSafeMode(false);setRetry(v=>v+1)};
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;
- return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={onBack}
+ return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={leaveBook}
   onNext={()=>turn(1)} onPrevious={()=>turn(-1)} safeMode={safeMode}
   chapters={chapters.length?chapters.map((entry,i)=>({...entry,page:chapterPageNumbers[i]})):undefined} currentChapter={currentChapter}
    quoteSelection={()=>captureEpubQuote(rendition.current?.getContents?.()||[],{chapter:view.index,page:view.page-1,fraction:progress/100,cfi:view.cfi,updatedAt:Date.now()})}
