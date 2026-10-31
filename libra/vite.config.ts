@@ -5,5 +5,6 @@ export default defineConfig({
   plugins: [react()],
   server: {allowedHosts:['terminal.local']},
   base: process.env.LIBRA_BASE_PATH || '/',
+  define: {__LIBRA_BUILD__: JSON.stringify((process.env.GITHUB_SHA || 'local').slice(0,8))},
   build: { target: 'es2022', outDir: 'dist' }
 });
