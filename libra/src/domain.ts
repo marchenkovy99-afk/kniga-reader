@@ -43,7 +43,7 @@ export type ReaderPosition = {
   /** The exact book-wide number shown when the user left this page. */
   globalPage?: number;
 };
-export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };
+export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string; /** Sanitized FB2 inline tags only. */ html?: string };
 export type ImageBlock = { kind: 'image'; src: string; alt: string };
 export type TableBlock = { kind: 'table'; rows: string[][] };
 export type Block = TextBlock | ImageBlock | TableBlock;
