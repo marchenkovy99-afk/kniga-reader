@@ -13,6 +13,7 @@ export function applyEpubAppearance(themes:EpubThemes,settings:ReaderSettings):v
   'font-weight':String(settings.fontWeight),
   'line-height':String(settings.lineHeight),
   'font-family':fontStack(settings.fontFamily),
+  '--libra-font':fontStack(settings.fontFamily),
   'text-align':settings.align,
   '--libra-text-align':settings.align,
   '--libra-hyphens':settings.hyphenation,
