@@ -7,7 +7,7 @@ import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, p
 import { savePosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack,readingInk } from '../readerSettings';
-import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber } from '../bookPagination';
+import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position } from '../bookPagination';
 import { inspectTextColumns, inspectCurrentColumn, invalidateTextColumnAudit, observeTextColumnChanges, type ClipIssue } from '../clippingGuard';
 import { ClippingAlert } from '../components/ClippingAlert';
 import {captureFB2Quote} from '../quoteSelection';
@@ -112,6 +112,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const lastPosition=useRef<ReaderPosition|undefined>(book.position);
  // The initial saved physical page wins over a premature Safari reflow.
  const restoringSavedPage=useRef(Boolean(book.position));
+ // Rebase only the column index after an asynchronous WebKit reflow.
+ const restoreByAnchor=useRef(false);
  const nextPositionTime=()=>Math.max(Date.now(),(lastPosition.current?.updatedAt??0)+1);
  useEffect(()=>{
   let cancelled=false;
@@ -192,22 +194,26 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    // until a precise source anchor is available.
    const explicitPage=requestedPage.current;
    const saved=lastPosition.current?.chapter===chapter?lastPosition.current:undefined;
-   // Identical geometry and typography must restore the exact physical page.
-   // Only translate the text anchor when the layout has actually changed.
+   // Restore the source text if Safari's column count has changed.
+   // The absolute page number must NOT fall by the reflow difference.
    const firstRestore=restoringSavedPage.current&&Boolean(saved);
-   // Restore the exact physical page even when viewport geometry settles
-   // differently during the first frames of an iOS home-screen launch.
+   const anchorPreferred=Boolean(saved&&(restoreByAnchor.current||
+    saved.layoutKey!==layoutKey||saved.page>=count));
    const selected=explicitPage??(previous.current?count-1:
-    firstRestore?clampPage(saved!.page,count):
-    saved?.layoutKey===layoutKey?clampPage(saved.page,count):
-    anchored??(saved?clampPage(saved.page,count):0));
+    restoredFB2Page(saved,layoutKey,count,anchored,anchorPreferred));
    traceReading('fb2.layout',{id:book.id,chapter,savedPage:saved?.page,savedGlobal:saved?.globalPage,
     selectedPage:selected,anchorPage:anchored??undefined,firstRestore,explicitPage,
-    layoutMatches:saved?.layoutKey===layoutKey,columns:count,width:geometry.width,
+    layoutMatches:saved?.layoutKey===layoutKey,anchorPreferred,columns:count,width:geometry.width,
     height:geometry.height,fontStatus:document.fonts.status});
    requestedPage.current=undefined;
    restoringSavedPage.current=false;
    const navigation=chapterCommit.current;
+   if(saved&&!navigation&&explicitPage===undefined&&!previous.current){
+    if(anchorPreferred&&anchored!==null)restoreByAnchor.current=true;
+    // Rebase the physical column without persisting a false user page turn.
+    // Preserve the exact book-wide page number and source anchor.
+    lastPosition.current=rebaseFB2Position(saved,selected);
+   }
    if(navigation?.chapter===chapter){
     // Only explicit navigation can persist progress; reflow and hydration cannot.
     const indexKey=layoutKey.slice(layoutKey.indexOf(':')+1);
@@ -316,6 +322,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
   if(safe===page)return;
+  restoreByAnchor.current=false;
   // Save synchronously at the tap, not only in the post-render effect.
   const previous=lastPosition.current;
   const measuredCounts=pageIndex.key===layoutKey.slice(layoutKey.indexOf(':')+1)?pageIndex.counts:{};
@@ -342,6 +349,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const key=layoutKey.slice(layoutKey.indexOf(':')+1);
   const cached=pageIndex.key===key?pageIndex.counts[nextChapter]:undefined;
   const target=requestedPage.current??(toLast?Math.max(0,(cached||1)-1):0);
+  restoreByAnchor.current=false;
   chapterCommit.current={chapter:nextChapter,requestedBookPage};
   traceReading('fb2.chapter.request',{id:book.id,from:chapter,to:nextChapter,target});
   previous.current=toLast;
