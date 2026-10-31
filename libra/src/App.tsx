@@ -11,6 +11,7 @@ import { Library } from './components/Library';
 import { FB2Reader } from './reader/FB2Reader';
 import { EpubReader } from './reader/EpubReader';
 import {extractEpubCover,coverDataUrl} from './covers';
+import {traceReading} from './readingDiagnostics';
 
 const supported=(name:string):Format|null=>{
  const ext=name.split('.').pop()?.toLowerCase();
@@ -35,6 +36,8 @@ export default function App(){
     const position=session!.position&&session!.position.updatedAt>=(latest.position?.updatedAt??0)
      ?session!.position:latest.position;
     const recovered=activateReadingSession(latest.id,position);
+    traceReading('app.resume',{id:latest.id,page:recovered?.page,
+     globalPage:recovered?.globalPage,updatedAt:recovered?.updatedAt});
     setOpened({...latest,position:recovered});
    }else if(session){deactivateReadingSession()}
    setHydrated(true);
@@ -112,6 +115,8 @@ export default function App(){
     session.position.updatedAt>=(latest.position?.updatedAt??0)?session.position:latest.position;
    const position=requested??restored;
    const recovered=activateReadingSession(latest.id,position);
+   traceReading('app.open.book',{id:latest.id,page:recovered?.page,
+    globalPage:recovered?.globalPage,updatedAt:recovered?.updatedAt});
    setOpened({...latest,position:recovered});
   }catch(e){setError('Не удалось восстановить позицию чтения: '+String(e))}
  }
