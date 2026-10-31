@@ -1,5 +1,6 @@
 import type { ReaderSettings, ReaderPosition, StoredBook, SavedQuote } from './domain';
 import {sameBookmark} from './bookmarks';
+import {traceReading} from './readingDiagnostics';
 
 /**
  * V3 adds the durable cloud outbox; V2 keeps imported bytes in 'books' and high-frequency reader state in
@@ -43,7 +44,11 @@ function writeBookCheckpoint(id:string,position:ReaderPosition){
 }
 export function freshestPosition(id:string,persisted?:ReaderPosition):ReaderPosition|undefined{
  const local=readBookCheckpoint(id);
- return local&&(!persisted||local.updatedAt>=persisted.updatedAt)?local:persisted;
+ const selected=local&&(!persisted||local.updatedAt>=persisted.updatedAt)?local:persisted;
+ traceReading('position.resolve',{id,checkpointPage:local?.page,checkpointTime:local?.updatedAt,
+  storedPage:persisted?.page,storedTime:persisted?.updatedAt,selectedPage:selected?.page,
+  selectedTime:selected?.updatedAt,selectedGlobal:selected?.globalPage});
+ return selected;
 }
 function readSession():ReadingSession|null{
  try{
@@ -59,10 +64,16 @@ function readSession():ReadingSession|null{
 function writeSession(session:ReadingSession){
  try{localStorage.setItem(readingSessionKey(),JSON.stringify(session))}catch{/* IndexedDB remains the durable fallback. */}
 }
-export async function loadReadingSession():Promise<ReadingSession|null>{await db();return readSession()}
+export async function loadReadingSession():Promise<ReadingSession|null>{
+ await db();const session=readSession();
+ traceReading('session.load',{id:session?.bookId,page:session?.position?.page,
+  globalPage:session?.position?.globalPage,updatedAt:session?.position?.updatedAt});
+ return session;
+}
 export function activateReadingSession(id:string,position?:ReaderPosition):ReaderPosition|undefined{
  activeReadingId=id;activeReadingKey=readingSessionKey();
  const current=freshestPosition(id,position);
+ traceReading('session.activate',{id,page:current?.page,globalPage:current?.globalPage,updatedAt:current?.updatedAt});
  if(current)writeBookCheckpoint(id,current);
  writeSession({bookId:id,position:current});
  return current;
@@ -203,6 +214,8 @@ export function newestReadingPosition(current:ReaderPosition|undefined,next:Read
  return current && current.updatedAt>next.updatedAt?current:next;
 }
 export function savePosition(id:string,position:ReaderPosition){
+ traceReading('position.commit.request',{id,active:activeReadingId===id,chapter:position.chapter,
+  page:position.page,globalPage:position.globalPage,updatedAt:position.updatedAt,layoutKey:position.layoutKey});
  // Commit immediately on the navigation event, before any asynchronous IDB work.
  // Never let a delayed write from a previously closed book change the active session.
  if(activeReadingId===id){
@@ -211,12 +224,17 @@ export function savePosition(id:string,position:ReaderPosition){
   if(!previous||previous.updatedAt<=position.updatedAt){
    writeBookCheckpoint(id,position);
    writeSession({bookId:id,position});
+   traceReading('position.checkpoint.written',{id,page:position.page,globalPage:position.globalPage,updatedAt:position.updatedAt});
   }
  }
  return updateReading(id,old=>{
   if(old.position && old.position.updatedAt>position.updatedAt)return old;
   return {...old,position:newestReadingPosition(old.position,position),
    lastOpenedAt:Math.max(old.lastOpenedAt??0,Date.now())};
+ }).then(state=>{
+  traceReading('position.idb.complete',{id,page:state.position?.page,
+   globalPage:state.position?.globalPage,updatedAt:state.position?.updatedAt});
+  return state;
  });
 }
 export async function toggleBookmark(id:string,position:ReaderPosition):Promise<ReaderPosition[]>{
