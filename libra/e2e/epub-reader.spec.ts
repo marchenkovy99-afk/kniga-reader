@@ -334,3 +334,30 @@ test('publisher justified EPUB is rendered with equal word gaps and keeps origin
  await page.locator('.continue-card').click();
  await expect.poll(async()=>(await page.frameLocator('.epub-mount iframe').locator('body p').first().evaluate(el=>getComputedStyle(el).wordSpacing))).toBe('2.5px');
 });
+
+test('EPUB2 NCX: restart preserves the user-selected CFI without reflow writes',async({page})=>{
+ test.setTimeout(120000);
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({
+  name:'epub-resume.epub',mimeType:'application/epub+zip',buffer:epubFixture(false,'EPUB resume',140)
+ });
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:30000});
+ // A navigation event, rather than a pagination probe, must create the checkpoint.
+ await page.locator('.reading-zones').click({position:{x:340,y:240}});
+ const readPosition=()=>page.evaluate(async()=>{
+  const storage=await import('/src/storage.ts');
+  return (await storage.listBooks())[0]?.position;
+ });
+ await expect.poll(async()=>(await readPosition())?.page??-1,{timeout:30000}).toBeGreaterThan(0);
+ const before=await readPosition();
+ expect(before?.cfi).toBeTruthy();
+ await page.reload();
+ await expect(page.locator('.epub-mount iframe')).toBeVisible({timeout:30000});
+ await page.waitForTimeout(600);
+ const after=await readPosition();
+ expect(after?.updatedAt).toBe(before?.updatedAt);
+ expect(after?.cfi).toBe(before?.cfi);
+ expect(after?.chapter).toBe(before?.chapter);
+ expect(after?.page).toBe(before?.page);
+});
