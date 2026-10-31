@@ -127,7 +127,10 @@ export default function App(){
    <EpubReader book={opened} settings={settings} onSettings={update} onBack={back}/>):
    <Library cloud={cloud} books={books.filter(book=>book.format!=='pdf')} settings={settings} onSettings={update} onOpen={(book:StoredBook,position?:ReaderPosition)=>{
       // Browsers that permit an installed PWA to lock orientation can do so here.
-      try{void screen.orientation?.lock?.('portrait').catch(()=>{})}catch{}
+      try{
+       const rotation=screen.orientation as ScreenOrientation & {lock?:(mode:'portrait')=>Promise<void>};
+       void rotation.lock?.('portrait').catch(()=>{});
+      }catch{}
       void openBook(book,position);
      }} onImport={files=>void importFiles(files)}
      onDelete={book=>void remove(book)} onFavorite={book=>void toggleFavorite(book)} onBackupImported={refresh} loading={loading}/>}
