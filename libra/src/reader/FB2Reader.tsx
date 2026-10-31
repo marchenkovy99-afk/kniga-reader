@@ -363,6 +363,21 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const key=layoutKey.slice(layoutKey.indexOf(':')+1);
   const cached=pageIndex.key===key?pageIndex.counts[nextChapter]:undefined;
   const target=requestedPage.current??(toLast?Math.max(0,(cached||1)-1):0);
+  // A page number shown during a chapter switch must already be durable.
+  // Safari can suspend a Home Screen PWA before the destination chapter's
+  // fonts and columns have been measured. Save the user's exact requested
+  // page now, then amend the source anchor at chapterCommit.
+  if(requestedBookPage!==undefined&&(!toLast||Boolean(cached))){
+   const prior=lastPosition.current;
+   const confirmed:ReaderPosition={chapter:nextChapter,page:target,
+    globalPage:requestedBookPage,fraction:prior?.fraction??0,
+    updatedAt:nextPositionTime(),pageCounts:prior?.pageCounts};
+   lastPosition.current=confirmed;
+   confirmedRef.current=confirmed;setResumeCheck('saved');
+   traceReading('fb2.chapter.immediate',{id:book.id,chapter:nextChapter,
+    page:target,globalPage:requestedBookPage,updatedAt:confirmed.updatedAt});
+   void confirmReadingPosition(book.id,confirmed).catch(console.error);
+  }
   restoreByAnchor.current=false;
   chapterCommit.current={chapter:nextChapter,requestedBookPage};
   traceReading('fb2.chapter.request',{id:book.id,from:chapter,to:nextChapter,target});
