@@ -867,3 +867,11 @@ html[data-library-view="true"],html[data-library-view="true"] body,html[data-lib
 
 /* Approved Libra mark: ivory open-book outline and muted gold bookmark. */
 .library-shell .reference-header .brand-mark{display:block;width:36px;height:28px;object-fit:contain;margin:0 0 12px 1px;object-position:left center}
+
+/* Reader-verified page guard: shown in the existing controls, never over text. */
+.reader-page-check{display:flex;align-items:center;justify-content:space-between;gap:12px;
+ font:500 11px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--muted);
+ margin:6px 0 10px;font-variant-numeric:tabular-nums}
+.reader-page-check[data-resume-check="mismatch"]{color:var(--fg)}
+.reader-page-check button{border:1px solid var(--border);background:transparent;
+ color:var(--fg);border-radius:7px;padding:5px 9px;font-size:11px}
