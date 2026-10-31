@@ -67,7 +67,7 @@ describe('iOS layout reflow preserves the last confirmed page',()=>{
   expect(stableBookPageNumber(rebaseFB2Position(saved,current),[287],0,current)).toBe(289);
  });
  it('keeps source position across subsequent layout measurements until user navigation',()=>{
-  const saved={page:288,globalPage:289,layoutKey:'old-layout'};
+  const saved={chapter:0,page:288,globalPage:289,layoutKey:'old-layout'};
   const first=rebaseFB2Position(saved,restoredFB2Page(saved,'new-layout',287,286));
   expect(restoredFB2Page(first,'new-layout',300,288,true)).toBe(288);
   expect(stableBookPageNumber(rebaseFB2Position(first,288),[300],0,288)).toBe(289);
