@@ -20,7 +20,7 @@ test('iPhone: reopen exact book-wide page after app restart and return to librar
  const slider=page.getByRole('slider',{name:'Прогресс чтения'});
  await expect(slider).toBeEnabled({timeout:60000});
  const caption=await page.locator('.reading-progress span').innerText();
- const total=Number(/из (\\d+)/.exec(caption)?.[1]);
+ const total=Number(/из ([0-9]+)/.exec(caption)?.[1]);
  expect(total).toBeGreaterThan(16);
  const target=Math.min(20,total-3);
  await page.getByRole('button',{name:'Страница',exact:true}).click();
