@@ -1,4 +1,4 @@
-export function illustratedEpub(complex=false,title='EPUB fixture',paragraphCount=140,clipped=false,publisherJustified=false,artwork=''):Buffer{
+export function illustratedEpub(complex=false,title='EPUB fixture',paragraphCount=140,clipped=false,publisherJustified=false,artwork='',chapterCSS=''):Buffer{
  const chapterParagraphs=Array.from({length:paragraphCount},(_,i)=>
   '<p'+(clipped&&i===0?' style="height:10px;overflow:hidden"':'')+'>Passage '+i+' '+('The complete book remains visible after typography changes. '.repeat(7))+'</p>').join('');
  const files=[
@@ -33,6 +33,7 @@ export function illustratedEpub(complex=false,title='EPUB fixture',paragraphCoun
    '<p>END OF SECOND CHAPTER</p></body></html>']);
  }
  const chapter=files.find(file=>file[0]==='OEBPS/one.xhtml')!;
+ if(chapterCSS)chapter[1]=chapter[1].replace('</head>','<style>'+chapterCSS+'</style></head>');
  chapter[1]=chapter[1].replace('</head>','<style>p,span {font-family:Georgia!important} .symbols {font-family:monospace}</style></head>').replace('<h1>FIRST CHAPTER</h1>',`<p style="font-family:Georgia!important">BEFORE <span style="font:italic 12px Georgia!important">LOCKED FONT</span> <strong>BOLD TEXT</strong></p><p><img alt="Original artwork" src="data:image/png;base64,${artwork}" style="filter:invert(1)!important;width:2000px;height:4000px"/></p><p>IMAGE CAPTION</p>`);
  for(const file of files)file[1]=file[1].replaceAll('EPUB fixture',title);
  const crc32=(buffer:Buffer)=>{

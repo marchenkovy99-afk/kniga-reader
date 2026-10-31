@@ -11,6 +11,7 @@ import {applyEpubQuoteHighlights} from '../quoteHighlights';
 import {IllustrationViewer,type Illustration} from '../components/IllustrationViewer';
 import {illustrationFromElement,isIllustrationActivation} from './bookMedia';
 import {waitForEpub} from './epubLifecycle';
+import {freezeEpubViewport} from './epubTransition';
 import {applyEpubSafety,setEpubDocumentSafety,configureEpub,EPUB_OPTIONS,epubTypographyKey,physicalPage,settleEpub,restoreEpubPhysicalPage} from './epubLayout';
 
 type Props={book:StoredBook;settings:ReaderSettings;onSettings:(s:ReaderSettings)=>void;onBack:()=>void};
@@ -41,12 +42,14 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const layoutKey=[geometry.width,geometry.height,epubTypographyKey(settings)].join(':');
  const keyRef=useRef(layoutKey);keyRef.current=layoutKey;
  const commitRef=useRef<(loc:any)=>void>(()=>{}),auditRef=useRef<()=>void>(()=>{});
- const enqueue=(task:()=>Promise<unknown>|void)=>{
+ const enqueue=(task:()=>Promise<unknown>|void,protect:boolean|(()=>boolean)=true)=>{
   queue.current=queue.current.catch(()=>{}).then(async()=>{
    if(!live.current||!rendition.current)return;
    busy.current=true;
+   const cover=typeof protect==='function'?protect():protect;
+   const release=cover&&host.current?freezeEpubViewport(host.current):()=>{};
    try{await task();if(live.current){await settleEpub(rendition.current);busy.current=false;commitRef.current(rendition.current.currentLocation());auditRef.current();}}
-   finally{busy.current=false;}
+   finally{release();busy.current=false;}
   }).catch(e=>{if(live.current)setError(e instanceof Error?e.message:String(e))});
  };
  commitRef.current=(location:any)=>{
@@ -254,6 +257,9 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
    const last=physicalPage(r.currentLocation());r.moveTo({left:(last.total-1)*r.layout().delta,top:0});r.reportLocation();return;
   }
   if(direction>0)await r.next();else await r.prev();
+ },()=>{
+  const location=physicalPage(rendition.current?.currentLocation());
+  return direction<0?location.page<=1:location.page>=location.total;
  });
  const retryPages=()=>{setIssue(null);setSafeMode(false);setRetry(v=>v+1)};
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;

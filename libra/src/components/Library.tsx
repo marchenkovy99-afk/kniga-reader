@@ -49,7 +49,9 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
   <button type="button" onClick={()=>{setMenu(null);onDelete(b)}}>Удалить книгу</button>
  </div>;
  return <div className="library-shell">
-  <input ref={input} type="file" accept=".fb2,.epub" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
+  {/* iOS does not register a selectable UTI for .fb2. An extension-only
+      accept filter greys out valid books in Files. App validates on import. */}
+  <input ref={input} type="file" multiple hidden onChange={e=>{if(e.target.files)onImport(e.target.files);e.target.value=''}}/>
   {tab==='library'&&<>
    <header className="library-header reference-header"><div className="library-identity"><img className="library-logo" src="./icon-mark.svg?v=5" width="44" height="44" alt="Логотип LIBRA"/><div className="library-page-title"><h1>Библиотека</h1></div></div></header>
    <main className="library-main reference-main">
