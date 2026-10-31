@@ -63,6 +63,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const [chapter,setChapter]=useState(book.position?.chapter||0);
  useEffect(()=>{setClipIssue(null);setRetryVersion(v=>v+1)},[settings,chapter]);
  const [page,setPage]=useState(book.position?.page||0);
+ const latestPage=useRef(page);
+ latestPage.current=page;
  const [pages,setPages]=useState(1);
  const [stride,setStride]=useState(0);
  const [geometry,setGeometry]=useState({width:0,height:0});
@@ -326,7 +328,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const safe=clampPage(target,pages);
   const anchor=getPageAnchor(flow.current,safe,{width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP});
   if(anchor)anchorRef.current=anchor;
-  if(safe===page)return;
+  if(safe===latestPage.current)return;
   restoreByAnchor.current=false;
   // Save synchronously at the tap, not only in the post-render effect.
   const previous=lastPosition.current;
@@ -344,6 +346,7 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   traceReading('fb2.page.turn',{id:book.id,chapter,page:safe,globalPage:position.globalPage,
    updatedAt:position.updatedAt});
   void savePosition(book.id,position).catch(console.error);
+  latestPage.current=safe;
   setPage(safe);
  };
  const switchChapter=(nextChapter:number,toLast=false,requestedBookPage?:number)=>{
@@ -361,19 +364,25 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   returnToChapterEnd.current=toLast;
   anchorRef.current=undefined;
   setTableLayout({key:'',indices:new Set()});setChapter(nextChapter);
-  setPage(target);setPages(cached||1);setMeasuredKey('');
+  latestPage.current=target;setPage(target);setPages(cached||1);setMeasuredKey('');
  };
  function next(){
   if(clipIssue){if(chapter<chapters.length-1)void switchChapter(chapter+1);return;}
   if(!ready)return;
-  if(page<pages-1)setReaderPage(page+1,nextLogicalFB2Page(globalPage,1));
-  else if(chapter<chapters.length-1)switchChapter(chapter+1,false,nextLogicalFB2Page(globalPage,1));
+  const current=latestPage.current;
+  const absolute=lastPosition.current?.chapter===chapter?
+   lastPosition.current.globalPage??globalPage:globalPage;
+  if(current<pages-1)setReaderPage(current+1,nextLogicalFB2Page(absolute,1));
+  else if(chapter<chapters.length-1)switchChapter(chapter+1,false,nextLogicalFB2Page(absolute,1));
  }
  function prev(){
   if(clipIssue){if(chapter>0)void switchChapter(chapter-1,true);return;}
   if(!ready)return;
-  if(page>0)setReaderPage(page-1,nextLogicalFB2Page(globalPage,-1));
-  else if(chapter>0)switchChapter(chapter-1,true,nextLogicalFB2Page(globalPage,-1));
+  const current=latestPage.current;
+  const absolute=lastPosition.current?.chapter===chapter?
+   lastPosition.current.globalPage??globalPage:globalPage;
+  if(current>0)setReaderPage(current-1,nextLogicalFB2Page(absolute,-1));
+  else if(chapter>0)switchChapter(chapter-1,true,nextLogicalFB2Page(absolute,-1));
  }
  const style={
   '--font-size':settings.fontSize+'px',
