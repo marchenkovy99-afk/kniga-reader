@@ -36,6 +36,40 @@ describe('FB2',()=>{
   expect(book.fullText.indexOf('До')).toBeLessThan(book.fullText.indexOf('После'));
   expect(book.fullText).toContain('Левая ячейка Правая ячейка');
  });
+
+ it('preserves FB2 emphasis, strong, note marks and source text without executable HTML',()=>{
+  const xml=`<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description><title-info><book-title>Текст</book-title></title-info></description>
+  <body><section><p>Простой <emphasis>курсив</emphasis> и <strong>жирный</strong>,
+   <a l:href="#note1" type="note">1</a> и <code>пример</code>.</p>
+   <p>Начало <emphasis>до <image l:href="#figure"/> после</emphasis> конец</p>
+   </section></body>
+  <binary id="figure" content-type="image/svg+xml">PHN2Zy8+</binary>
+  </FictionBook>`;
+  const parsed=parseFB2(xml);
+  const blocks=parsed.chapters[0].blocks;
+  expect(blocks[0].kind).toBe('paragraph');
+  expect(blocks[0].kind==='paragraph'&&blocks[0].html).toContain('<em>курсив</em>');
+  expect(blocks[0].kind==='paragraph'&&blocks[0].html).toContain('<strong>жирный</strong>');
+  expect(blocks[0].kind==='paragraph'&&blocks[0].html).toContain('book-note-reference');
+  expect(blocks.map(b=>b.kind)).toEqual(['paragraph','paragraph','image','paragraph']);
+  expect(blocks[2].kind==='image'&&blocks[2].src).toContain('data:image/svg+xml;base64,');
+  expect(parsed.fullText).toContain('Простой курсив и жирный');
+  expect(parsed.fullText).toContain('до');
+  expect(parsed.fullText).toContain('после');
+ });
+ it('does not inject untrusted authored attributes or elements into reader markup',()=>{
+  const xml=`<FictionBook><body><section><p>Обычный
+   <emphasis onclick="alert(1)">текст</emphasis><script>alert(2)</script>
+   <a href="javascript:alert(3)">фрагмент</a></p></section></body></FictionBook>`;
+  const parsed=parseFB2(xml);
+  const html=parsed.chapters[0].blocks.find(b=>b.kind==='paragraph');
+  expect(html?.kind==='paragraph'&&html.html).toContain('<em>текст</em>');
+  expect(html?.kind==='paragraph'&&html.html).not.toContain('<script');
+  expect(html?.kind==='paragraph'&&html.html).not.toContain('onclick');
+  expect(html?.kind==='paragraph'&&html.html).not.toContain('javascript:');
+ });
+
  it('rejects broken XML',()=>expect(()=>parseFB2('<FictionBook><body>')).toThrow());
  it('rejects unsupported documents',()=>expect(()=>parseFB2('<html/>')).toThrow());
 });
