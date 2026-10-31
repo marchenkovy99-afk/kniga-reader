@@ -9,7 +9,7 @@ createRoot(node).render(<StrictMode><App/></StrictMode>);
 if('serviceWorker' in navigator&&import.meta.env.PROD){
   // Installed iPhone apps have their own persistent service worker. A stale
   // controller must not keep serving a prior release with the old reader code.
-  const workerUrl=import.meta.env.BASE_URL+'sw.js?rev=12';
+  const workerUrl=import.meta.env.BASE_URL+'sw.js?rev=13';
   let controlled=Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     const current=navigator.serviceWorker.controller?.scriptURL;
