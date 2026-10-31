@@ -137,6 +137,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
      <button type="button" onClick={()=>void copyQuote()}>Копировать</button>
    </div>}
    <div className={'reading-bottom '+(panels?'visible':'')}>
+     <div className="reading-position-capsule">
      {chapterTitle&&<div className="reading-chapter">{chapterTitle}</div>}
      <div className="reading-progress"><span>{caption}</span><strong>{previewPercent}%</strong></div>
      <input className="reading-seek" type="range" aria-label="Прогресс чтения" aria-valuetext={'Страница '+(seekDraft??pageNumber??1)+' из '+(totalPages||1)+', '+previewPercent+'% прочитано'} min="1" max={totalPages||1} step="1"
@@ -146,10 +147,13 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
       onKeyUp={e=>{if(['ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(e.key)){commitSeek(Number(e.currentTarget.value))}}}
       onBlur={e=>{if(seekDraft!==null){commitSeek(Number(e.currentTarget.value))}}}/>
      {(!onPage||!totalPages)&&<small className="indexing-note">Считаем страницы… Читать уже можно.</small>}
-     <nav className="reading-tools">
+     </div>
+     <nav className="reading-tools" aria-label="Управление чтением">
        <button onClick={()=>setSheet('chapters')} disabled={!chapters}><Icon name="list"/>Оглавление</button>
+       <div className="reading-tools-capsule">
        <button onClick={()=>setSheet('settings')}><Icon name="type"/>Текст</button>
        <button disabled={!totalPages||!onPage} onClick={()=>{setJump(String(pageNumber||1));setSheet('position')}}><Icon name="book"/>Страница</button>
+       </div>
         <button type="button" aria-pressed={quoteMode} onClick={()=>{setPanels(false);setSheet(null);setQuoteCapture(null);setQuoteMode(true)}}><Icon name="quote"/>Цитата</button>
      </nav>
    </div>
