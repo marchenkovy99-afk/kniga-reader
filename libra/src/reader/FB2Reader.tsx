@@ -447,7 +447,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   const sameLayout=guard.layoutKey===layoutKey;
   const anchorPage=guard.anchor?getAnchorPage(flow.current,guard.anchor,{
    width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP}):null;
-  const target=clampPage(!sameLayout&&anchorPage!==null?anchorPage:guard.page,pages);
+  const changedColumns=guard.pageCounts?.[chapter]!==undefined&&guard.pageCounts[chapter]!==pages;
+  const target=clampPage((!sameLayout||changedColumns)&&anchorPage!==null?anchorPage:guard.page,pages);
   const samePage=page===target&&globalPage===guard.globalPage;
   if(samePage){setResumeCheck(old=>old==='recovered'?'recovered':'verified');return;}
   const attempt=chapter+':'+layoutKey+':'+guard.updatedAt+':'+target;
