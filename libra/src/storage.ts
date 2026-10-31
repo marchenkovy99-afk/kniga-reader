@@ -216,16 +216,17 @@ export function newestReadingPosition(current:ReaderPosition|undefined,next:Read
 export function savePosition(id:string,position:ReaderPosition){
  traceReading('position.commit.request',{id,active:activeReadingId===id,chapter:position.chapter,
   page:position.page,globalPage:position.globalPage,updatedAt:position.updatedAt,layoutKey:position.layoutKey});
- // Commit immediately on the navigation event, before any asynchronous IDB work.
- // Never let a delayed write from a previously closed book change the active session.
- if(activeReadingId===id){
-  const session=readSession();
-  const previous=freshestPosition(id,session?.bookId===id?session.position:undefined);
-  if(!previous||previous.updatedAt<=position.updatedAt){
-   writeBookCheckpoint(id,position);
-   writeSession({bookId:id,position});
-   traceReading('position.checkpoint.written',{id,page:position.page,globalPage:position.globalPage,updatedAt:position.updatedAt});
-  }
+ // Checkpoint every confirmed reading location synchronously, including when
+ // iOS has already suspended/cleared the active reading-session flag.
+ // Only the per-book checkpoint is updated for inactive books; do not resurrect
+ // an old active session or overwrite a newer checkpoint.
+ const session=activeReadingId===id?readSession():null;
+ const previous=freshestPosition(id,session?.bookId===id?session.position:undefined);
+ if(!previous||previous.updatedAt<=position.updatedAt){
+  writeBookCheckpoint(id,position);
+  if(activeReadingId===id)writeSession({bookId:id,position});
+  traceReading('position.checkpoint.written',{id,page:position.page,
+   globalPage:position.globalPage,updatedAt:position.updatedAt,active:activeReadingId===id});
  }
  return updateReading(id,old=>{
   if(old.position && old.position.updatedAt>position.updatedAt)return old;
