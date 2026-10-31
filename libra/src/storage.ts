@@ -27,9 +27,30 @@ let activeReadingId:string|null=null;
 let activeReadingKey:string|null=null;
 const readingSessionKey=()=> 'libra-last-reading-v1:'+encodeURIComponent(activeOwner||'guest');
 const checkpointKey=(id:string)=>'libra-book-position-v2:'+encodeURIComponent(activeOwner||'guest')+':'+encodeURIComponent(id);
+const confirmedKey=(id:string)=>'libra-confirmed-page-v1:'+encodeURIComponent(activeOwner||'guest')+':'+encodeURIComponent(id);
 function validPosition(p:ReaderPosition):boolean{
  return Number.isSafeInteger(p.chapter)&&p.chapter>=0&&
   Number.isSafeInteger(p.page)&&p.page>=0&&Number.isFinite(p.updatedAt);
+}
+/** The last reader-confirmed page is authoritative; reflow and cloud hydration cannot rewrite it. */
+export function readConfirmedPosition(id:string):ReaderPosition|undefined{
+ try{
+  const value=localStorage.getItem(confirmedKey(id));
+  const position=value?JSON.parse(value) as ReaderPosition:null;
+  return position&&validPosition(position)?position:undefined;
+ }catch{return undefined}
+}
+/**
+ * Synchronously lock the page at the moment of a real reading action.
+ * Durable IDB/cloud persistence continues asynchronously, but background
+ * pagination MUST NOT call this function.
+ */
+export function confirmReadingPosition(id:string,position:ReaderPosition){
+ if(!validPosition(position))return Promise.reject(Error('Некорректная страница'));
+ try{localStorage.setItem(confirmedKey(id),JSON.stringify(position))}catch{}
+ traceReading('page.confirmed',{id,chapter:position.chapter,page:position.page,
+  globalPage:position.globalPage,updatedAt:position.updatedAt});
+ return savePosition(id,position);
 }
 /** Per-book synchronous checkpoint, retained when the reader goes back to the library. */
 export function readBookCheckpoint(id:string):ReaderPosition|undefined{
@@ -44,7 +65,7 @@ function writeBookCheckpoint(id:string,position:ReaderPosition){
 }
 export function freshestPosition(id:string,persisted?:ReaderPosition):ReaderPosition|undefined{
  const local=readBookCheckpoint(id);
- const selected=local&&(!persisted||local.updatedAt>=persisted.updatedAt)?local:persisted;
+ const selected=readConfirmedPosition(id)??(local&&(!persisted||local.updatedAt>=persisted.updatedAt)?local:persisted);
  traceReading('position.resolve',{id,checkpointPage:local?.page,checkpointTime:local?.updatedAt,
   storedPage:persisted?.page,storedTime:persisted?.updatedAt,selectedPage:selected?.page,
   selectedTime:selected?.updatedAt,selectedGlobal:selected?.globalPage});
@@ -168,7 +189,7 @@ export async function saveBook(book:StoredBook):Promise<void>{
 /** Delete both file and reading state as one atomic operation. */
 export function deleteBook(id:string):Promise<void>{
  // A deleted book must not be resurrected by a stale reading checkpoint.
- try{localStorage.removeItem(checkpointKey(id))}catch{}
+ try{localStorage.removeItem(checkpointKey(id));localStorage.removeItem(confirmedKey(id))}catch{}
  return db().then(database=>new Promise((resolve,reject)=>{
   const tx=database.transaction(['books','reading','cloud'],'readwrite');
   tx.objectStore('books').delete(id);
