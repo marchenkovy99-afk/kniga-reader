@@ -1,7 +1,7 @@
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import type {ReaderSettings,StoredBook,ReaderPosition} from '../domain';
 import {traceReading} from '../readingDiagnostics';
-import {savePosition} from '../storage';
+import {savePosition,confirmReadingPosition,readConfirmedPosition} from '../storage';
 import {ReadingControls} from '../components/ReadingControls';
 import {ClippingAlert} from '../components/ClippingAlert';
 import {inspectTextColumns,invalidateTextColumnAudit,observeTextColumnChanges,type ClipIssue} from '../clippingGuard';
@@ -16,8 +16,12 @@ type Section={index:number;href:string};
 export function EpubReader({book,settings,onSettings,onBack}:Props){
  const host=useRef<HTMLDivElement>(null),probeHost=useRef<HTMLDivElement>(null);
  const epub=useRef<any>(null),rendition=useRef<any>(null),live=useRef(false),busy=useRef(false);
- const lastCfi=useRef(book.position?.cfi||''),settingsRef=useRef(settings);settingsRef.current=settings;
- const lastConfirmed=useRef<ReaderPosition|undefined>(book.position);
+ const guard=useRef<ReaderPosition|undefined>(readConfirmedPosition(book.id));
+ const lastCfi=useRef(guard.current?.cfi||book.position?.cfi||''),settingsRef=useRef(settings);settingsRef.current=settings;
+ const lastConfirmed=useRef<ReaderPosition|undefined>(guard.current??book.position);
+ const [resumeCheck,setResumeCheck]=useState<'checking'|'verified'|'recovered'|'saved'|'mismatch'>(
+  guard.current?'checking':'saved');
+ const guardAttempt=useRef('');
  const nextPositionTime=()=>Math.max(Date.now(),(lastConfirmed.current?.updatedAt??0)+1);
  const queue=useRef<Promise<unknown>>(Promise.resolve());
  const userNavigationPending=useRef(0);
@@ -26,7 +30,8 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  const [geometry,setGeometry]=useState({width:0,height:0});
  const [chapters,setChapters]=useState<EpubChapter[]>([]),[spine,setSpine]=useState<Section[]>([]);
  const spineRef=useRef<Section[]>([]);
- const [view,setView]=useState<View>({index:book.position?.chapter||0,page:(book.position?.page||0)+1,total:1,cfi:lastCfi.current,href:''});
+ const [view,setView]=useState<View>({index:(guard.current??book.position)?.chapter||0,
+  page:((guard.current??book.position)?.page||0)+1,total:1,cfi:lastCfi.current,href:''});
  const [currentChapter,setCurrentChapter]=useState(0);
  const [issue,setIssue]=useState<ClipIssue|null>(null),[safeMode,setSafeMode]=useState(false),[retry,setRetry]=useState(0);
  const safeRef=useRef(false);safeRef.current=safeMode;
@@ -87,11 +92,13 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
    if(previous?.cfi===selected.cfi&&previous.globalPage===absolute)return;
    const position:ReaderPosition={chapter:selected.index,page:selected.page-1,
     fraction,cfi:selected.cfi,globalPage:absolute,updatedAt:nextPositionTime(),
+    layoutKey:keyRef.current,
     pageCounts:indexed?order.map(section=>cached.values[section.index]):previous?.pageCounts};
    lastConfirmed.current=position;
+   guard.current=position;setResumeCheck('saved');
    traceReading('epub.page.navigation',{id:book.id,chapter:position.chapter,
     page:position.page,updatedAt:position.updatedAt});
-   void savePosition(book.id,position).catch(console.error);
+   void confirmReadingPosition(book.id,position).catch(console.error);
   }
  };
  auditRef.current=()=>{
@@ -276,6 +283,29 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
    page:upgraded.page});
   void savePosition(book.id,upgraded).catch(console.error);
  },[loaded,indexed,globalPage,spine,layoutKey]);
+ // On PWA relaunch, verify the settled EPUB rendition against the last
+ // user-confirmed CFI/page. Never overwrite that guard from reflow callbacks.
+ const verifyGuard=()=>{
+  const saved=guard.current,r=rendition.current;
+  if(!loaded||!saved?.cfi||!r||busy.current)return;
+  const shown=physicalPage(r.currentLocation());
+  const expected=saved.page+1;
+  if(shown.index===saved.chapter&&shown.page===expected){
+   setResumeCheck(old=>old==='recovered'?'recovered':'verified');
+   return;
+  }
+  const attempt=keyRef.current+':'+saved.updatedAt;
+  if(guardAttempt.current===attempt){setResumeCheck('mismatch');return;}
+  guardAttempt.current=attempt;
+  traceReading('epub.guard.recover',{id:book.id,expected:saved.globalPage,
+   expectedChapter:saved.chapter,expectedSectionPage:expected,
+   shownChapter:shown.index,shownSectionPage:shown.page});
+  enqueue(()=>r.display(saved.cfi!),false);
+  setResumeCheck('recovered');
+ };
+ useEffect(()=>{
+  if(loaded&&resumeCheck!=='saved')verifyGuard();
+ },[loaded,layoutKey,view.index,view.page,resumeCheck]);
  const retryPages=()=>{setIssue(null);setSafeMode(false);setRetry(v=>v+1)};
  const frameStyle={'--page-left':settings.margin+'px','--page-right':settings.marginRight+'px','--page-top':settings.verticalMargin+'px','--page-bottom':settings.bottomMargin+'px'} as React.CSSProperties;
  return <ReadingControls book={book} settings={settings} onSettings={s=>{if(safeMode)retryPages();onSettings(s)}} onBack={leaveBook}
@@ -286,6 +316,8 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
   position={{chapter:view.index,page:view.page-1,fraction:indexed?globalPage/Math.max(1,totalPages):(book.position?.fraction||0),cfi:view.cfi,updatedAt:Date.now()}}
   progress={progress} caption={safeMode?'Режим прокрутки':`Страница ${globalPage||view.page} из ${totalPages||view.total}`}
   pageNumber={indexed&&!safeMode?globalPage:undefined} totalPages={indexed&&!safeMode?totalPages:undefined}
+   verifiedPage={guard.current?.globalPage} resumeCheck={resumeCheck}
+   onRecover={()=>{guardAttempt.current='';verifyGuard()}}
   chapterTitle={chapters[currentChapter]?.title}
   onPage={indexed&&!safeMode?number=>{
    let offset=Math.max(0,Math.min(totalPages-1,Math.floor(number)-1));
