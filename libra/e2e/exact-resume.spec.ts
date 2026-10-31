@@ -116,7 +116,7 @@ test('iPhone: two-column Safari reflow restores the original text and page numbe
   const {getPageAnchor}=await import('/src/anchors.ts');
   const flow=document.querySelector<HTMLElement>('.book-flow')!;
   const stride=Number(flow.dataset.columnStride);
-  const translation=/translateX\\(-([\\d.]+)px\\)/.exec(flow.style.transform);
+  const translation=/translateX\(-([\d.]+)px\)/.exec(flow.style.transform);
   const column=translation?Math.round(Number(translation[1])/stride):0;
   return {column,anchor:getPageAnchor(flow,column,{width:flow.clientWidth,gap:24,stride})};
  });
