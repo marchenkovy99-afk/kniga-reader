@@ -4,7 +4,7 @@ import type { FB2Anchor } from '../anchors';
 import { getAnchorPage, getPageAnchor } from '../anchors';
 import { loadParsedFB2 } from './parsedFB2Cache';
 import { clampPage, restoreChapter, measureRenderedPages, measureColumnStride, progressOf } from '../pagination';
-import { savePosition } from '../storage';
+import { savePosition,confirmReadingPosition,readConfirmedPosition } from '../storage';
 import { ReadingControls } from '../components/ReadingControls';
 import { fontStack,readingInk } from '../readerSettings';
 import { bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber,restoredFB2Page,rebaseFB2Position,restoreLogicalFB2Position,nextLogicalFB2Page } from '../bookPagination';
@@ -112,6 +112,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const chapterCommit=useRef<{chapter:number;requestedBookPage?:number}|null>(null);
  const anchorRef=useRef<FB2Anchor|undefined>(book.position?.anchor);
  const lastPosition=useRef<ReaderPosition|undefined>(restoreLogicalFB2Position(book.position));
+ const confirmedRef=useRef<ReaderPosition|undefined>(readConfirmedPosition(book.id));
+ const [resumeCheck,setResumeCheck]=useState<'checking'|'verified'|'recovered'|'saved'|'mismatch'>(
+  confirmedRef.current?'checking':'saved');
+ const verificationAttempt=useRef('');
  // The initial saved physical page wins over a premature Safari reflow.
  const restoringSavedPage=useRef(Boolean(book.position));
  // Rebase only the column index after an asynchronous WebKit reflow.
@@ -241,7 +245,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     traceReading('fb2.chapter.commit',{id:book.id,chapter,page:position.page,
      globalPage:position.globalPage,updatedAt:position.updatedAt});
     lastPosition.current=position;
-    void savePosition(book.id,position).catch(console.error);
+    confirmedRef.current=position;setResumeCheck('saved');
+    void confirmReadingPosition(book.id,position).catch(console.error);
    }
    previous.current=false;
    setPages(count);setPage(clampPage(selected,count));setMeasuredKey(layoutKey);
@@ -343,9 +348,10 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
     fullyIndexed?stableBookPageNumber(previous,allCounts,chapter,safe):undefined),
    pageCounts:fullyIndexed?allCounts:previous?.pageCounts};
   lastPosition.current=position;
+  confirmedRef.current=position;setResumeCheck('saved');
   traceReading('fb2.page.turn',{id:book.id,chapter,page:safe,globalPage:position.globalPage,
    updatedAt:position.updatedAt});
-  void savePosition(book.id,position).catch(console.error);
+  void confirmReadingPosition(book.id,position).catch(console.error);
   latestPage.current=safe;
   setPage(safe);
  };
@@ -432,13 +438,42 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   requestedPage.current=target.page;
   void switchChapter(target.chapter,false,number);
  };
+
+ // Compare the actual rendered location with the page the reader confirmed.
+ // Reflow is never allowed to silently become a new confirmed checkpoint.
+ const restoreConfirmedPage=()=>{
+  const guard=confirmedRef.current;
+  if(!guard||!ready||!flow.current||guard.chapter!==chapter||!pages)return;
+  const sameLayout=guard.layoutKey===layoutKey;
+  const anchorPage=guard.anchor?getAnchorPage(flow.current,guard.anchor,{
+   width:geometry.width,gap:GAP,stride:stride||geometry.width+GAP}):null;
+  const target=clampPage(!sameLayout&&anchorPage!==null?anchorPage:guard.page,pages);
+  const samePage=page===target&&globalPage===guard.globalPage;
+  if(samePage){setResumeCheck(old=>old==='recovered'?'recovered':'verified');return;}
+  const attempt=chapter+':'+layoutKey+':'+guard.updatedAt+':'+target;
+  if(verificationAttempt.current===attempt){setResumeCheck('mismatch');return;}
+  verificationAttempt.current=attempt;
+  traceReading('fb2.guard.recover',{id:book.id,expected:guard.globalPage,
+   displayed:globalPage,expectedPhysical:target,displayedPhysical:page});
+  lastPosition.current={...guard,page:target};
+  anchorRef.current=guard.anchor;
+  latestPage.current=target;
+  setPage(target);
+  setResumeCheck('recovered');
+ };
+ useEffect(()=>{
+  if(ready&&!reflowing&&confirmedRef.current&&resumeCheck!=='saved'){
+   restoreConfirmedPage();
+  }
+ },[ready,reflowing,chapter,page,globalPage,layoutKey,pages,stride]);
  // Keep the small reading-state record and library percentage book-wide.
  const bookProgress=indexed?Math.min(100,Math.round(globalPage/totalPages*100)):progressOf(chapter,page,pages,chapters.length);
  // A WebKit reflow can change the visible page without running setReaderPage.
  // Persist the actual settled screen, not merely tap handlers, and immediately
  // flush that screen before Safari suspends an installed home-screen PWA.
  const persistVisiblePage=()=>{
-  if(!ready||reflowing||clipIssue||!flow.current||chapterCommit.current||!globalPage)return;
+  if(!ready||reflowing||clipIssue||!flow.current||chapterCommit.current||!globalPage||
+    confirmedRef.current)return;
   const prior=lastPosition.current;
   if(prior?.chapter===chapter&&prior.page===page&&prior.globalPage===globalPage)return;
   const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,
@@ -473,6 +508,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={()=>{persistVisiblePage();onBack()}} onNext={next} onPrevious={prev}
   position={position} progress={bookProgress} safeMode={Boolean(clipIssue)}
   pageNumber={globalPage||undefined} totalPages={totalPages||undefined} onPage={indexed&&ready?seekPage:undefined}
+   verifiedPage={confirmedRef.current?.globalPage} resumeCheck={resumeCheck}
+   onRecover={()=>{verificationAttempt.current='';restoreConfirmedPage()}}
   chapterTitle={actualChapter?.title}
   caption={clipIssue?'Глава с прокруткой':ready?'Страница '+(globalPage||page+1)+' из '+(totalPages||pages):'Открываем книгу'}
   chapters={chapters.map((item,i)=>({title:item.title,page:chapterPages[i]}))} currentChapter={chapter}
