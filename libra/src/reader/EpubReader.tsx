@@ -56,7 +56,14 @@ export function EpubReader({book,settings,onSettings,onBack}:Props){
  };
  commitRef.current=(location:any,confirmedNavigation=false,requestedBookPage?:number)=>{
   const selected=physicalPage(location);if(!selected.cfi||!live.current)return;
-  lastCfi.current=selected.cfi;
+  // Preserve the confirmed text location. WebKit emits relocated events
+  // during resize/font hydration which are NOT user navigation and can point
+  // to the start of an earlier physical column.
+  if(confirmedNavigation||!lastCfi.current)lastCfi.current=selected.cfi;
+  if(!confirmedNavigation&&lastConfirmed.current?.chapter===selected.index&&
+   lastConfirmed.current.globalPage){
+   lastConfirmed.current={...lastConfirmed.current,page:selected.page-1};
+  }
   setView({...selected,href:location?.start?.href||''});
   setCurrentChapter(chapterForHref(location?.start?.href,chapters));
   if(!safeRef.current){
