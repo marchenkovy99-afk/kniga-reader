@@ -34,8 +34,8 @@ export default function App(){
    if(latest){
     const position=session!.position&&session!.position.updatedAt>=(latest.position?.updatedAt??0)
      ?session!.position:latest.position;
-    activateReadingSession(latest.id,position);
-    setOpened({...latest,position});
+    const recovered=activateReadingSession(latest.id,position);
+    setOpened({...latest,position:recovered});
    }else if(session){deactivateReadingSession()}
    setHydrated(true);
   }).catch(e=>{if(live)setError('Не удалось открыть локальную библиотеку: '+String(e))});
@@ -111,8 +111,8 @@ export default function App(){
    const restored=session?.bookId===latest.id&&session.position &&
     session.position.updatedAt>=(latest.position?.updatedAt??0)?session.position:latest.position;
    const position=requested??restored;
-   activateReadingSession(latest.id,position);
-   setOpened({...latest,position});
+   const recovered=activateReadingSession(latest.id,position);
+   setOpened({...latest,position:recovered});
   }catch(e){setError('Не удалось восстановить позицию чтения: '+String(e))}
  }
  function update(s:ReaderSettings){

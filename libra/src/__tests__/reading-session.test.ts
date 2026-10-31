@@ -75,3 +75,15 @@ it('keeps the latest per-book checkpoint when an earlier page save arrives late'
  expect(storage.readBookCheckpoint(id)?.page).toBe(25);
  expect((await storage.getBook(id))?.position?.page).toBe(25);
 });
+
+it('returns the newest checkpoint on reactivation so App renders it, not an older IDB copy',async()=>{
+ const id='reactivation-authority';
+ storage.activateReadingSession(id,position(12,600));
+ const last=position(14,605);
+ await storage.savePosition(id,last);
+ storage.deactivateReadingSession();
+ // The caller is holding stale book metadata with the page before the final flip.
+ expect(storage.activateReadingSession(id,position(12,600))).toEqual(last);
+ expect((await storage.loadReadingSession())?.position).toEqual(last);
+ storage.deactivateReadingSession();
+});

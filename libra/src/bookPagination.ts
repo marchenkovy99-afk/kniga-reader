@@ -22,3 +22,19 @@ export function chapterStartPages(counts:readonly number[]):Array<number|undefin
   return start;
  });
 }
+
+/**
+ * Preserve the number the reader actually saw at their saved location.
+ * Re-measuring preceding chapters may give a different count on iOS Safari,
+ * but must not silently turn saved page 288 into 286.
+ */
+export function stableBookPageNumber(
+ anchor:{chapter:number;page:number;globalPage?:number}|undefined,
+ counts:readonly number[],chapter:number,page:number
+):number{
+ if(anchor?.chapter===chapter&&Number.isSafeInteger(anchor.globalPage)&&
+    (anchor.globalPage??0)>0){
+  return Math.max(1,anchor.globalPage!+page-anchor.page);
+ }
+ return bookPageNumber(Array.from(counts),chapter,page);
+}

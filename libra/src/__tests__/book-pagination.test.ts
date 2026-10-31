@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {epubTocStartPages} from '../reader/epubNavigation';
-import {bookPageLocation,bookPageNumber,chapterStartPages} from '../bookPagination';
+import {bookPageLocation,bookPageNumber,chapterStartPages,stableBookPageNumber} from '../bookPagination';
 describe('whole-book page navigation',()=>{
  it('maps boundaries and the final page without losing a chapter',()=>{
   expect(bookPageLocation([3,1,6],1)).toEqual({chapter:0,page:0});
@@ -29,5 +29,19 @@ describe('chapter start pages',()=>{
   expect(epubTocStartPages(spine,{0:9,1:5,2:2},locations,4)).toEqual([1,4,11,15]);
   expect(epubTocStartPages(spine,{0:9,1:0,2:2},locations,4)).toEqual([1,4,undefined,undefined]);
   expect(epubTocStartPages(spine,{0:9,1:5,2:2},{0:{index:0,page:10}},2)).toEqual([undefined,undefined]);
+ });
+});
+
+describe('exact reading-page restoration',()=>{
+ it('keeps page 288 after Safari reindexes preceding chapters by two pages',()=>{
+  const saved={chapter:1,page:7,globalPage:288};
+  expect(bookPageNumber([278,20],1,7)).toBe(286);
+  expect(stableBookPageNumber(saved,[278,20],1,7)).toBe(288);
+  expect(stableBookPageNumber(saved,[278,20],1,8)).toBe(289);
+  expect(stableBookPageNumber(saved,[278,20],1,6)).toBe(287);
+ });
+ it('uses true book pagination when no saved absolute page exists',()=>{
+  expect(stableBookPageNumber({chapter:1,page:7},[278,20],1,7)).toBe(286);
+  expect(stableBookPageNumber({chapter:1,page:7,globalPage:288},[278,20],0,5)).toBe(6);
  });
 });

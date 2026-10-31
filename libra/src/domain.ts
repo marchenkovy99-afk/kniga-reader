@@ -40,6 +40,8 @@ export type ReaderPosition = {
   layoutKey?: string;
   /** Snapshot of chapter page counts for stable book-wide numbering across sessions. */
   pageCounts?: number[];
+  /** The exact book-wide number shown when the user left this page. */
+  globalPage?: number;
 };
 export type TextBlock = { kind: 'paragraph' | 'heading' | 'verse'; text: string };
 export type ImageBlock = { kind: 'image'; src: string; alt: string };
