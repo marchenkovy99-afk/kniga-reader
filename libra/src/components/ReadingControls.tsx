@@ -11,11 +11,12 @@ type Props={
   onBack:()=>void; onNext:()=>void; onPrevious:()=>void;
   position:ReaderPosition; progress:number; caption:string;
   pageNumber?:number; totalPages?:number; onPage?:(page:number)=>void; chapterTitle?:string; conditionalPages?:boolean;
+  verifiedPage?:number; resumeCheck?:'checking'|'verified'|'recovered'|'saved'|'mismatch'; onRecover?:()=>void;
   chapters?:{title:string;page?:number}[]; currentChapter?:number; onChapter?:(index:number)=>void;
   quoteSelection?:()=>QuoteCapture|null;
   children:ReactNode; safeMode?:boolean; interactiveContent?:boolean; modalContentOpen?:boolean;
 };
-export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection}:Props){
+export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevious,position,progress,caption,chapters,currentChapter,onChapter,children,interactiveContent=false,safeMode=false,modalContentOpen=false,pageNumber,totalPages,onPage,chapterTitle,conditionalPages=false,quoteSelection,verifiedPage,resumeCheck,onRecover}:Props){
  const [panels,setPanels]=useState(false);
  const [sheet,setSheet]=useState<'settings'|'chapters'|'position'|null>(null);
  const [bookmarks,setBookmarks]=useState<ReaderPosition[]>(book.bookmarks||[]);
@@ -139,6 +140,13 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    <div className={'reading-bottom '+(panels?'visible':'')}>
      {chapterTitle&&<div className="reading-chapter">{chapterTitle}</div>}
      <div className="reading-progress"><span>{caption}</span><strong>{previewPercent}%</strong></div>
+      {verifiedPage&&<div className="reader-page-check" role="status" data-resume-check={resumeCheck||'checking'}>
+       <span>{resumeCheck==='mismatch'?'Позиция отличается от сохранённой':
+        resumeCheck==='recovered'?'Позиция восстановлена':
+        resumeCheck==='verified'?'Позиция проверена':
+        resumeCheck==='saved'?'Страница сохранена':'Проверяем сохранённую страницу'}: {verifiedPage}</span>
+       {resumeCheck==='mismatch'&&onRecover&&<button type="button" onClick={onRecover}>Восстановить</button>}
+      </div>}
      <input className="reading-seek" type="range" aria-label="Прогресс чтения" aria-valuetext={'Страница '+(seekDraft??pageNumber??1)+' из '+(totalPages||1)+', '+previewPercent+'% прочитано'} min="1" max={totalPages||1} step="1"
       value={seekDraft??pageNumber??1} disabled={!onPage||!totalPages}
       onChange={e=>setSeekDraft(Number(e.target.value))}
