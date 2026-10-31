@@ -1,0 +1,147 @@
+name: LIBRA production text integrity
+on:
+  push:
+    branches: ['feature/libra-standalone-v1']
+    paths:
+      - '.github/workflows/libra-production-text-integrity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: libra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser runner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Audit publicly deployed reader in both browsers
+        env:
+          LIBRA_PUBLIC_URL: https://libra-standalone-preview.vercel.app/
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium,webkit} from '@playwright/test';
+          const url=new URL(process.env.LIBRA_PUBLIC_URL);
+          if(url.origin!=='https://libra-standalone-preview.vercel.app')
+            throw new Error('Unapproved public URL');
+          const prose=Array.from({length:32},(_,i)=>'<p>Маркер '+i+'. '+
+            'Каждая строка книги должна быть полностью доступна читателю. '.repeat(4)+'</p>').join('');
+          const source='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'+
+            '<description><title-info><book-title>Проверка публикации</book-title></title-info></description>'+
+            '<body><section><title><p>Глава</p></title>'+prose+
+            '<p>ФИНАЛЬНЫЙ_СИМВОЛ_ДОСТУПЕН</p></section></body></FictionBook>';
+          const cell='Данные таблицы доступны полностью. '.repeat(8);
+          const tableSource='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">'+
+            '<description><title-info><book-title>Полная таблица</book-title></title-info></description>'+
+            '<body><section><title><p>Таблица</p></title>'+
+            '<table><tr><td>Значение</td><td>'+cell+'</td></tr></table>'+
+            '<p>Конец после таблицы</p></section></body></FictionBook>';
+          for(const [engine,name] of [[chromium,'Chromium'],[webkit,'WebKit']]){
+            const browser=await engine.launch({headless:true});
+            try{
+              for(const [fixture,title] of [[source,'Проверка публикации'],[tableSource,'Полная таблица']]){
+                const context=await browser.newContext({viewport:{width:320,height:568},
+                  isMobile:true,hasTouch:true,deviceScaleFactor:2});
+                const page=await context.newPage(),errors=[];
+                page.on('pageerror',e=>errors.push(e.message));
+                const response=await page.goto(url.href,{waitUntil:'networkidle',timeout:30000});
+                if(response?.status()!==200)throw Error('Production unavailable: '+response?.status());
+                await page.locator('input[type=file]').first().setInputFiles({
+                  name:'live.fb2',mimeType:'application/xml',buffer:Buffer.from(fixture)
+                });
+                await page.locator('.continue-card').click();
+                await page.locator('.book-flow').waitFor({state:'visible'});
+                await page.locator('.reading-zones').click({position:{x:160,y:270}});
+                await page.getByRole('button',{name:'Текст'}).click();
+                const sliders=page.locator('.sheet-settings input[type=range]');
+                await sliders.nth(0).fill('36');
+                await sliders.nth(1).fill('2.2');
+                await sliders.nth(2).fill('50');
+                await sliders.nth(8).fill('50');
+                await sliders.nth(7).fill('48');
+                await sliders.nth(9).fill('48');
+                await page.getByRole('button',{name:'Закрыть'}).click();
+                await page.waitForTimeout(480);
+                if(title==='Полная таблица'){
+                  const launcher=page.getByRole('button',{name:/Большая таблица/});
+                  await launcher.waitFor({state:'visible'});
+                  await launcher.click();
+                  const dialog=page.getByRole('dialog',{name:'Таблица книги'});
+                  if(!(await dialog.innerText()).includes(cell.trim()))
+                    throw Error(name+': table content missing');
+                  await dialog.getByRole('button',{name:'Закрыть таблицу'}).click({timeout:7000});
+                  if(await dialog.isVisible())throw Error(name+': table viewer cannot be closed');
+                  if(!(await page.locator('.book-flow').innerText()).includes('Конец после таблицы'))
+                    throw Error(name+': text following table missing');
+                } else {
+                  const audit=await page.locator('.book-flow').evaluate(flow=>{
+                    const vp=flow.closest('.page-viewport');
+                    const width=vp.clientWidth,height=vp.clientHeight;
+                    const stride=Number(flow.dataset.columnStride);
+                    const gap=parseFloat(getComputedStyle(flow).columnGap)||24;
+                    const origin=flow.getBoundingClientRect();
+                    let count=0,max=-1,issues=0;
+                    const walker=document.createTreeWalker(flow,NodeFilter.SHOW_TEXT);
+                    let node;
+                    while((node=walker.nextNode())){
+                      if(!node.textContent?.trim())continue;
+                      const range=document.createRange();range.selectNodeContents(node);
+                      for(const rect of Array.from(range.getClientRects())){
+                        if(rect.width<.5||rect.height<.5)continue;
+                        count++;
+                        const dx=rect.left-origin.left,base=Math.max(0,Math.floor(dx/stride));
+                        const within=dx-base*stride;
+                        const col=base+(within>width+gap*.35?1:0);
+                        max=Math.max(max,col);
+                        const x=dx-col*stride,y=rect.top-origin.top;
+                        if(x< -3||x+rect.width>width+3||y< -3||y+rect.height>height+3)issues++;
+                      }
+                    }
+                    return {count,max,issues};
+                  });
+                  if(audit.count<40||audit.issues)
+                    throw Error(name+': clipped text fragments '+JSON.stringify(audit));
+                  const caption=await page.locator('.reading-progress span').textContent();
+                  const total=Number(/из ([0-9]+)/.exec(caption||'')?.[1]);
+                  if(total!==audit.max+1)throw Error(name+': unreachable text columns');
+                  await page.locator('.reading-zones').evaluate(async(zone,total)=>{
+                    const rect=zone.getBoundingClientRect();
+                    for(let p=1;p<total;p++){
+                      zone.dispatchEvent(new MouseEvent('click',{bubbles:true,
+                        clientX:rect.left+rect.width*.89,clientY:rect.top+rect.height*.5}));
+                      await new Promise(resolve=>requestAnimationFrame(resolve));
+                    }
+                  },total);
+                  await page.waitForTimeout(450);
+                  const last=await page.locator('.book-flow').evaluate(flow=>{
+                    const viewport=flow.closest('.page-viewport').getBoundingClientRect();
+                    const last=Array.from(flow.querySelectorAll('p')).at(-1);
+                    const node=last?.firstChild;
+                    if(!node?.textContent)return {visible:false,text:''};
+                    const range=document.createRange();
+                    range.setStart(node,node.textContent.length-1);
+                    range.setEnd(node,node.textContent.length);
+                    const r=range.getBoundingClientRect();
+                    return {text:node.textContent,visible:r.left>=viewport.left-3&&r.right<=viewport.right+3&&
+                      r.top>=viewport.top-3&&r.bottom<=viewport.bottom+3};
+                  });
+                  if(!last.text.includes('ФИНАЛЬНЫЙ_СИМВОЛ_ДОСТУПЕН')||!last.visible)
+                    throw Error(name+': final text character is not visible');
+                  console.log(name+': PUBLIC_TEXT_GEOMETRY_OK '+JSON.stringify(audit));
+                }
+                if(errors.length)throw Error(name+': runtime errors '+errors.join(' | '));
+                await context.close();
+              }
+            }finally{await browser.close();}
+          }
+          console.log('LIBRA_PUBLIC_TEXT_INTEGRITY_OK');
+          JS
