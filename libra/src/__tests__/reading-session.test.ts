@@ -87,3 +87,22 @@ it('returns the newest checkpoint on reactivation so App renders it, not an olde
  expect((await storage.loadReadingSession())?.position).toEqual(last);
  storage.deactivateReadingSession();
 });
+
+it('checkpoints an actual page flip after the iOS reading-session flag was cleared',async()=>{
+ const id='safari-inactive-reading-session';
+ await storage.saveBook({id,filename:'resume.fb2',format:'fb2',title:'Resume',author:'Reader',
+  file:new Blob(['test']),importedAt:15,bookmarks:[]});
+ const old:ReaderPosition={chapter:0,page:286,globalPage:287,fraction:.7,updatedAt:1000};
+ const latest:ReaderPosition={chapter:0,page:288,globalPage:289,fraction:.7,updatedAt:1002};
+ storage.activateReadingSession(id,old);
+ await storage.savePosition(id,old);
+ storage.deactivateReadingSession();
+ // WebKit can suspend the session before its final navigation handler commits.
+ const lastWrite=storage.savePosition(id,latest);
+ expect(storage.readBookCheckpoint(id)).toEqual(latest);
+ expect(await storage.loadReadingSession()).toBeNull();
+ await lastWrite;
+ expect((await storage.getBook(id))?.position).toEqual(latest);
+ expect(storage.activateReadingSession(id,old)).toEqual(latest);
+ storage.deactivateReadingSession();
+});
