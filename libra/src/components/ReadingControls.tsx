@@ -150,10 +150,8 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
      </div>
      <nav className="reading-tools" aria-label="Управление чтением">
        <button onClick={()=>setSheet('chapters')} disabled={!chapters}><Icon name="list"/>Оглавление</button>
-       <div className="reading-tools-capsule">
        <button onClick={()=>setSheet('settings')}><Icon name="type"/>Текст</button>
        <button disabled={!totalPages||!onPage} onClick={()=>{setJump(String(pageNumber||1));setSheet('position')}}><Icon name="book"/>Страница</button>
-       </div>
         <button type="button" aria-pressed={quoteMode} onClick={()=>{setPanels(false);setSheet(null);setQuoteCapture(null);setQuoteMode(true)}}><Icon name="quote"/>Цитата</button>
      </nav>
    </div>

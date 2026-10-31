@@ -119,10 +119,8 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
   {loading&&<div className="import-status" role="status">Импорт книги…</div>}
   <nav className="app-tabbar" aria-label="Разделы приложения">
    <button type="button" className={tab==='library'?'active':''} aria-current={tab==='library'?'page':undefined} onClick={()=>{setTab('library');setMenu(null)}}><Icon name="book" size={25}/>Библиотека</button>
-   <div className="tabbar-capsule">
    <button type="button" className={tab==='bookmarks'?'active':''} aria-current={tab==='bookmarks'?'page':undefined} onClick={()=>{setTab('bookmarks');setMenu(null)}}><Icon name="bookmark" size={25}/>Закладки</button>
    <button type="button" className={tab==='quotes'?'active':''} aria-current={tab==='quotes'?'page':undefined} onClick={()=>{setTab('quotes');setMenu(null)}}><Icon name="quote" size={25}/>Цитаты</button>
-   </div>
     <button type="button" className={tab==='settings'?'active':''} aria-current={tab==='settings'?'page':undefined} onClick={()=>{setTab('settings');setMenu(null)}}><Icon name="settings" size={25}/>Настройки</button>
   </nav>
  </div>;

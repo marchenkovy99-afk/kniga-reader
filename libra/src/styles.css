@@ -855,39 +855,44 @@ html[data-theme="oled"] ::highlight(libra-saved-quote){background-color:rgba(197
 @keyframes quote-appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.quote-popover{animation:none}}
 
-/* Floating controls, variant 2. Only UI layers are styled here: the reading
-   canvas, typography and pagination geometry deliberately have no dependency
-   on panel visibility. All existing tools and saved preferences are retained. */
-.library-shell .app-tabbar{
- left:16px;right:16px;bottom:calc(var(--reader-safe-bottom) + 10px);
- width:auto;max-width:490px;margin-inline:auto;height:76px;padding:0;
- border:0;background:transparent;box-shadow:none;align-items:center;gap:12px;
- pointer-events:none;
+/* Unified floating capsules. Presentation only: reader canvas dimensions,
+   typography and pagination never depend on panel visibility. */
+.library-shell .app-tabbar,.reading-tools{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;
+ gap:0;height:72px;padding:6px;border-radius:999px;
+ border:1px solid color-mix(in srgb,var(--fg) 16%,transparent);
+ box-shadow:inset 0 1px 1px #ffffff16,0 5px 20px #0002;
 }
-.library-shell .app-tabbar>button,.tabbar-capsule{
- pointer-events:auto;border:1px solid #ffffff24;
- background:linear-gradient(145deg,#ffffff13,#ffffff03),#242322ed;
- box-shadow:inset 0 1px 1px #ffffff16,0 5px 18px #0003;
+.library-shell .app-tabbar{
+ position:fixed;left:16px;right:16px;bottom:calc(var(--reader-safe-bottom) + 10px);
+ width:auto;max-width:490px;margin-inline:auto;
+ background:linear-gradient(145deg,#ffffff0c,#ffffff02),#262524f5;
+ border-color:#ffffff26;pointer-events:auto;
  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
 }
-.library-shell .app-tabbar>button{
- flex:0 0 60px;height:60px;min-height:60px;border-radius:50%;
- font-size:9px;gap:4px;color:#c8c3bd;
+.library-shell .app-tabbar button,.reading-tools button{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ width:100%;min-width:0;height:58px;min-height:44px;padding:5px 0;
+ gap:5px;border:0;border-radius:999px;background:transparent;box-shadow:none;
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+ font-size:clamp(10px,2.65vw,12px);font-weight:500;line-height:15px;
+ letter-spacing:-.02em;text-align:center;white-space:nowrap;
 }
-.library-shell .tabbar-capsule{display:flex;align-items:center;flex:1;min-width:0;height:64px;border-radius:34px;padding:4px}
-.library-shell .tabbar-capsule button{height:54px;min-width:0;border-radius:28px;color:#c8c3bd;font-size:10px}
-.library-shell .app-tabbar button.active{color:#edbd8a;background-color:#e6b27d1c}
+.library-shell .app-tabbar button{color:#d1ccc6}
+.library-shell .app-tabbar button.active{color:#edbd8a;background:#e6b27d1c;font-weight:500}
 .library-shell .app-tabbar button.active svg{stroke:currentColor}
-.library-shell{padding-bottom:calc(112px + var(--reader-safe-bottom))}
+.library-shell .app-tabbar button svg,.reading-tools button svg{
+ display:block;width:24px;height:24px;flex:0 0 24px;stroke-width:1.65;
+}
+.library-shell{padding-bottom:calc(108px + var(--reader-safe-bottom))}
 .library-shell .reference-import{border-radius:32px;background:linear-gradient(145deg,#ffffff10,#ffffff02),#242322;border-color:#ffffff24}
 .library-shell .reference-import-icon{background:none;border:0;color:var(--fg)}
 .reading-top,.reading-bottom{background:transparent;border:0;box-shadow:none}
 .reading-top{left:16px;right:16px;top:calc(var(--reader-safe-top) + 8px);height:48px;padding:0;gap:8px}
-.reading-top button,.reading-title,.reading-position-capsule,.reading-tools>button,.reading-tools-capsule{
- border:1px solid color-mix(in srgb,var(--fg) 15%,transparent);
- background:color-mix(in srgb,var(--bg) 94%,transparent);
- box-shadow:inset 0 1px 1px #ffffff19,0 4px 15px #00000015;
- color:var(--fg);
+.reading-top button,.reading-title,.reading-position-capsule,.reading-tools{
+ border:1px solid color-mix(in srgb,var(--fg) 16%,transparent);
+ background:color-mix(in srgb,var(--bg) 96%,transparent);
+ box-shadow:inset 0 1px 1px #ffffff19,0 4px 15px #00000015;color:var(--fg);
 }
 .reading-top button{border-radius:50%;width:44px;height:44px;flex:0 0 44px}
 .reading-title{padding:14px 12px;border-radius:26px;font-size:12px}
@@ -895,12 +900,8 @@ html[data-theme="oled"] ::highlight(libra-saved-quote){background-color:rgba(197
 .reading-position-capsule{border-radius:22px;padding:10px 16px 2px;margin-bottom:10px}
 .reading-position-capsule .reading-chapter{margin-bottom:5px}
 .reading-position-capsule .reading-seek{height:34px}
-.reading-tools{display:flex;align-items:center;gap:12px;justify-content:space-between}
-.reading-tools>button{flex:0 0 60px;min-width:0;height:60px;border-radius:50%;font-size:9px;gap:3px;justify-content:center;padding:0}
-.reading-tools-capsule{display:flex;align-items:center;flex:1;min-width:0;height:64px;padding:4px;border-radius:34px}
-.reading-tools-capsule button{flex:1;min-width:0;height:54px;min-height:44px;border:0;background:transparent;border-radius:28px;justify-content:center;padding:0;font-size:10px}
 .reading-tools button:active,.reading-top button:active{background:color-mix(in srgb,var(--fg) 10%,var(--bg))}
 .reading-sheet{border:1px solid var(--border);border-bottom:0;box-shadow:0 -8px 32px #0002}
 @media(min-width:700px){.reading-top{max-width:650px;margin-inline:auto}.library-shell .app-tabbar{left:0;right:0}}
-@media(max-width:359px){.library-shell .app-tabbar,.reading-bottom{left:10px;right:10px;gap:8px}.reading-tools{gap:8px}.library-shell .app-tabbar>button,.reading-tools>button{flex-basis:56px;height:56px;min-height:56px}}
+@media(max-width:359px){.library-shell .app-tabbar,.reading-bottom{left:10px;right:10px}}
 @media(prefers-reduced-motion:reduce){.reading-top,.reading-bottom{transition:none}}
