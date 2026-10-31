@@ -2,7 +2,7 @@ name: Publish Libra on GitHub Pages
 
 on:
   push:
-    branches: [feature/libra-standalone-v1]
+    branches: [feature/libra-standalone-v1, codex/libra-quotes-toc]
     paths:
       - 'libra/**'
       - '.github/workflows/libra-publish-pages.yml'
@@ -35,6 +35,7 @@ jobs:
         env:
           LIBRA_BASE_PATH: /kniga-reader/libra/
         run: |
+          npm test
           npm run build
           test -s dist/index.html
           test -f dist/sw.js
