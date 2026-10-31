@@ -5,6 +5,48 @@ const child=(node:Element,name:string)=>Array.from(node.children).find(e=>e.loca
 const children=(node:Element,name:string)=>Array.from(node.children).filter(e=>e.localName===name);
 const href=(node:Element)=>node.getAttribute('l:href')||node.getAttribute('xlink:href')||node.getAttribute('href')||'';
 
+
+const escapeHTML=(value:string)=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+ .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+type InlinePiece={html:string;text:string}|{image:Element};
+/** Only known FB2 text markup is serialized; file-supplied tags, styles and scripts are never copied. */
+function inlinePieces(node:Node):InlinePiece[]{
+ if(node.nodeType===Node.TEXT_NODE){
+  const text=(node.textContent||'').replace(/\s+/g,' ');
+  return text?[{text,html:escapeHTML(text)}]:[];
+ }
+ if(node.nodeType!==Node.ELEMENT_NODE)return [];
+ const element=node as Element,tag=element.localName.toLowerCase();
+ if(tag==='image')return [{image:element}];
+ const parts=Array.from(element.childNodes).flatMap(inlinePieces);
+ const allowed:Record<string,string>={emphasis:'em',i:'em',strong:'strong',b:'strong',
+  strikethrough:'s',sub:'sub',sup:'sup',code:'code',cite:'cite'};
+ const wrapper=tag==='a'&&href(element).startsWith('#')?'sup':allowed[tag];
+ return parts.map(piece=>{
+  if('image' in piece||!wrapper)return piece;
+  const cls=tag==='a'?' class="book-note-reference"':'';
+  return {text:piece.text,html:`<${wrapper}${cls}>${piece.html}</${wrapper}>`};
+ });
+}
+function addRichText(element:Element,kind:'paragraph'|'heading'|'verse',target:Block[],images:Map<string,string>){
+ const pieces=Array.from(element.childNodes).flatMap(inlinePieces);
+ let html='',text='';
+ const flush=()=>{
+  const normalized=text.replace(/\s+/g,' ').trim();
+  if(normalized)target.push({kind,text:normalized,html:html.trim()});
+  html='';text='';
+ };
+ for(const piece of pieces){
+  if('image' in piece){
+   flush();
+   const ref=href(piece.image).replace(/^#/,'');
+   const src=images.get(ref)||'';
+   target.push({kind:'image',src,alt:src?'':'Изображение '+(ref||'без идентификатора')+' отсутствует в файле'});
+  }else{html+=piece.html;text+=piece.text;}
+ }
+ flush();
+}
+
 export function parseFB2(xml:string):ParsedFB2{
   const doc=new DOMParser().parseFromString(xml,'application/xml');
   if(doc.querySelector('parsererror'))throw new Error('FB2 содержит ошибку XML');
@@ -20,7 +62,7 @@ export function parseFB2(xml:string):ParsedFB2{
   for(const binary of Array.from(root.getElementsByTagName('*')).filter(e=>e.localName==='binary')){
     const id=binary.getAttribute('id'), mime=binary.getAttribute('content-type')||'image/jpeg';
     const contents=(binary.textContent||'').replace(/\s/g,'');
-    if(id&&/^image\/(jpeg|png|webp|gif)$/i.test(mime)&&contents.length<20_000_000&&/^[\w+/]*={0,2}$/.test(contents)){
+    if(id&&/^image\/(jpeg|png|webp|gif|svg\+xml)$/i.test(mime)&&contents.length<20_000_000&&/^[\w+/]*={0,2}$/.test(contents)){
       images.set(id,'data:'+mime+';base64,'+contents);
     }
   }
@@ -45,21 +87,7 @@ export function parseFB2(xml:string):ParsedFB2{
     }
     if(tag==='p'||tag==='v'||tag==='subtitle'||tag==='text-author'){
       const kind=tag==='v'?'verse':tag==='subtitle'?'heading':'paragraph';
-      // Inline pictures must survive. Split around image nodes, preserving the
-      // complete sequence of text segments and illustrations.
-      const hasPicture=Array.from(element.getElementsByTagName('*')).some(el=>el.localName==='image');
-      if(!hasPicture){target.push({kind,text:xmlText(element)});return;}
-      let buffer='';
-      const flush=()=>{const value=buffer.replace(/\s+/g,' ').trim();if(value)target.push({kind,text:value});buffer=''};
-      const visit=(node:Node):void=>{
-        if(node.nodeType===Node.TEXT_NODE){buffer+=node.textContent||'';return;}
-        if(node.nodeType!==Node.ELEMENT_NODE)return;
-        const nested=node as Element;
-        if(nested.localName==='image'){flush();walk(nested,target);return;}
-        for(const child of Array.from(node.childNodes))visit(child);
-      };
-      for(const node of Array.from(element.childNodes))visit(node);
-      flush();return;
+      addRichText(element,kind,target,images);return;
     }
     if(tag==='title'){
       const title=xmlText(element);if(title)target.push({kind:'heading',text:title});return;
