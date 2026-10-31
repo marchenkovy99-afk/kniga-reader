@@ -200,7 +200,8 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
    const savedChapterPages=saved?.pageCounts?.[chapter];
    const pageCountChanged=Boolean(savedChapterPages&&savedChapterPages!==count);
    const anchorPreferred=Boolean(saved&&(restoreByAnchor.current||
-    saved.layoutKey!==layoutKey||saved.page>=count||pageCountChanged));
+    (firstRestore&&anchored!==null)||saved.layoutKey!==layoutKey||
+    saved.page>=count||pageCountChanged));
    const selected=explicitPage??(previous.current?count-1:
     restoredFB2Page(saved,layoutKey,count,anchored,anchorPreferred));
    traceReading('fb2.layout',{id:book.id,chapter,savedPage:saved?.page,savedGlobal:saved?.globalPage,
@@ -394,7 +395,13 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
  const pageCounts=chapters.map((_,i)=>knownCounts[i]||0);
  const chapterPages=chapterStartPages(pageCounts);
  const totalPages=indexed?pageCounts.reduce((sum,n)=>sum+n,0):0;
- const globalPage=indexed?stableBookPageNumber(lastPosition.current,pageCounts,chapter,page):0;
+ // The confirmed book-wide page belongs to the reader location, not the
+ // asynchronous background chapter index. Show it even before reindexing ends.
+ const savedBookPage=lastPosition.current?.chapter===chapter&&
+  Number.isSafeInteger(lastPosition.current?.globalPage)&&
+  (lastPosition.current?.globalPage??0)>0;
+ const globalPage=(indexed||savedBookPage)?
+  stableBookPageNumber(lastPosition.current,pageCounts,chapter,page):0;
  const probeChapter=ready?chapters.findIndex((_,i)=>!knownCounts[i]):-1;
  const acceptCount=(target:number,count:number)=>{
   setPageIndex(old=>{
@@ -415,10 +422,44 @@ export function FB2Reader({book,settings,onSettings,onBack}:Props){
   void switchChapter(target.chapter,false,number);
  };
  // Keep the small reading-state record and library percentage book-wide.
- const bookProgress=indexed?Math.round(globalPage/totalPages*100):progressOf(chapter,page,pages,chapters.length);
+ const bookProgress=indexed?Math.min(100,Math.round(globalPage/totalPages*100)):progressOf(chapter,page,pages,chapters.length);
+ // A WebKit reflow can change the visible page without running setReaderPage.
+ // Persist the actual settled screen, not merely tap handlers, and immediately
+ // flush that screen before Safari suspends an installed home-screen PWA.
+ const persistVisiblePage=()=>{
+  if(!ready||reflowing||clipIssue||!flow.current||chapterCommit.current||!globalPage)return;
+  const prior=lastPosition.current;
+  if(prior?.chapter===chapter&&prior.page===page&&prior.globalPage===globalPage)return;
+  const anchor=getPageAnchor(flow.current,page,{width:geometry.width,gap:GAP,
+   stride:stride||geometry.width+GAP})??anchorRef.current;
+  if(anchor)anchorRef.current=anchor;
+  const confirmed:ReaderPosition={
+   chapter,page,globalPage,anchor:anchorRef.current,layoutKey,
+   updatedAt:nextPositionTime(),fraction:bookProgress/100,
+   pageCounts:indexed?pageCounts:prior?.pageCounts
+  };
+  lastPosition.current=confirmed;
+  traceReading('fb2.visible.commit',{id:book.id,chapter,page,globalPage,
+   updatedAt:confirmed.updatedAt,indexed});
+  void savePosition(book.id,confirmed).catch(console.error);
+ };
+ // React runs this after the reflow lock has been released and the page has
+ // actually painted. It also fills missing globalPage in legacy checkpoints.
+ useEffect(()=>{persistVisiblePage()},[ready,reflowing,clipIssue,chapter,page,
+  globalPage,indexed,layoutKey,geometry.width,stride,bookProgress]);
+ const flushRef=useRef<()=>void>(()=>{});
+ flushRef.current=persistVisiblePage;
+ useEffect(()=>{
+  const flush=()=>flushRef.current();
+  const onVisibility=()=>{if(document.visibilityState==='hidden')flush()};
+  window.addEventListener('pagehide',flush);
+  document.addEventListener('visibilitychange',onVisibility);
+  return ()=>{window.removeEventListener('pagehide',flush);
+   document.removeEventListener('visibilitychange',onVisibility)};
+ },[]);
  const position:ReaderPosition={chapter,page,fraction:bookProgress/100,
   anchor:anchorRef.current,updatedAt:Date.now()};
- return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={onBack} onNext={next} onPrevious={prev}
+ return <ReadingControls book={book} settings={settings} onSettings={onSettings} onBack={()=>{persistVisiblePage();onBack()}} onNext={next} onPrevious={prev}
   position={position} progress={bookProgress} safeMode={Boolean(clipIssue)}
   pageNumber={globalPage||undefined} totalPages={totalPages||undefined} onPage={indexed&&ready?seekPage:undefined}
   chapterTitle={actualChapter?.title}
