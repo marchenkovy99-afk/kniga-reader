@@ -1,8 +1,8 @@
 /* Generated for each release by scripts/build-offline.mjs.
  * Cache the complete application shell; imported books remain in IndexedDB. */
 const CACHE_PREFIX = 'libra-offline-';
-const CACHE_NAME = CACHE_PREFIX + '0182515264134eef';
-const PRECACHE_URLS = ["/kniga-reader/libra/assets/index-CW9-LxyW.js","/kniga-reader/libra/assets/index-DlZ_07KR.css","/kniga-reader/libra/assets/src-BiLfDYX7.js","/kniga-reader/libra/icon-180.png","/kniga-reader/libra/icon-512.png","/kniga-reader/libra/icon-mark.svg","/kniga-reader/libra/icon.svg","/kniga-reader/libra/index.html","/kniga-reader/libra/manifest.webmanifest"];
+const CACHE_NAME = CACHE_PREFIX + '2195c90a2c0102d6';
+const PRECACHE_URLS = ["/kniga-reader/libra/assets/index-B8rRcIN8.js","/kniga-reader/libra/assets/index-DlZ_07KR.css","/kniga-reader/libra/assets/src-CaZztNXv.js","/kniga-reader/libra/icon-180.png","/kniga-reader/libra/icon-512.png","/kniga-reader/libra/icon-mark.svg","/kniga-reader/libra/icon.svg","/kniga-reader/libra/index.html","/kniga-reader/libra/manifest.webmanifest"];
 const SCOPE = new URL(self.registration.scope);
 const APP_INDEX = new URL('index.html', SCOPE).href;
 
