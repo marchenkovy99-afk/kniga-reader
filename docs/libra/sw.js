@@ -1,8 +1,8 @@
 /* Generated for each release by scripts/build-offline.mjs.
  * Cache the complete application shell; imported books remain in IndexedDB. */
 const CACHE_PREFIX = 'libra-offline-';
-const CACHE_NAME = CACHE_PREFIX + '2195c90a2c0102d6';
-const PRECACHE_URLS = ["/kniga-reader/libra/assets/index-B8rRcIN8.js","/kniga-reader/libra/assets/index-DlZ_07KR.css","/kniga-reader/libra/assets/src-CaZztNXv.js","/kniga-reader/libra/icon-180.png","/kniga-reader/libra/icon-512.png","/kniga-reader/libra/icon-mark.svg","/kniga-reader/libra/icon.svg","/kniga-reader/libra/index.html","/kniga-reader/libra/manifest.webmanifest"];
+const CACHE_NAME = CACHE_PREFIX + '2df3d63f8e782de7';
+const PRECACHE_URLS = ["/kniga-reader/libra/assets/index-CslbUpIT.js","/kniga-reader/libra/assets/index-DlZ_07KR.css","/kniga-reader/libra/assets/src-Df1Forlq.js","/kniga-reader/libra/icon-180.png","/kniga-reader/libra/icon-512.png","/kniga-reader/libra/icon-mark.svg","/kniga-reader/libra/icon.svg","/kniga-reader/libra/index.html","/kniga-reader/libra/manifest.webmanifest"];
 const SCOPE = new URL(self.registration.scope);
 const APP_INDEX = new URL('index.html', SCOPE).href;
 
@@ -48,5 +48,18 @@ self.addEventListener('fetch', event => {
       }
       return response;
     } catch { return Response.error(); }
+  })());
+});
+
+// Verify actual cached bytes without contacting the hosting or cloud services.
+self.addEventListener('message', event => {
+  if(event.data?.type !== 'LIBRA_OFFLINE_STATUS' || !event.ports[0]) return;
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const missing = [];
+      for(const url of PRECACHE_URLS) if(!await cache.match(new URL(url,SCOPE).href)) missing.push(url);
+      event.ports[0].postMessage({ready:missing.length===0,files:PRECACHE_URLS.length,missing});
+    } catch { event.ports[0].postMessage({ready:false,files:0}); }
   })());
 });
