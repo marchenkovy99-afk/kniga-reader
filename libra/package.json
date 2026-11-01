@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/build-offline.mjs && node --test tests/offline-cache.test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run src/__tests__",
     "preview": "vite preview --host 0.0.0.0"
