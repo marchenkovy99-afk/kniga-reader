@@ -93,7 +93,9 @@ test('build precaches every shipped JS/CSS chunk, including EPUB lazy imports', 
 
 test('deployment configuration is excluded even when packaging adds it to dist', async () => {
   const root = path.join(here,'..');
-  await writeFile(path.join(root,'dist','vercel.json'),'{}');
+  // Leave the actual deployment config intact while ensuring it is present.
+  const config=path.join(root,'dist','vercel.json');
+  try { await readFile(config); } catch { await writeFile(config,'{}'); }
   execFileSync(process.execPath,[path.join(root,'scripts','build-offline.mjs')]);
   const packaged = await readFile(path.join(root,'dist','sw.js'),'utf8');
   assert.doesNotMatch(packaged,/"[^"\n]*vercel\.json"/);
