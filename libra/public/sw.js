@@ -50,3 +50,16 @@ self.addEventListener('fetch', event => {
     } catch { return Response.error(); }
   })());
 });
+
+// Verify actual cached bytes without contacting the hosting or cloud services.
+self.addEventListener('message', event => {
+  if(event.data?.type !== 'LIBRA_OFFLINE_STATUS' || !event.ports[0]) return;
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const missing = [];
+      for(const url of PRECACHE_URLS) if(!await cache.match(new URL(url,SCOPE).href)) missing.push(url);
+      event.ports[0].postMessage({ready:missing.length===0,files:PRECACHE_URLS.length,missing});
+    } catch { event.ports[0].postMessage({ready:false,files:0}); }
+  })());
+});

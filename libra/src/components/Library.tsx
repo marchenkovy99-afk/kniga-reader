@@ -4,6 +4,7 @@ import {bookmarkLocationLabel} from '../bookmarks';
 import {removeQuote} from '../storage';
 import {BookCover} from './BookCover';
 import {Icon} from './Icons';
+import {OfflinePanel} from './OfflinePanel';
 import {BackupPanel} from './BackupPanel';
 import {CloudPanel} from './CloudPanel';
 import type {CloudController} from '../useCloudSync';
@@ -115,7 +116,7 @@ export function Library({cloud,books,settings,onSettings,onOpen,onImport,onDelet
    <button className="backup-action" type="button" onClick={()=>input.current?.click()}>Добавить книгу (FB2, EPUB)</button>
    <div className="section-heading" style={{marginTop:30}}><h2>Тема чтения</h2></div><p className="setting-hint">Выберите оформление страниц книги. Библиотека остаётся тёмной.</p>
    <div className="theme-options settings-themes">{(['paper','white','night','oled'] as const).map(t=><button key={t} className={'theme-swatch '+(settings.theme===t?'chosen':'')} data-option={t} onClick={()=>onSettings({...settings,theme:t})}><span>{t==='paper'?'Бумага':t==='white'?'Белая':t==='night'?'Ночь':'OLED'}</span></button>)}</div>
-   <BackupPanel settings={settings} onSettings={onSettings} onImported={onBackupImported}/><CloudPanel cloud={cloud}/>
+   <OfflinePanel/><BackupPanel settings={settings} onSettings={onSettings} onImported={onBackupImported}/><CloudPanel cloud={cloud}/>
   </main>}
   {loading&&<div className="import-status" role="status">Импорт книги…</div>}
   <nav className="app-tabbar" aria-label="Разделы приложения">

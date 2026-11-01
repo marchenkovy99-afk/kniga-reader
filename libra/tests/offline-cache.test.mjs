@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 import {runInNewContext} from 'node:vm';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
@@ -19,7 +20,7 @@ function boot() {
     const entries = names.get(name);
     const keyOf = input => new URL(typeof input === 'string' ? input : input.url, origin).href;
     return {
-      addAll: async urls => { for (const url of urls) entries.set(keyOf(url), new Response('cached: ' + url)); },
+      addAll: async urls => { assert.ok(!urls.some(url=>url.endsWith('/vercel.json')), 'Vercel hides its config: one 404 cancels the entire offline installation'); for (const url of urls) entries.set(keyOf(url), new Response('cached: ' + url)); },
       match: async (input, opts) => {
         let key = keyOf(input);
         if (opts?.ignoreSearch) key = key.split('?')[0];
@@ -60,7 +61,13 @@ function boot() {
     });
     return response ? await response : undefined;
   };
-  return {lifecycle, request, names, fetched};
+  const status = async () => {
+    let complete, result;
+    handlers.message({data:{type:'LIBRA_OFFLINE_STATUS'},ports:[{postMessage:value=>{result=value;}}],waitUntil:promise=>{complete=promise;}});
+    await complete;
+    return result;
+  };
+  return {lifecycle, request, names, fetched, status};
 }
 
 test('build precaches every shipped JS/CSS chunk, including EPUB lazy imports', async () => {
@@ -81,4 +88,26 @@ test('build precaches every shipped JS/CSS chunk, including EPUB lazy imports', 
   await app.lifecycle('activate');
   assert.ok(app.names.has('other-application-cache'), 'do not remove other apps caches');
   assert.ok(!app.names.has('libra-shell-old'), 'remove only old Libra cache');
+});
+
+
+test('deployment configuration is excluded even when packaging adds it to dist', async () => {
+  const root = path.join(here,'..');
+  await writeFile(path.join(root,'dist','vercel.json'),'{}');
+  execFileSync(process.execPath,[path.join(root,'scripts','build-offline.mjs')]);
+  const packaged = await readFile(path.join(root,'dist','sw.js'),'utf8');
+  assert.doesNotMatch(packaged,/"[^"\n]*vercel\.json"/);
+});
+
+test('offline readiness checks cached files and detects incomplete storage', async () => {
+  const app=boot();
+  await app.lifecycle('install');
+  assert.equal((await app.status()).ready,true);
+  const active=[...app.names.keys()].find(key=>key.startsWith('libra-offline-'));
+  const files=app.names.get(active);
+  const asset=[...files.keys()].find(url=>/\/assets\/.*\.js$/.test(url));
+  files.delete(asset);
+  const status=await app.status();
+  assert.equal(status.ready,false);
+  assert.ok(status.missing.length>0);
 });

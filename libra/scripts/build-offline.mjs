@@ -16,7 +16,7 @@ async function walk(dir, prefix = '') {
   for (const entry of await readdir(dir, {withFileTypes: true})) {
     const relative = path.posix.join(prefix, entry.name);
     if (entry.isDirectory()) found.push(...await walk(path.join(dir, entry.name), relative));
-    else if (entry.isFile() && relative !== 'sw.js') found.push(relative);
+    else if (entry.isFile() && relative !== 'sw.js' && !['vercel.json','netlify.toml','_headers','_redirects'].includes(relative) && !relative.startsWith('.')) found.push(relative);
   }
   return found;
 }
