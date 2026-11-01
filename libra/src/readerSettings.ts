@@ -24,7 +24,7 @@ export function normalizeSettings(saved:Partial<ReaderSettings>|undefined):Reade
   align:'justify',
   animation:source.animation==='none'?'none':'slide',
   fontSize:bounded(source.fontSize,12,36,DEFAULT_SETTINGS.fontSize),
-  lineHeight:bounded(source.lineHeight,1.1,2.2,DEFAULT_SETTINGS.lineHeight),
+  lineHeight:bounded(source.lineHeight,1,2.2,DEFAULT_SETTINGS.lineHeight),
   margin:bounded(source.margin,0,52,DEFAULT_SETTINGS.margin),
   marginRight:bounded(source.marginRight,0,52,bounded(source.margin,0,52,DEFAULT_SETTINGS.margin)),
   verticalMargin:bounded(source.verticalMargin,0,52,DEFAULT_SETTINGS.verticalMargin),

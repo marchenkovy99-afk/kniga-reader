@@ -200,8 +200,8 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
            )}
          </div>
          <div className="settings-section-title">Размер и интервалы</div>
-         <label>Размер текста <strong>{settings.fontSize} px</strong><input type="range" min="12" max="36" step="1" value={settings.fontSize} onChange={e=>update('fontSize',Number(e.target.value))}/></label>
-         <label>Интервал строк <strong>{settings.lineHeight.toFixed(2)}</strong><input type="range" min="1.1" max="2.2" step=".05" value={settings.lineHeight} onChange={e=>update('lineHeight',Number(e.target.value))}/></label>
+         <label>Размер текста <strong>{settings.fontSize.toLocaleString('ru-RU')} px</strong><input type="range" min="12" max="36" step="0.5" value={settings.fontSize} onChange={e=>update('fontSize',Number(e.target.value))}/></label>
+         <label>Интервал строк <strong>{settings.lineHeight.toFixed(2)}</strong><input type="range" min="1" max="2.2" step=".05" value={settings.lineHeight} onChange={e=>update('lineHeight',Number(e.target.value))}/></label>
          <label>Поле слева <strong>{settings.margin} px</strong><input type="range" min="0" max="52" step="2" value={settings.margin} onChange={e=>update('margin',Number(e.target.value))}/></label>
          <label>Между словами <strong>{settings.wordSpacing.toFixed(1)} px</strong><input type="range" min="0" max="5" step=".5" value={settings.wordSpacing} onChange={e=>update('wordSpacing',Number(e.target.value))}/></label>
          <label>Между буквами <strong>{settings.letterSpacing.toFixed(1)} px</strong><input type="range" min="-.5" max="1.5" step=".1" value={settings.letterSpacing} onChange={e=>update('letterSpacing',Number(e.target.value))}/></label>
