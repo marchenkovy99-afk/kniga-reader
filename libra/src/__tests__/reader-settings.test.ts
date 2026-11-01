@@ -3,6 +3,14 @@ import {describe,it,expect} from 'vitest';
 import {DEFAULT_SETTINGS} from '../domain';
 import {normalizeSettings,fontStack,resetTypography,readingInk,maximumTextPreset,balancePageMargins} from '../readerSettings';
 describe('reader typography normalization',()=>{
+ it('retains half-point font sizes and tighter line spacing after loading',()=>{
+  for(const fontSize of [22.5,23.5,24.5]){
+   for(const lineHeight of [1,1.025,1.05,1.075]){
+    expect(normalizeSettings({fontSize,lineHeight})).toMatchObject({fontSize,lineHeight});
+   }
+  }
+  expect(normalizeSettings({lineHeight:0}).lineHeight).toBe(1);
+ });
  it('retains zero page margins and spacing',()=>{
   const s=normalizeSettings({...DEFAULT_SETTINGS,margin:0,marginRight:0,verticalMargin:0,bottomMargin:0,paragraphSpacing:0,wordSpacing:0});
   for(const key of ['margin','marginRight','verticalMargin','bottomMargin','paragraphSpacing','wordSpacing'] as const)expect(s[key]).toBe(0);

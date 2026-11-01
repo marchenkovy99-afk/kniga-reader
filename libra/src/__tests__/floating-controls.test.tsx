@@ -22,6 +22,11 @@ it('opens overlay tools and settings without changing preferences or remounting 
  await act(async()=>{Array.from(host.querySelectorAll('button')).find(b=>b.textContent==='Текст')!.click()});
  expect(host.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Настройки чтения');
  expect(host.querySelectorAll('.sheet-settings input[type="range"]').length).toBeGreaterThan(8);
+ const sliders=Array.from(host.querySelectorAll<HTMLInputElement>('.sheet-settings input[type="range"]'));
+ expect(sliders.find(el=>el.closest('label')?.textContent?.startsWith('Размер текста'))?.step).toBe('0.5');
+ const lineSpacing=sliders.find(el=>el.closest('label')?.textContent?.startsWith('Интервал строк'))!;
+ expect(lineSpacing.min).toBe('1');
+ expect(lineSpacing.step).toBe('.025');
  await click('[aria-label="Закрыть"]');
  await click('[aria-label="Скрыть управление чтением"]');
  expect(host.querySelector('.reading-bottom')?.classList.contains('visible')).toBe(false);
