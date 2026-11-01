@@ -1,0 +1,41 @@
+name: LIBRA no-clipping regression gate
+on:
+  push:
+    branches: ['feature/libra-standalone-v1']
+    paths:
+      - 'libra/src/**'
+      - 'libra/e2e/no-clipped-content.spec.ts'
+      - 'libra/e2e/media-overflow-guard.spec.ts'
+      - '.github/workflows/libra-clipping-regressions.yml'
+  workflow_dispatch:
+concurrency:
+  group: libra-no-clipping-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  clipping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: libra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install app and browser runner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify every text fragment, last page, tall images and tables
+        run: npx playwright test e2e/no-clipped-content.spec.ts e2e/media-overflow-guard.spec.ts --config playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libra-clipping-debug
+          path: libra/test-results
+          if-no-files-found: ignore
