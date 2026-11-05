@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сегодняшние обновления</book-title></title-info></description><body><section><title><p>Первая глава</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Текст для проверки сохранения страницы. '.repeat(25))+'</p>').join('')+'</section><section><title><p>Вторая глава</p></title><p>Следующая глава книги.</p></section></body></FictionBook>';
 async function add(page){await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'today.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});}
 async function ready(page){await expect(page.locator('.book-flow')).toBeVisible();await expect(page.locator('.reading-status')).toContainText(/\d+ \/ \d+/);}
-async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await zones.dispatchEvent('touchstart',{touches:[point]});await zones.dispatchEvent('touchend',{touches:[],changedTouches:[point]});}
+async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await page.touchscreen.tap(point.clientX,point.clientY);}
 test('read/unread book moves between filters and survives reload',async({page})=>{
  await add(page);await page.getByRole('button',{name:'Действия с книгой «Сегодняшние обновления»'}).click();
  await page.getByRole('button',{name:'В прочитанные',exact:true}).click();

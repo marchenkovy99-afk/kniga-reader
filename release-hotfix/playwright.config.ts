@@ -1,2 +1,2 @@
 import {defineConfig,devices} from '@playwright/test';
-export default defineConfig({testDir:'./e2e',timeout:45000,retries:0,workers:1,reporter:'list',use:{baseURL:process.env.BASE_URL||'http://127.0.0.1:4173',trace:'retain-on-failure'},projects:[{name:'chromium',use:{...devices['iPhone 13'],browserName:'chromium'}},{name:'webkit',use:{...devices['iPhone 13'],browserName:'webkit'}}]});
+export default defineConfig({testDir:'./e2e',outputDir:'./test-results',timeout:45000,retries:0,workers:1,reporter:'list',use:{baseURL:process.env.BASE_URL||'http://127.0.0.1:4173',trace:'retain-on-failure'},projects:[{name:'chromium',use:{...devices['iPhone 13'],browserName:'chromium'}},{name:'webkit',use:{...devices['iPhone 13'],browserName:'webkit'}}]});
