@@ -66,7 +66,7 @@
     const touch = event.touches[0];
     gesture = {root, x: touch.clientX, y: touch.clientY, held: false, moved: false};
     const point = gesture;
-    if (!root.querySelector('.reading-sheet') && !contentAt(root, point.x, point.y)?.closest?.('img,svg,a,button,[role="button"]')) {
+    if (!root.querySelector('.sheet-scrim:not(.sheet-exiting) .reading-sheet') && !contentAt(root, point.x, point.y)?.closest?.('img,svg,a,button,[role="button"]')) {
       timer = setTimeout(() => {
         timer = null;
         if (gesture !== point || active() !== root) return;
@@ -99,7 +99,7 @@
     if (hit?.closest?.('img,svg,a,button,[role="button"]')) return;
     suppressUntil = Date.now() + 900;
     event.preventDefault(); event.stopImmediatePropagation();
-    const close = root.querySelector('.reading-sheet [aria-label="Закрыть"]');
+    const close = root.querySelector('.sheet-scrim:not(.sheet-exiting) .reading-sheet [aria-label="Закрыть"]');
     if (close) close.click(); else root.querySelector('.reading-status')?.click();
   }, {capture: true, passive: false});
   document.addEventListener('click', event => {
