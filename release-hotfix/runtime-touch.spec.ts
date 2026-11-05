@@ -72,6 +72,7 @@ for(const format of ['fb2','epub']){
    }),{timeout:15000}).toBe(true);
    server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));
    await page.reload();
+   await expect(page.locator('.reading-root, .continue-card').first()).toBeVisible();
    if(await page.locator('.continue-card').count())await page.locator('.continue-card').click();
    await expect(page.locator(format==='fb2'?'.book-flow':'.epub-mount iframe')).toBeVisible();
   }finally{server.closeAllConnections();server.close();}
