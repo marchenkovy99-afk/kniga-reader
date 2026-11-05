@@ -82,3 +82,34 @@ export function captureEpubQuote(contents:readonly any[],position:ReaderPosition
  }
  return null;
 }
+
+/** Begin a native selection after the gesture overlay has released hit testing. */
+export function selectQuoteWord(root:HTMLElement,x:number,y:number):boolean{
+ let doc=root.ownerDocument,container:HTMLElement=root,localX=x,localY=y;
+ for(const frame of Array.from(root.querySelectorAll('iframe'))){
+  const rect=frame.getBoundingClientRect();
+  if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)continue;
+  try{
+   if(frame.contentDocument?.body){doc=frame.contentDocument;container=doc.body;localX=x-rect.left;localY=y-rect.top;break}
+  }catch{/* Only same-origin reading frames can expose a selection. */}
+ }
+ const hit=doc as Document&{
+  caretRangeFromPoint?:(x:number,y:number)=>Range|null;
+  caretPositionFromPoint?:(x:number,y:number)=>{offsetNode:Node;offset:number}|null;
+ };
+ const caret=hit.caretRangeFromPoint?.(localX,localY);
+ const position=caret?{offsetNode:caret.startContainer,offset:caret.startOffset}:hit.caretPositionFromPoint?.(localX,localY);
+ const node=position?.offsetNode;
+ if(!node||node.nodeType!==3||!container.contains(node))return false;
+ const text=node.textContent||'';
+ let start=Math.min(position!.offset,text.length),end=start;
+ const word=(character:string)=>/[\p{L}\p{N}'’\u002d]/u.test(character);
+ if(!word(text[start]||'')&&start>0&&word(text[start-1]))start--;
+ end=start;
+ while(start>0&&word(text[start-1]))start--;
+ while(end<text.length&&word(text[end]))end++;
+ if(end<=start)return false;
+ const range=doc.createRange();range.setStart(node,start);range.setEnd(node,end);
+ const selection=doc.getSelection();if(!selection)return false;
+ selection.removeAllRanges();selection.addRange(range);return true;
+}
