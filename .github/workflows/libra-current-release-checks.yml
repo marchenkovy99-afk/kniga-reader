@@ -2,7 +2,7 @@ name: LIBRA current release browser checks
 on:
   push:
     branches: ['fix/libra-first-tap-and-quote-selection']
-    paths: ['release-hotfix/runtime-touch.spec.ts','release-hotfix/playwright.config.ts','release-hotfix/today-smoke.spec.ts','.github/workflows/libra-current-release-checks.yml']
+    paths: ['release-hotfix/runtime-touch.spec.ts','release-hotfix/playwright.config.ts','release-hotfix/today-smoke.spec.ts','release-hotfix/ios-controls-clearance.spec.ts','.github/workflows/libra-current-release-checks.yml']
 permissions:
   contents: read
 jobs:
@@ -22,6 +22,7 @@ jobs:
           mkdir -p release-hotfix/e2e/support
           cp release-hotfix/runtime-touch.spec.ts release-hotfix/e2e/
           cp release-hotfix/today-smoke.spec.ts release-hotfix/e2e/
+          cp release-hotfix/ios-controls-clearance.spec.ts release-hotfix/e2e/
           cp libra/e2e/support/epub-fixture.ts release-hotfix/e2e/support/
       - name: Install Chromium and WebKit
         working-directory: release-hotfix
@@ -29,7 +30,7 @@ jobs:
       - name: Verify current published build in both browser engines
         working-directory: release-hotfix
         env:
-          BASE_URL: https://libra-standalone-preview-jbypane5x-marchenkovy99-3693.vercel.app
+          BASE_URL: https://libra-standalone-preview-k1knczd20-marchenkovy99-3693.vercel.app
         run: npx playwright test --config playwright.config.ts
       - uses: actions/upload-artifact@v4
         if: always()

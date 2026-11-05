@@ -2,8 +2,22 @@
 (() => {
   const exitingStyle = document.createElement('style');
   exitingStyle.dataset.libraTouchRepair = 'true';
-  exitingStyle.textContent = '.reading-root .sheet-scrim.sheet-exiting{pointer-events:none!important}';
+  exitingStyle.textContent = `
+    .reading-root .sheet-scrim.sheet-exiting{pointer-events:none!important}
+    html.libra-ios-standalone .reading-root .reading-top{top:calc(var(--reader-safe-top) + 40px)}
+    html.libra-ios-standalone .reading-root .quote-mode-tip{top:calc(var(--reader-safe-top) + 42px)}
+  `;
   document.head.appendChild(exitingStyle);
+  // Offset only floating controls. The shared safe area and book viewport must
+  // stay unchanged: both participate in pagination and saved reading positions.
+  const standaloneMode = window.matchMedia('(display-mode: standalone)');
+  const syncControlsMode = () => document.documentElement.classList.toggle(
+    'libra-ios-standalone',
+    /iPhone|iPod/.test(navigator.userAgent) && (navigator.standalone === true || standaloneMode.matches)
+  );
+  syncControlsMode();
+  standaloneMode.addEventListener('change', syncControlsMode);
+  window.addEventListener('pageshow', syncControlsMode);
   const active = () => document.querySelector('.reading-root');
   let gesture = null, timer = null, suppressUntil = 0;
   const cancelHold = () => { if (timer !== null) clearTimeout(timer); timer = null; };
