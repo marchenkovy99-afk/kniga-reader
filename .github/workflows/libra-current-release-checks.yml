@@ -2,7 +2,7 @@ name: LIBRA current release browser checks
 on:
   push:
     branches: ['fix/libra-first-tap-and-quote-selection']
-    paths: ['release-hotfix/today-smoke.spec.ts','.github/workflows/libra-current-release-checks.yml']
+    paths: ['release-hotfix/runtime-touch.spec.ts','release-hotfix/playwright.config.ts','release-hotfix/today-smoke.spec.ts','.github/workflows/libra-current-release-checks.yml']
 permissions:
   contents: read
 jobs:

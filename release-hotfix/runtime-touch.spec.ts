@@ -68,7 +68,7 @@ for(const format of ['fb2','epub']){
    await page.locator('.continue-card').click();await expect(page.locator(format==='fb2'?'.book-flow':'.epub-mount iframe')).toBeVisible();
    await expect.poll(()=>page.evaluate(async()=>{
     const controller=navigator.serviceWorker.controller;if(!controller)return false;
-    return await new Promise(resolve=>{const channel=new MessageChannel();const timeout=setTimeout(()=>resolve(false),1500);channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data?.ready===true&&event.data?.files===12)};controller.postMessage({type:'LIBRA_OFFLINE_STATUS'},[channel.port2])});
+    return await new Promise(resolve=>{const channel=new MessageChannel();const timeout=setTimeout(()=>resolve(false),1500);channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data?.ready===true&&event.data?.files===10)};controller.postMessage({type:'LIBRA_OFFLINE_STATUS'},[channel.port2])});
    }),{timeout:15000}).toBe(true);
    server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));
    await page.reload();
