@@ -22,13 +22,14 @@ test('installed old PWA updates its cache without losing the book or reading pos
   const before=await page.locator('.reading-status span').first().textContent();
   updated=true;
   await page.evaluate(async()=>{const registration=await navigator.serviceWorker.getRegistration();await registration.update()});
-  await expect.poll(()=>page.evaluate(async()=>{const keys=await caches.keys();return keys.includes('libra-offline-b0941d7fc23d1842')}),{timeout:15000}).toBe(true);
+  await expect.poll(()=>page.evaluate(async()=>{const registration=await navigator.serviceWorker.getRegistration();return registration?.waiting?.state==='installed'}),{timeout:15000}).toBe(true);
   await page.close();page=await context.newPage();await page.goto('http://127.0.0.1:4174');
+  await expect(page.locator('.reading-root, .continue-card').first()).toBeVisible();
   if(await page.locator('.continue-card').count())await page.locator('.continue-card').click();
   await expect(page.locator('.book-flow')).toBeVisible();
   await expect(page.locator('.reading-status span').first()).toHaveText(before);
   const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),p={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};
-  await zones.dispatchEvent('touchstart',{touches:[p]});await zones.dispatchEvent('touchend',{touches:[],changedTouches:[p]});
+  await page.touchscreen.tap(p.clientX,p.clientY);
   await expect(page.locator('.reading-top')).toHaveClass(/visible/);
   await context.setOffline(true);await page.reload();
   if(await page.locator('.continue-card').count())await page.locator('.continue-card').click();
