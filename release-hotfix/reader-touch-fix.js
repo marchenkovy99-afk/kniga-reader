@@ -1,5 +1,9 @@
 // LIBRA reader gesture repair, layered onto the exact published application.
 (() => {
+  const exitingStyle = document.createElement('style');
+  exitingStyle.dataset.libraTouchRepair = 'true';
+  exitingStyle.textContent = '.reading-root .sheet-scrim.sheet-exiting{pointer-events:none!important}';
+  document.head.appendChild(exitingStyle);
   const active = () => document.querySelector('.reading-root');
   let gesture = null, timer = null, suppressUntil = 0;
   const cancelHold = () => { if (timer !== null) clearTimeout(timer); timer = null; };

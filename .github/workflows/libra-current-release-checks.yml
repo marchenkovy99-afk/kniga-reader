@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
       - name: Install browser test runner
         run: npm install --prefix release-hotfix --ignore-scripts --no-save --package-lock=false --no-audit --no-fund @playwright/test@1.56.1
+      - name: Recreate verified current release
+        run: node release-hotfix/build.mjs
       - name: Prepare exact-release tests
         run: |
           mkdir -p release-hotfix/e2e/support
@@ -27,7 +29,7 @@ jobs:
       - name: Verify current published build in both browser engines
         working-directory: release-hotfix
         env:
-          BASE_URL: https://libra-standalone-preview-heovcdvbv-marchenkovy99-3693.vercel.app
+          BASE_URL: https://libra-standalone-preview-femrqz3yv-marchenkovy99-3693.vercel.app
         run: npx playwright test --config playwright.config.ts
       - uses: actions/upload-artifact@v4
         if: always()

@@ -22,6 +22,7 @@ test('panels overlay text; dark headings, half-point fonts, chapter pages, bookm
  await size.evaluate(el=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'23.5');el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});
  await expect(size).toHaveValue('23.5');
  await page.locator('.theme-swatch[data-option="oled"]').click();await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ expect(await page.locator('.sheet-exiting').evaluateAll(nodes=>nodes.every(el=>getComputedStyle(el).pointerEvents==='none'))).toBe(true);
  await expect.poll(()=>page.locator('.book-flow').evaluate(el=>getComputedStyle(el).fontSize)).toBe('23.5px');
  const heading=page.locator('.book-flow h1,.book-flow h2,.book-flow h3').first();
  const color=await heading.evaluate(el=>getComputedStyle(el).color);expect(Math.max(...color.match(/[0-9.]+/g).slice(0,3).map(Number))).toBeGreaterThan(100);
