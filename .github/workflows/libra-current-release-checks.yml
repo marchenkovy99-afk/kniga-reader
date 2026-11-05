@@ -29,7 +29,7 @@ jobs:
       - name: Verify current published build in both browser engines
         working-directory: release-hotfix
         env:
-          BASE_URL: https://libra-standalone-preview-femrqz3yv-marchenkovy99-3693.vercel.app
+          BASE_URL: https://libra-standalone-preview-jbypane5x-marchenkovy99-3693.vercel.app
         run: npx playwright test --config playwright.config.ts
       - uses: actions/upload-artifact@v4
         if: always()

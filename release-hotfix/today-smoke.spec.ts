@@ -45,18 +45,16 @@ test('first touch still opens controls after repeatedly closing and reopening th
  for(let i=0;i<3;i++){await page.locator('.continue-card').click();await ready(page);await touchCenter(page);await expect(page.locator('.reading-top')).toHaveClass(/visible/);await page.getByRole('button',{name:'В библиотеку'}).click();}
 });
 
-test.beforeEach(async({page})=>{
+test('an exiting settings panel does not consume the next central tap',async({page})=>{
  await page.addInitScript(()=>{
-  const ids=new WeakMap();let next=0;window.__libraTouchEvents=[];
-  const record=(event,phase)=>{
-   const root=document.querySelector('.reading-root');if(!root)return;
-   if(!ids.has(root))ids.set(root,++next);
-   const touch=event.changedTouches?.[0]||event.touches?.[0]||event;
-   const x=touch.clientX,y=touch.clientY;
-   window.__libraTouchEvents.push({phase,type:event.type,time:Math.round(performance.now()),root:ids.get(root),target:event.target?.tagName+'.'+event.target?.className,hit:document.elementFromPoint(x||0,y||0)?.className,top:root.querySelector('.reading-top')?.className,exit:root.querySelector('.sheet-exiting')?getComputedStyle(root.querySelector('.sheet-exiting')).pointerEvents:null,prevented:event.defaultPrevented,x,y});
-   if(window.__libraTouchEvents.length>40)window.__libraTouchEvents.shift();
-  };
-  for(const type of ['touchstart','touchend','click']){document.addEventListener(type,event=>{record(event,'capture');queueMicrotask(()=>record(event,'after'))},true)}
+  const original=window.setTimeout.bind(window);
+  window.setTimeout=((handler,delay,...args)=>original(handler,delay===200?2000:delay,...args));
  });
+ await add(page);await page.locator('.continue-card').click();await ready(page);await touchCenter(page);
+ await page.getByRole('button',{name:'Текст',exact:true}).click();
+ await page.getByRole('button',{name:'Закрыть',exact:true}).click();
+ await expect(page.locator('.sheet-exiting')).toHaveCount(1);
+ await page.getByRole('button',{name:'Скрыть управление чтением'}).click();
+ await touchCenter(page);
+ await expect(page.locator('.reading-top')).toHaveClass(/visible/);
 });
-test.afterEach(async({page},info)=>{if(info.status!==info.expectedStatus)console.log('LIBRA_TOUCH_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>window.__libraTouchEvents)))});
