@@ -34,5 +34,6 @@ export function patchRelease(source){
  replace('async function h(e){s(!0),l(``);for(let t of Array.from(e))', 'async function h(e){const importFiles=Array.from(e);s(!0),l(``);let importOwner;try{importOwner=(await F()).owner}catch(error){l(String(error));s(false);return}for(let t of importFiles)');
  replace('importedAt:Date.now(),bookmarks:[]})}catch(e){l(`Не удалось импортировать', 'importedAt:Date.now(),bookmarks:[]},importOwner)}catch(e){l(`Не удалось импортировать');
  replace('let t=await he(),n=await ae(),r=await A();E=!0,', 'let t=await he(),n=await ae(),r=await A();if(e!==T)throw Error(`Учётная запись изменилась`);E=!0,');
+ replace('"data-book-id":e.id', '"data-book-id":e.id,"data-reading-owner":T||"guest"');
  return source;
 }

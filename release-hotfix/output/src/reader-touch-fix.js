@@ -1,3 +1,4 @@
+import './reading-time.js';
 import './footnotes.js';
 // LIBRA reader gesture repair, layered onto the exact published application.
 (() => {
