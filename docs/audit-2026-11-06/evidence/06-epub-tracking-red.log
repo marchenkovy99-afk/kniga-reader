@@ -1,0 +1,59 @@
+
+Running 2 tests using 1 worker
+
+(node:21) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources (1.2s)
+(node:116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 [chromium] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book (486ms)
+
+
+  1) [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+
+    [32m- Expected  -  1[39m
+    [31m+ Received  + 13[39m
+
+    [32m- Array [][39m
+    [31m+ Array [[39m
+    [31m+   "https://audit.invalid/frame",[39m
+    [31m+   "https://audit.invalid/style.css",[39m
+    [31m+   "https://audit.invalid/pixel.png",[39m
+    [31m+   "https://audit.invalid/style.css",[39m
+    [31m+   "https://audit.invalid/pixel.png",[39m
+    [31m+   "https://audit.invalid/style.css",[39m
+    [31m+   "https://audit.invalid/pixel.png",[39m
+    [31m+   "https://audit.invalid/frame",[39m
+    [31m+   "https://audit.invalid/style.css",[39m
+    [31m+   "https://audit.invalid/pixel.png",[39m
+    [31m+   "https://audit.invalid/frame",[39m
+    [31m+ ][39m
+
+      12 |  await expect(page.frameLocator('.epub-mount iframe').locator('p').first()).toContainText('Passage 0');
+      13 |  await page.frameLocator('.epub-mount iframe').locator('img').evaluate(async(img:HTMLImageElement)=>{if(!img.complete)await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;setTimeout(resolve,500)})});
+    > 14 |  expect(await page.evaluate(()=>Boolean((window as any).__auditPwned))).toBe(false);expect(requests).toEqual([]);
+         |                                                                                                      ^
+      15 | });
+      16 | test('FB2 custom entities are rejected without saving a partial book',async({page})=>{
+      17 |  await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'entities.fb2',mimeType:'text/xml',buffer:Buffer.from('<!DOCTYPE FictionBook [<!ENTITY x "expanded">]><FictionBook><body><section><p>&x;</p></section></body></FictionBook>')});
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/security-browser.spec.ts:14:102
+
+    Error Context: test-results/security-browser-untrusted-48ebc-d-remote-tracking-resources-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/security-browser-untrusted-48ebc-d-remote-tracking-resources-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/security-browser-untrusted-48ebc-d-remote-tracking-resources-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources 
+  1 passed (3.7s)

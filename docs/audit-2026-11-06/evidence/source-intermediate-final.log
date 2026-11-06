@@ -1,0 +1,649 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:32) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22mnpm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:45) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 124 tests using 2 workers
+
+(node:84) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:83) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:83) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:84) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓    1 [chromium-iphone] › e2e/backup.spec.ts:16:1 › backup export and additive restore recover exact book bytes, bookmarks and reading position (3.2s)
+  ✓    2 [chromium-iphone] › e2e/anchors.spec.ts:27:1 › font adjustment and reopen preserve source position and all text (3.3s)
+  ✓    3 [chromium-iphone] › e2e/backup.spec.ts:106:1 › invalid backup never deletes or changes an existing book (1.3s)
+  ✓    4 [chromium-iphone] › e2e/book-navigation.spec.ts:5:1 › whole-book slider, page jump, hidden footer and restored final character (3.1s)
+  ✓    5 [chromium-iphone] › e2e/bookmarks.spec.ts:6:1 › saved bookmark has the correct state and reopens its own page (2.4s)
+  ✓    6 [chromium-iphone] › e2e/book-navigation.spec.ts:90:1 › FB2 contents show the exact start page of every measured chapter (1.3s)
+  ✓    7 [chromium-iphone] › e2e/bookmarks.spec.ts:84:1 › bookmarks survive a full reload and reopen at the saved page (2.2s)
+  ✓    9 [chromium-iphone] › e2e/chapter-turn-stability.spec.ts:6:1 › chapter boundary keeps page geometry fixed and does not animate across the previous chapter (1.5s)
+  ✓    8 [chromium-iphone] › e2e/chapter-boundaries.spec.ts:9:1 › switching between chapters preserves last page and all body content (3.8s)
+  ✓   10 [chromium-iphone] › e2e/clear-first-line.spec.ts:6:1 › zero top margin never paints first reading line against iPhone clip or status bar (1.8s)
+  ✓   11 [chromium-iphone] › e2e/clear-reader.spec.ts:2:1 › reading canvas has no blur or visible footer and recovers a complete standard line (1.1s)
+  ✓   12 [chromium-iphone] › e2e/clipping-guard.spec.ts:25:1 › real glyph overflow raises an error and exposes the complete chapter through vertical scrolling (2.0s)
+  ✓   14 [chromium-iphone] › e2e/clipping-guard.spec.ts:85:1 › safe chapter navigation resets the next chapter to its start and the previous chapter to its end (1.6s)
+  ✓   15 [chromium-iphone] › e2e/density.spec.ts:6:1 › type sizes 14, 18, 24 preserve chapter content and avoid massive page gaps (1.8s)
+  ✓   13 [chromium-iphone] › e2e/cloud-sync.spec.ts:139:1 › two isolated devices synchronize exact book bytes, bookmarks, preferences and durable offline edits (6.3s)
+  ✓   16 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:5:1 › EPUB chapter turns never expose an intermediate first page or moving heading (2.1s)
+  ✓   17 [chromium-iphone] › e2e/epub-reader.spec.ts:66:1 › real EPUB stays readable across font, margin and palette adjustments (2.8s)
+  ✓   18 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:106:1 › outgoing EPUB snapshot preserves visible text coordinates during chapter loading (2.0s)
+  ✓   20 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:168:1 › FB2 picker is unrestricted on iPhone while unsupported imports are rejected (920ms)
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   21 [chromium-iphone] › e2e/fb2-epub-only.spec.ts:2:1 › LIBRA imports only FB2 and EPUB and never exposes a PDF reading flow (1.1s)
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:46 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:47 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:07:47 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   19 [chromium-iphone] › e2e/epub-reader.spec.ts:118:1 › EPUB2 NCX navigation opens later chapter with wide table and inline image (2.8s)
+  ✓   23 [chromium-iphone] › e2e/epub-reader.spec.ts:199:1 › library sorting orders imported books and displays progress metadata (1.3s)
+  ✓   22 [chromium-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (2.6s)
+  ✓   25 [chromium-iphone] › e2e/geometry.spec.ts:124:1 › a tall image remains scaled inside one page without discarding later text (1.5s)
+  ✓   24 [chromium-iphone] › e2e/epub-reader.spec.ts:217:1 › EPUB final source paragraph is reachable after font and margin reflow (4.8s)
+  ✓   26 [chromium-iphone] › e2e/illustrations-typography.spec.ts:23:3 › fb2 artwork remains original on OLED and viewer returns to the same position (3.1s)
+  ✓   27 [chromium-iphone] › e2e/epub-reader.spec.ts:310:1 › EPUB slider reaches final glyph and persists progress without rounded keyboard stalls (3.3s)
+  ✓   28 [chromium-iphone] › e2e/illustrations-typography.spec.ts:23:3 › epub artwork remains original on OLED and viewer returns to the same position (3.9s)
+  ✓   30 [chromium-iphone] › e2e/illustrations-typography.spec.ts:113:1 › FB2 emphasis, notes and legacy bookmarks survive richer markup (2.2s)
+[2m[WebServer] [22m12:08:00 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   29 [chromium-iphone] › e2e/epub-reader.spec.ts:372:1 › EPUB uses a distinct page number per turn and keeps zero-margin frame static (4.0s)
+  ✓   31 [chromium-iphone] › e2e/illustrations-typography.spec.ts:153:1 › EPUB import finishes resource loading before releasing the metadata reader (1.5s)
+  ✓   32 [chromium-iphone] › e2e/epub-reader.spec.ts:425:1 › EPUB clipped source block triggers recovery that exposes its full text (1.6s)
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:02 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:08:03 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   33 [chromium-iphone] › e2e/illustrations-typography.spec.ts:171:1 › quickly closing and reopening EPUB does not destroy pending renderer startup (2.1s)
+  ✓   34 [chromium-iphone] › e2e/epub-reader.spec.ts:443:1 › near-end EPUB stays in reading filter until actual last page (4.1s)
+  ✓   36 [chromium-iphone] › e2e/epub-reader.spec.ts:503:1 › publisher justified EPUB is rendered with equal word gaps and keeps original text (2.5s)
+  ✓   35 [chromium-iphone] › e2e/large-fb2.spec.ts:11:1 › 2400-paragraph chapter retains original text across taps, font change and reload (7.3s)
+  ✓   37 [chromium-iphone] › e2e/last-page-and-design.spec.ts:10:1 › last page remains accessible with large text and narrow asymmetric margins (2.5s)
+  ✓   38 [chromium-iphone] › e2e/legacy-encodings.spec.ts:5:1 › legacy Windows-1251 FB2 keeps Cyrillic during import and after reload (1.3s)
+  ✓   39 [chromium-iphone] › e2e/last-page-and-design.spec.ts:65:1 › library displays attractive real-metadata jackets without synthetic images or gradients (908ms)
+  ✓   40 [chromium-iphone] › e2e/library-import-no-plus.spec.ts:3:1 › library has no header plus and still imports books via settings (1.1s)
+  ✓   41 [chromium-iphone] › e2e/library-reference-design.spec.ts:3:1 › reference-inspired library preserves import, favorites, filtering and reader theme (2.1s)
+  ✓   43 [chromium-iphone] › e2e/library-reference-design.spec.ts:77:1 › library keeps narrow iPhone controls inside viewport (715ms)
+  ✓   44 [chromium-iphone] › e2e/media-overflow-guard.spec.ts:4:1 › tall image fits its page and tall table remains fully accessible on a narrow screen (1.6s)
+  ✓   45 [chromium-iphone] › e2e/migration.spec.ts:8:1 › upgrades legacy library to additive v3 cloud storage while preserving book bytes and reading state (756ms)
+  ✓   42 [chromium-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (7.5s)
+  ✓   47 [chromium-iphone] › e2e/oversized-table.spec.ts:4:1 › giant table opens full content in separate scrollable viewer without blocking the book (986ms)
+  ✓   48 [chromium-iphone] › e2e/quote-selection.spec.ts:6:1 › FB2 quote action selects text without intercepting book gestures, saves and returns to source (2.4s)
+  ✓   49 [chromium-iphone] › e2e/quote-selection.spec.ts:74:1 › EPUB content selection opens quote popover and saves original selected text (2.2s)
+  ✓   50 [chromium-iphone] › e2e/quote-selection.spec.ts:125:1 › first touch opens controls and holding book text starts quotation without a mode button (2.0s)
+  ✓   46 [chromium-iphone] › e2e/no-clipped-content.spec.ts:128:1 › every fragment fits a real page and final source character is reachable after dense reflow (13.3s)
+  ✓   51 [chromium-iphone] › e2e/reader-themes.spec.ts:24:1 › theme color matches every shell panel, reader chrome and iPhone status-bar metadata (2.6s)
+  ✓   52 [chromium-iphone] › e2e/reader-zones.spec.ts:6:1 › tap zones use centered reader width on wide iPad/desktop viewport (1.8s)
+  ✓   53 [chromium-iphone] › e2e/reading-density-ink.spec.ts:5:1 › compact OLED text survives reload and retains all book text (2.3s)
+  ✓   54 [chromium-iphone] › e2e/reading-state-order.spec.ts:5:1 › outdated async reading-state write cannot rewind position, bookmarks survive (980ms)
+  ✓   55 [chromium-iphone] › e2e/reading.spec.ts:9:1 › iPhone reader keeps all 180 paragraphs in DOM during paging (1.1s)
+  ✓   56 [chromium-iphone] › e2e/russian-justify-hyphens.spec.ts:6:1 › Russian FB2 paragraphs justify, hyphenate, retain the exact book text and do not clip (857ms)
+  ✓   57 [chromium-iphone] › e2e/reading.spec.ts:34:1 › OLED background is consistent across page shell and metadata (1.1s)
+  ✓   58 [chromium-iphone] › e2e/stale-chapter-recovery.spec.ts:3:1 › an invalid saved chapter opens real content and preserves original bytes and bookmarks (1.1s)
+  ✓   60 [chromium-iphone] › e2e/typography.spec.ts:6:1 › legacy book remains readable with even spaces and extended persistent typography (2.2s)
+  ✓   61 [chromium-iphone] › e2e/typography.spec.ts:80:1 › new LIBRA icon and iPhone touch icon have installable PNG assets (502ms)
+(node:1307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   59 [chromium-iphone] › e2e/typographic-boundaries.spec.ts:73:1 › all source text and line fragments survive asymmetric margins, high font size and viewport changes (6.1s)
+  ✓   62 [webkit-iphone] › e2e/anchors.spec.ts:27:1 › font adjustment and reopen preserve source position and all text (3.5s)
+  ✓   63 [chromium-iphone] › e2e/typographic-boundaries.spec.ts:162:1 › separate margin controls, hyphenation and reset remain usable (2.5s)
+(node:1479) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1479) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   64 [webkit-iphone] › e2e/backup.spec.ts:16:1 › backup export and additive restore recover exact book bytes, bookmarks and reading position (4.3s)
+  ✓   66 [webkit-iphone] › e2e/backup.spec.ts:106:1 › invalid backup never deletes or changes an existing book (2.0s)
+  ✓   65 [webkit-iphone] › e2e/book-navigation.spec.ts:5:1 › whole-book slider, page jump, hidden footer and restored final character (4.3s)
+  ✓   68 [webkit-iphone] › e2e/book-navigation.spec.ts:90:1 › FB2 contents show the exact start page of every measured chapter (2.3s)
+  ✓   67 [webkit-iphone] › e2e/bookmarks.spec.ts:6:1 › saved bookmark has the correct state and reopens its own page (3.6s)
+  ✓   70 [webkit-iphone] › e2e/bookmarks.spec.ts:84:1 › bookmarks survive a full reload and reopen at the saved page (3.0s)
+  ✓   69 [webkit-iphone] › e2e/chapter-boundaries.spec.ts:9:1 › switching between chapters preserves last page and all body content (5.9s)
+  ✓   71 [webkit-iphone] › e2e/chapter-turn-stability.spec.ts:6:1 › chapter boundary keeps page geometry fixed and does not animate across the previous chapter (3.1s)
+  ✓   72 [webkit-iphone] › e2e/clear-first-line.spec.ts:6:1 › zero top margin never paints first reading line against iPhone clip or status bar (2.6s)
+  ✓   73 [webkit-iphone] › e2e/clear-reader.spec.ts:2:1 › reading canvas has no blur or visible footer and recovers a complete standard line (1.7s)
+  ✓   74 [webkit-iphone] › e2e/clipping-guard.spec.ts:25:1 › real glyph overflow raises an error and exposes the complete chapter through vertical scrolling (2.8s)
+  ✓   76 [webkit-iphone] › e2e/clipping-guard.spec.ts:85:1 › safe chapter navigation resets the next chapter to its start and the previous chapter to its end (2.3s)
+  ✓   77 [webkit-iphone] › e2e/density.spec.ts:6:1 › type sizes 14, 18, 24 preserve chapter content and avoid massive page gaps (3.9s)
+  ✓   75 [webkit-iphone] › e2e/cloud-sync.spec.ts:139:1 › two isolated devices synchronize exact book bytes, bookmarks, preferences and durable offline edits (10.4s)
+  ✓   78 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:5:1 › EPUB chapter turns never expose an intermediate first page or moving heading (4.2s)
+  ✓   80 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:106:1 › outgoing EPUB snapshot preserves visible text coordinates during chapter loading (4.5s)
+  ✓   79 [webkit-iphone] › e2e/epub-reader.spec.ts:66:1 › real EPUB stays readable across font, margin and palette adjustments (7.2s)
+  ✓   81 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:168:1 › FB2 picker is unrestricted on iPhone while unsupported imports are rejected (2.0s)
+  ✓   83 [webkit-iphone] › e2e/fb2-epub-only.spec.ts:2:1 › LIBRA imports only FB2 and EPUB and never exposes a PDF reading flow (2.1s)
+  ✓   82 [webkit-iphone] › e2e/epub-reader.spec.ts:118:1 › EPUB2 NCX navigation opens later chapter with wide table and inline image (6.8s)
+  ✘   84 [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (3.5s)
+(node:2975) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2975) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   85 [webkit-iphone] › e2e/epub-reader.spec.ts:199:1 › library sorting orders imported books and displays progress metadata (1.8s)
+  ✓   86 [webkit-iphone] › e2e/geometry.spec.ts:124:1 › a tall image remains scaled inside one page without discarding later text (2.3s)
+  ✓   87 [webkit-iphone] › e2e/epub-reader.spec.ts:217:1 › EPUB final source paragraph is reachable after font and margin reflow (7.8s)
+  ✓   88 [webkit-iphone] › e2e/illustrations-typography.spec.ts:23:3 › fb2 artwork remains original on OLED and viewer returns to the same position (6.3s)
+  ✓   89 [webkit-iphone] › e2e/epub-reader.spec.ts:310:1 › EPUB slider reaches final glyph and persists progress without rounded keyboard stalls (6.3s)
+  ✓   90 [webkit-iphone] › e2e/illustrations-typography.spec.ts:23:3 › epub artwork remains original on OLED and viewer returns to the same position (7.0s)
+  ✓   92 [webkit-iphone] › e2e/illustrations-typography.spec.ts:113:1 › FB2 emphasis, notes and legacy bookmarks survive richer markup (3.1s)
+  ✓   91 [webkit-iphone] › e2e/epub-reader.spec.ts:372:1 › EPUB uses a distinct page number per turn and keeps zero-margin frame static (5.9s)
+  ✓   93 [webkit-iphone] › e2e/illustrations-typography.spec.ts:153:1 › EPUB import finishes resource loading before releasing the metadata reader (1.6s)
+  ✓   94 [webkit-iphone] › e2e/epub-reader.spec.ts:425:1 › EPUB clipped source block triggers recovery that exposes its full text (2.4s)
+  ✓   95 [webkit-iphone] › e2e/illustrations-typography.spec.ts:171:1 › quickly closing and reopening EPUB does not destroy pending renderer startup (4.3s)
+  ✓   96 [webkit-iphone] › e2e/epub-reader.spec.ts:443:1 › near-end EPUB stays in reading filter until actual last page (12.4s)
+  ✓   97 [webkit-iphone] › e2e/large-fb2.spec.ts:11:1 › 2400-paragraph chapter retains original text across taps, font change and reload (10.6s)
+  ✓   99 [webkit-iphone] › e2e/last-page-and-design.spec.ts:10:1 › last page remains accessible with large text and narrow asymmetric margins (4.0s)
+  ✓   98 [webkit-iphone] › e2e/epub-reader.spec.ts:503:1 › publisher justified EPUB is rendered with equal word gaps and keeps original text (4.5s)
+  ✓  100 [webkit-iphone] › e2e/last-page-and-design.spec.ts:65:1 › library displays attractive real-metadata jackets without synthetic images or gradients (2.0s)
+  ✓  101 [webkit-iphone] › e2e/legacy-encodings.spec.ts:5:1 › legacy Windows-1251 FB2 keeps Cyrillic during import and after reload (2.2s)
+  ✓  102 [webkit-iphone] › e2e/library-import-no-plus.spec.ts:3:1 › library has no header plus and still imports books via settings (2.2s)
+  ✓  103 [webkit-iphone] › e2e/library-reference-design.spec.ts:3:1 › reference-inspired library preserves import, favorites, filtering and reader theme (4.2s)
+  ✓  105 [webkit-iphone] › e2e/library-reference-design.spec.ts:77:1 › library keeps narrow iPhone controls inside viewport (1.6s)
+  ✓  106 [webkit-iphone] › e2e/media-overflow-guard.spec.ts:4:1 › tall image fits its page and tall table remains fully accessible on a narrow screen (3.6s)
+  ✓  107 [webkit-iphone] › e2e/migration.spec.ts:8:1 › upgrades legacy library to additive v3 cloud storage while preserving book bytes and reading state (1.7s)
+  ✘  104 [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (12.4s)
+(node:4540) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4540) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓  109 [webkit-iphone] › e2e/oversized-table.spec.ts:4:1 › giant table opens full content in separate scrollable viewer without blocking the book (2.2s)
+  ✓  110 [webkit-iphone] › e2e/quote-selection.spec.ts:6:1 › FB2 quote action selects text without intercepting book gestures, saves and returns to source (4.1s)
+  ✓  111 [webkit-iphone] › e2e/quote-selection.spec.ts:74:1 › EPUB content selection opens quote popover and saves original selected text (3.7s)
+  ✓  112 [webkit-iphone] › e2e/quote-selection.spec.ts:125:1 › first touch opens controls and holding book text starts quotation without a mode button (3.2s)
+  ✓  113 [webkit-iphone] › e2e/reader-themes.spec.ts:24:1 › theme color matches every shell panel, reader chrome and iPhone status-bar metadata (6.3s)
+  ✓  114 [webkit-iphone] › e2e/reader-zones.spec.ts:6:1 › tap zones use centered reader width on wide iPad/desktop viewport (4.4s)
+  ✓  115 [webkit-iphone] › e2e/reading-density-ink.spec.ts:5:1 › compact OLED text survives reload and retains all book text (5.2s)
+  ✓  116 [webkit-iphone] › e2e/reading-state-order.spec.ts:5:1 › outdated async reading-state write cannot rewind position, bookmarks survive (1.6s)
+  ✓  117 [webkit-iphone] › e2e/reading.spec.ts:9:1 › iPhone reader keeps all 180 paragraphs in DOM during paging (1.9s)
+  ✓  118 [webkit-iphone] › e2e/reading.spec.ts:34:1 › OLED background is consistent across page shell and metadata (2.3s)
+  ✓  108 [webkit-iphone] › e2e/no-clipped-content.spec.ts:128:1 › every fragment fits a real page and final source character is reachable after dense reflow (39.2s)
+  ✓  119 [webkit-iphone] › e2e/russian-justify-hyphens.spec.ts:6:1 › Russian FB2 paragraphs justify, hyphenate, retain the exact book text and do not clip (1.8s)
+  ✓  120 [webkit-iphone] › e2e/stale-chapter-recovery.spec.ts:3:1 › an invalid saved chapter opens real content and preserves original bytes and bookmarks (2.1s)
+  ✓  122 [webkit-iphone] › e2e/typography.spec.ts:6:1 › legacy book remains readable with even spaces and extended persistent typography (4.3s)
+  ✓  123 [webkit-iphone] › e2e/typography.spec.ts:80:1 › new LIBRA icon and iPhone touch icon have installable PNG assets (1.3s)
+  ✓  121 [webkit-iphone] › e2e/typographic-boundaries.spec.ts:73:1 › all source text and line fragments survive asymmetric margins, high font size and viewport changes (8.8s)
+  ✓  124 [webkit-iphone] › e2e/typographic-boundaries.spec.ts:162:1 › separate margin controls, hyphenation and reset remain usable (3.2s)
+
+
+  1) [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries 
+
+    Error: Content changed at {"width":768,"height":1024}
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m"Первая часть·[39m
+    [32mПараграф 0. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 1. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 2. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 3. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 4. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 5. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 6. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 7. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 8. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 9. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 10. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 11. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 12. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 13. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 14. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 15. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 16. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 17. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 18. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 19. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 20. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 21. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 22. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 23. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 24. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 25. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 26. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 27. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 28. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 29. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mСтрока первая[39m
+    [32mСтрока вторая[39m
+    [32mТаблица: ячейка А	Таблица: ячейка Б[39m
+    [32mСтрока два и подробный текст	Содержимое таблицы сохраняется·[39m
+    [32mПараграф 30. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 31. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 32. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 33. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 34. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 35. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 36. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 37. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 38. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 39. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 40. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 41. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 42. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 43. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 44. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 45. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 46. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 47. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 48. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 49. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 50. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 51. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 52. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 53. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 54. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 55. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 56. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 57. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 58. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 59. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 60. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 61. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 62. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 63. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 64. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 65. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 66. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 67. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 68. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 69. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 70. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 71. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 72. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 73. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 74. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 75. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 76. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 77. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 78. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 79. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 80. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 81. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 82. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 83. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 84. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 85. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 86. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 87. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 88. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mПараграф 89. Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать. . Содержимое страницы не должно исчезать.[39m
+    [32mКонец книги: последняя строка.[39m
+    [32m"[39m
+    Received: [31m""[39m
+
+      92 |   expect(audit.fragments,'No layout fragments at '+JSON.stringify(size)).toBeGreaterThan(100);
+      93 |   expect(audit.errors,'Clipped fragments at '+JSON.stringify(size)+': '+audit.errors.join('; ')).toEqual([]);
+    > 94 |   expect(await flow.innerText(),'Content changed at '+JSON.stringify(size)).toBe(text);
+         |                                                                             ^
+      95 |  }
+      96 | });
+      97 |
+        at /workspace/scratch/26c1ab5ee782/libra/libra/e2e/geometry.spec.ts:94:77
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/geometry-FB2-preserves-tex-11868--iPhone-and-iPad-geometries-webkit-iphone/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/geometry-FB2-preserves-tex-11868--iPhone-and-iPad-geometries-webkit-iphone/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/geometry-FB2-preserves-tex-11868--iPhone-and-iPad-geometries-webkit-iphone/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/geometry-FB2-preserves-tex-11868--iPhone-and-iPad-geometries-webkit-iphone/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m"Глава первая·[39m
+    [32mПроверка 0. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 1. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 2. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 3. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 4. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 5. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 6. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 7. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 8. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 9. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 10. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 11. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 12. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 13. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 14. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 15. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 16. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 17. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 18. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 19. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 20. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 21. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 22. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 23. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 24. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 25. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 26. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 27. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 28. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 29. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 30. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 31. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 32. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 33. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 34. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 35. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 36. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 37. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 38. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 39. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 40. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 41. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 42. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 43. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 44. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 45. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 46. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 47. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 48. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 49. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 50. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 51. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 52. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 53. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 54. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 55. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 56. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 57. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 58. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 59. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 60. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 61. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 62. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 63. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 64. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 65. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 66. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 67. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 68. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 69. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 70. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 71. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 72. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 73. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 74. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 75. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 76. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 77. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 78. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 79. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 80. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 81. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 82. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 83. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 84. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 85. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 86. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 87. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 88. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 89. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 90. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 91. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 92. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 93. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 94. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 95. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 96. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 97. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 98. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 99. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 100. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 101. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 102. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 103. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 104. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 105. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 106. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 107. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 108. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПроверка 109. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Многие дети и взрослые сталкиваются с непредсказуемыми последствиями. Исследования эмоциональной реабилитации и психологической травмы.[39m
+    [32mПОСЛЕДНИЙ АБЗАЦ НА МЕСТЕ[39m
+    [32m"[39m
+    Received: [31m""[39m
+
+      88 |  await page.reload();
+      89 |  await page.locator('.continue-card').click();
+    > 90 |  expect(await page.locator('.book-flow').innerText()).toBe(original);
+         |                                                       ^
+      91 |  const audit=await geometry(page);
+      92 |  expect(audit.errors,'After reload '+audit.errors.join('; ')).toEqual([]);
+      93 | });
+        at /workspace/scratch/26c1ab5ee782/libra/libra/e2e/margins-regression.spec.ts:90:55
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/margins-regression-changin-7bca0-ide-page-including-mid-book-webkit-iphone/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/margins-regression-changin-7bca0-ide-page-including-mid-book-webkit-iphone/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/margins-regression-changin-7bca0-ide-page-including-mid-book-webkit-iphone/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/margins-regression-changin-7bca0-ide-page-including-mid-book-webkit-iphone/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries 
+    [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book 
+  122 passed (3.9m)

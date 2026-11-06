@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {patchRelease} from './security-patches.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -28,16 +29,29 @@ for(const [file,expected] of Object.entries(originals)){
  await fs.mkdir(path.dirname(path.join(root,file)),{recursive:true});
  await fs.writeFile(path.join(root,file),data);
 }
-await fs.copyFile(path.join(here,'reader-touch-fix.js'),path.join(root,'reader-touch-fix.js'));
+await fs.cp(root,path.join(here,'.original-release'),{recursive:true});
+const bundlePath=path.join(root,'assets/index-DMkgLOVA.js');
+await fs.writeFile(bundlePath,patchRelease(await fs.readFile(bundlePath,'utf8')));
+for(const file of ['reader-touch-fix.js','footnotes.js'])await fs.copyFile(path.join(here,file),path.join(root,file));
+const contentSecurityPolicy="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' blob:; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self' blob: https://qwnkigorqsgugcctnfmj.supabase.co wss://qwnkigorqsgugcctnfmj.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'";
 let html=await fs.readFile(path.join(root,'index.html'),'utf8');
+html=html.replace('<meta charset="UTF-8" />','<meta charset="UTF-8" /><meta http-equiv="Content-Security-Policy" content="'+contentSecurityPolicy+'" />');
 html=html.replace('    <script type="module" crossorigin','    <script type="module" src="/reader-touch-fix.js"></script>\n    <script type="module" crossorigin');
 await fs.writeFile(path.join(root,'index.html'),html);await fs.writeFile(path.join(root,'offline-shell.txt'),html);
 let sw=await fs.readFile(path.join(root,'sw.js'),'utf8');
-const urls=JSON.parse(sw.match(/const PRECACHE_URLS = (.*);/)[1]);urls.push('/reader-touch-fix.js');
+const urls=JSON.parse(sw.match(/const PRECACHE_URLS = (.*);/)[1]);urls.push('/reader-touch-fix.js','/footnotes.js');
 const hashes={};for(const url of urls)hashes[url]=createHash('sha256').update(await fs.readFile(path.join(root,url.slice(1)))).digest('hex');
 const build=createHash('sha256').update(JSON.stringify(hashes)).digest('hex').slice(0,16);
 sw=sw.replace(/const CACHE_NAME = CACHE_PREFIX \+ '[^']+';/,"const CACHE_NAME = CACHE_PREFIX + '"+build+"';").replace(/const PRECACHE_URLS = .*;/,'const PRECACHE_URLS = '+JSON.stringify(urls)+';').replace(/const PRECACHE_HASHES = .*;/,'const PRECACHE_HASHES = '+JSON.stringify(hashes)+';');
 await fs.writeFile(path.join(root,'sw.js'),sw);
-await fs.writeFile(path.join(root,'release.json'),"{\"release\":\"2026-11-06-ios-controls-alignment\",\"sourceCommit\":\"4787d6d742e3e76e763cd24647c50391dcbc163b\",\"features\":[\"theme-aware chapter headings\",\"remaining chapter pages\",\"immediate reader controls on first tap\",\"hold to select a quote\",\"lower floating controls in installed iPhone PWA without repaginating text\"],\"previousRelease\":\"2026-11-05-first-tap-quotes\",\"recoveryBaseDeployment\":\"dpl_C6pMj1A1abRKbtpeUpbswhJVqcwC\",\"repairRevision\":5}");
-await fs.writeFile(path.join(output,'vercel.json'),"{\"version\":2,\"framework\":null,\"buildCommand\":\"\",\"installCommand\":\"\",\"outputDirectory\":\"src\",\"headers\":[{\"source\":\"/sw.js\",\"headers\":[{\"key\":\"Cache-Control\",\"value\":\"no-cache, no-store, must-revalidate\"}]},{\"source\":\"/\",\"headers\":[{\"key\":\"Cache-Control\",\"value\":\"no-cache, must-revalidate\"}]},{\"source\":\"/release.json\",\"headers\":[{\"key\":\"Cache-Control\",\"value\":\"no-cache, must-revalidate\"}]},{\"source\":\"/reader-touch-fix.js\",\"headers\":[{\"key\":\"Cache-Control\",\"value\":\"no-cache, must-revalidate\"}]}]}");
+await fs.writeFile(path.join(root,'release.json'),JSON.stringify({
+ release:'2026-11-06-audit-footnotes',baseCommit:'8d0fdb6',
+ features:['existing November 6 reader interface','glass footnotes in FB2 and EPUB','revision and offline deletion race guards','DTD rejection','remote EPUB resource blocking'],
+ recoveryBaseDeployment:'dpl_C6pMj1A1abRKbtpeUpbswhJVqcwC',repairRevision:6,offlineBuild:build,
+ patchSha256:createHash('sha256').update(await fs.readFile(path.join(here,'security-patches.mjs'))).digest('hex')
+}));
+await fs.writeFile(path.join(output,'vercel.json'),JSON.stringify({version:2,framework:null,buildCommand:'',installCommand:'',outputDirectory:'src',headers:[
+ {source:'/(.*)',headers:[{key:'X-Content-Type-Options',value:'nosniff'},{key:'Referrer-Policy',value:'no-referrer'},{key:'X-Frame-Options',value:'DENY'},{key:'Content-Security-Policy',value:contentSecurityPolicy+"; frame-ancestors 'none'"}]},
+ ...['/sw.js','/','/release.json','/reader-touch-fix.js','/footnotes.js'].map(source=>({source,headers:[{key:'Cache-Control',value:'no-cache, must-revalidate'}]}))
+]}));
 console.log('Recovered and verified current release; new offline cache:',build);

@@ -1,0 +1,74 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:33) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22mnpm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:46) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 18 tests using 2 workers
+
+(node:82) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:82) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   1 [chromium-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (3.4s)
+  ✓   3 [chromium-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.5s)
+(node:264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   2 [chromium-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (8.4s)
+  ✓   4 [chromium-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (2.4s)
+(node:348) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:348) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   5 [chromium-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.4s)
+(node:450) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:450) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   7 [chromium-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (2.2s)
+  ✓   8 [chromium-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.4s)
+  ✓   6 [chromium-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (6.7s)
+(node:563) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:563) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓  10 [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (2.8s)
+  ✓   9 [chromium-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (6.7s)
+(node:728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  11 [webkit-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.9s)
+(node:742) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+(node:742) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓  13 [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (3.5s)
+  ✓  14 [webkit-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (2.2s)
+  ✓  12 [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (12.2s)
+(node:1055) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1055) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓  16 [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (4.7s)
+  ✓  17 [webkit-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (3.6s)
+  ✓  15 [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (16.4s)
+  ✓  18 [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (8.4s)
+
+  18 passed (54.0s)

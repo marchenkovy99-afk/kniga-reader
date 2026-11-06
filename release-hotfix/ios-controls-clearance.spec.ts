@@ -32,7 +32,9 @@ async function metrics(page,format:string){
 for(const format of ['fb2','epub']){
  test(format+': installed iPhone controls move down while book geometry and pages remain identical',async({page})=>{
   await installMode(page,true);await open(page,format);
-  await expect(page.locator('html')).toHaveClass(/libra-ios-standalone/);
+  await expect(page.locator('html').first()).toHaveClass(/libra-ios-standalone/);
+  // Initial EPUB indexing is asynchronous; wait for the complete caption before comparing geometry.
+  await expect(page.locator('.reading-status')).toContainText('До конца главы:');
   const installed=await metrics(page,format);
   await expect(page.locator('.reading-top')).toHaveCSS('top','91px');
   const height=await page.locator('.reading-top').evaluate(el=>el.getBoundingClientRect().height);
@@ -51,13 +53,13 @@ for(const format of ['fb2','epub']){
 }
 test('ordinary iPhone browser keeps the existing toolbar position',async({page})=>{
  await installMode(page,false);await open(page,'fb2');
- await expect(page.locator('html')).not.toHaveClass(/libra-ios-standalone/);
+ await expect(page.locator('html').first()).not.toHaveClass(/libra-ios-standalone/);
  await expect(page.locator('.reading-top')).toHaveCSS('top','67px');
 });
 test('a non-iPhone standalone app keeps its existing toolbar position',async({page})=>{
  await installMode(page,true);
  await page.addInitScript(()=>Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile Safari/537.36'}));
  await open(page,'fb2');
- await expect(page.locator('html')).not.toHaveClass(/libra-ios-standalone/);
+ await expect(page.locator('html').first()).not.toHaveClass(/libra-ios-standalone/);
  await expect(page.locator('.reading-top')).toHaveCSS('top','67px');
 });

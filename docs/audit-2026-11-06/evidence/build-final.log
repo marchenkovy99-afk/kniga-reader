@@ -1,0 +1,33 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 build
+> tsc --noEmit && vite build && node scripts/build-offline.mjs && node --test tests/offline-cache.test.mjs
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 183 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   1.25 kB │ gzip:   0.62 kB
+dist/assets/index-DlZ_07KR.css   77.46 kB │ gzip:  14.43 kB
+dist/assets/src-B6vzVB5y.js     370.83 kB │ gzip: 111.49 kB
+dist/assets/index-M-U7_GE6.js   522.64 kB │ gzip: 154.01 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 232ms
+Offline shell 99d686ad5e4e8172: precached 9 local assets (/)
+✔ build precaches every shipped JS/CSS chunk, including EPUB lazy imports (6.681378ms)
+✔ deployment configuration is excluded even when packaging adds it to dist (78.07352ms)
+✔ offline readiness checks cached files and detects incomplete storage (2.33712ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 176.611668

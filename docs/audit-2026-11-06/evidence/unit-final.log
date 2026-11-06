@@ -1,0 +1,17 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 test
+> vitest run src/__tests__
+
+
+ RUN  v5.1.0 /workspace/scratch/26c1ab5ee782/libra/libra
+
+
+ Test Files  30 passed (30)
+      Tests  120 passed (120)
+   Start at  12:22:42
+   Duration  2.38s (environment 71%, tests 16%, import 7%, transform 5%, worker 1%)
+
+    Isolate  30 workers spawned · ~449ms startup each (spawn + environment, per file)
+             at least ~1.24s faster with isolate: false — reuses workers across files instead of one per file
+

@@ -1,0 +1,21 @@
+[2m[WebServer] [22m(node:34) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:42) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+LIBRA_PERFORMANCE {"browser":"chromium","sourceBytes":1081445,"paragraphs":2400,"shellMs":123,"importMs":388,"firstOpenMs":423,"reopenMs":[621,574,599,609]}
+  ✓  1 [chromium] › e2e/performance.spec.ts:2:1 › large FB2 opens and survives repeated reading sessions with measured timings (5.2s)
+(node:120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+LIBRA_PERFORMANCE {"browser":"webkit","sourceBytes":1081445,"paragraphs":2400,"shellMs":302,"importMs":369,"firstOpenMs":452,"reopenMs":[521,548,562,560]}
+  ✓  2 [webkit] › e2e/performance.spec.ts:2:1 › large FB2 opens and survives repeated reading sessions with measured timings (5.8s)
+
+  2 passed (12.8s)

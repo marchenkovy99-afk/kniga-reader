@@ -6,7 +6,7 @@ import type {CloudEntry} from './storage';
 export type RemoteRecord={key:string;revision:number;deleted:boolean;payload:Record<string,unknown>};
 export type CloudConflict={key:string;local:CloudEntry;remote:RemoteRecord;title:string};
 export type CloudTransport={list:()=>Promise<RemoteRecord[]>;upload:(path:string,file:Blob)=>Promise<void>;download:(path:string)=>Promise<Blob>;cas:(key:string,expected:number,payload:Record<string,unknown>,deleted:boolean)=>Promise<RemoteRecord|undefined>};
-export type LocalSyncPort={entries:(owner:string)=>Promise<CloudEntry[]>;book:(id:string)=>Promise<StoredBook|undefined>;settings:()=>Promise<ReaderSettings|undefined>;ack:typeof local.acknowledgeCloudEntry;archive:typeof local.archiveCloudBook;apply:typeof local.applyCloudRecord};
+export type LocalSyncPort={entries:(owner:string)=>Promise<CloudEntry[]>;book:(id:string)=>Promise<StoredBook|undefined>;settings:()=>Promise<ReaderSettings|undefined>;ack:typeof local.acknowledgeCloudEntry;archive:(owner:string,id:string,revision:number,expectedGeneration?:number)=>Promise<boolean|void>;apply:typeof local.applyCloudRecord};
 const localPort:LocalSyncPort={entries:local.getCloudEntries,book:local.getBook,settings:local.loadSettings,ack:local.acknowledgeCloudEntry,archive:local.archiveCloudBook,apply:local.applyCloudRecord};
 export async function sha256(blob:Blob){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),x=>x.toString(16).padStart(2,'0')).join('')}
 async function payloadFor(entry:CloudEntry,port:LocalSyncPort){
@@ -19,11 +19,12 @@ async function payloadFor(entry:CloudEntry,port:LocalSyncPort){
 function validateRow(row:RemoteRecord){if(!(row.key==='settings'||/^book:[A-Za-z0-9_-]{1,128}$/.test(row.key))||!Number.isSafeInteger(row.revision)||row.revision<1)throw Error('Некорректная облачная запись')}
 async function pull(owner:string,row:RemoteRecord,transport:CloudTransport,port:LocalSyncPort,generation?:number){
  validateRow(row);
- if(row.deleted){if(row.key.startsWith('book:'))await port.archive(owner,row.key.slice(5),row.revision);return true}
+ if(row.deleted){if(row.key.startsWith('book:'))return (await port.archive(owner,row.key.slice(5),row.revision,generation))!==false;return true}
  if(row.key==='settings')return port.apply(owner,row.key,row.revision,undefined,normalizeSettings(row.payload.settings as ReaderSettings),generation);
  const p=row.payload,id=row.key.slice(5);
  if(p.id!==id||!['fb2','epub'].includes(String(p.format))||!(/^[0-9a-f]{64}$/).test(String(p.sha256))||!Number.isSafeInteger(p.size)||Number(p.size)>52428800||Number(p.size)<0||!Array.isArray(p.bookmarks))throw Error('Некорректные данные облачной книги');
  const existing=await port.book(id);
+ if(existing&&(existing.file.size!==p.size||await sha256(existing.file)!==p.sha256))throw Error('Облачная запись пытается заменить исходный файл книги');
  const file=existing&&existing.file.size===p.size&&await sha256(existing.file)===p.sha256?existing.file:await transport.download(owner+'/'+p.sha256);
  if(file.size!==p.size||await sha256(file)!==p.sha256)throw Error('Проверка целостности облачной книги не пройдена');
  const book:StoredBook={id,filename:String(p.filename??'book.'+p.format),title:String(p.title??'Книга'),author:String(p.author??''),format:p.format as StoredBook['format'],importedAt:Number(p.importedAt)||Date.now(),file,bookmarks:p.bookmarks as StoredBook['bookmarks'],quotes:Array.isArray(p.quotes)?p.quotes as StoredBook['quotes']:[],position:p.position as StoredBook['position'],lastOpenedAt:Number(p.lastOpenedAt)||undefined,isFavorite:p.isFavorite===true,cover:typeof p.cover==='string'&&p.cover.startsWith('data:image/')?p.cover:undefined};
@@ -43,7 +44,14 @@ export async function runCloudSync(owner:string,transport:CloudTransport,port:Lo
  const conflicts:CloudConflict[]=[];let applied=0;
  for(const row of remote.values()){
   const entry=byKey.get(row.key);
-  if(row.deleted){if(!entry?.deleted||entry.revision<row.revision){await pull(owner,row,transport,port);applied++}continue}
+  if(row.deleted&&entry?.pending&&!entry.deleted){conflicts.push({key:row.key,local:entry,remote:row,title:'Книга удалена в облаке, но на устройстве есть изменения'});continue}
+  if(row.deleted){
+   if(!entry?.deleted||entry.revision<row.revision){
+    if(await pull(owner,row,transport,port))applied++;
+    else {const current=(await port.entries(owner)).find(e=>e.key===row.key);if(current?.pending)conflicts.push({key:row.key,local:current,remote:row,title:'Во время синхронизации книга изменилась на устройстве'})}
+   }
+   continue;
+  }
   if(entry?.deleted&&!entry.pending)continue;
   if(entry?.pending&&entry.revision!==row.revision){conflicts.push({key:row.key,local:entry,remote:row,title:String(row.payload.title??'Настройки')});continue}
   if(!entry?.pending&&(!entry||row.revision>entry.revision)){if(await pull(owner,row,transport,port))applied++}
@@ -53,7 +61,8 @@ export async function runCloudSync(owner:string,transport:CloudTransport,port:Lo
   if(!entry.pending||row?.deleted||conflicts.some(c=>c.key===entry.key))continue;
   if(!await push(owner,entry,entry.revision,transport,port)){
    const latest=(await transport.list()).find(r=>r.key===entry.key);
-   if(latest?.deleted){await pull(owner,latest,transport,port);applied++}
+   if(latest?.deleted&&!entry.deleted)conflicts.push({key:entry.key,local:entry,remote:latest,title:'Книга удалена в облаке, но на устройстве есть изменения'});
+   else if(latest?.deleted){await pull(owner,latest,transport,port);applied++}
    else if(latest)conflicts.push({key:entry.key,local:entry,remote:latest,title:String(latest.payload.title??'Настройки')});
    else throw Error('Облачная запись изменилась. Повторите синхронизацию');
   }
@@ -62,6 +71,7 @@ export async function runCloudSync(owner:string,transport:CloudTransport,port:Lo
 }
 export async function resolveCloudConflict(owner:string,conflict:CloudConflict,choice:'local'|'remote',transport:CloudTransport){
  const entry=(await localPort.entries(owner)).find(e=>e.key===conflict.key);if(!entry)throw Error('Запись изменилась. Повторите синхронизацию');
+ if(choice==='local'&&conflict.remote.deleted)throw Error('Удаление в облаке нельзя отменить. Сохраните локальную книгу в резервную копию и импортируйте её как новую');
  if(choice==='remote'){if(!await pull(owner,conflict.remote,transport,localPort,entry.generation))throw Error('Во время выбора книга изменилась. Повторите синхронизацию')}
  else if(!await push(owner,entry,conflict.remote.revision,transport,localPort))throw Error('На другом устройстве появились новые изменения. Повторите синхронизацию');
 }

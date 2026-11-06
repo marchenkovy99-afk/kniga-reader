@@ -66,10 +66,10 @@ for(const format of ['fb2','epub']){
    await page.goto(origin);
    await page.locator('input[type=file]').first().setInputFiles({name:'offline.'+format,mimeType:format==='fb2'?'application/xml':'application/epub+zip',buffer:format==='fb2'?Buffer.from(fb2):epubFixture(false,'Offline EPUB',12)});
    await page.locator('.continue-card').click();await expect(page.locator(format==='fb2'?'.book-flow':'.epub-mount iframe')).toBeVisible();
-   await expect.poll(()=>page.evaluate(async()=>{
+   await expect.poll(()=>page.evaluate(async expectedFiles=>{
     const controller=navigator.serviceWorker.controller;if(!controller)return false;
-    return await new Promise(resolve=>{const channel=new MessageChannel();const timeout=setTimeout(()=>resolve(false),1500);channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data?.ready===true&&event.data?.files===10)};controller.postMessage({type:'LIBRA_OFFLINE_STATUS'},[channel.port2])});
-   }),{timeout:15000}).toBe(true);
+    return await new Promise(resolve=>{const channel=new MessageChannel();const timeout=setTimeout(()=>resolve(false),1500);channel.port1.onmessage=event=>{clearTimeout(timeout);resolve(event.data?.ready===true&&event.data?.files===expectedFiles)};controller.postMessage({type:'LIBRA_OFFLINE_STATUS'},[channel.port2])});
+   },JSON.parse(fs.readFileSync(path.join(root,'sw.js'),'utf8').match(/const PRECACHE_URLS = (.*);/)[1]).length),{timeout:15000}).toBe(true);
    server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));
    await page.reload();
    await expect(page.locator('.reading-root, .continue-card').first()).toBeVisible();

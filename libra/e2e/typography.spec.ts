@@ -58,5 +58,5 @@ test('new LIBRA icon and iPhone touch icon have installable PNG assets',async({p
   expect((await response.body()).byteLength,src).toBeGreaterThan(300);
  }
  const manifest=await (await request.get('/manifest.webmanifest')).json();
- expect(manifest.icons.some((x:any)=>x.src==='./icon-512.png')).toBe(true);
+ expect(manifest.icons.some((x:any)=>new URL(x.src,'https://reader.test/').pathname==='/icon-512.png')).toBe(true);
 });

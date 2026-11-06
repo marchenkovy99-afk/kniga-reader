@@ -36,8 +36,10 @@ test('theme color matches every shell panel, reader chrome and iPhone status-bar
    meta:document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
    status:document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.getAttribute('content')
   }));
-  for(const field of ['html','body','app','shell','header','footer'] as const)
+  for(const field of ['html','body','app','shell'] as const)
    expect(observed[field],theme.name+' '+field).toBe(theme.background);
+  expect(observed.header).toBe('rgba(0, 0, 0, 0)');
+  expect(observed.footer).toBe('rgba(0, 0, 0, 0)');
   expect(observed.meta).toBe(theme.meta);
   if(theme.name==='night')expect(observed.readingInk).toBe('rgb(146, 149, 141)');
   if(theme.name==='oled')expect(observed.readingInk).toBe('rgb(140, 141, 134)');

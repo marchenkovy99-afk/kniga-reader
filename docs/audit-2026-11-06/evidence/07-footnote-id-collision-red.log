@@ -1,0 +1,49 @@
+
+Running 2 tests using 1 worker
+
+(node:21) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (1.5s)
+  ✘  2 [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (5.9s)
+
+
+  1) [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: getByRole('dialog', { name: 'Сноска', exact: true })
+    Expected substring: [32m"EPUB сноска без перехода"[39m
+    Received string:    [31m"Сноска×1 Passage 0 The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes."[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for getByRole('dialog', { name: 'Сноска', exact: true })[22m
+    [2m    9 × locator resolved to <section role="dialog" aria-modal="true" aria-label="Сноска" class="libra-note-card">…</section>[22m
+    [2m      - unexpected value "Сноска×1 Passage 0 The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes. The complete book remains visible after typography changes."[22m
+
+
+      30 |  const box=await note.boundingBox();await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
+      31 |  const dialog=page.getByRole('dialog',{name:'Сноска',exact:true});await expect(dialog).toBeVisible();
+    > 32 |  await expect(dialog).toContainText(format==='fb2'?text:'EPUB сноска без перехода');
+         |                       ^
+      33 |  await expect(dialog.locator('img,script,iframe')).toHaveCount(0);
+      34 |  expect(await position()).toBe(before);
+      35 |  const backdrop=await dialog.evaluate(el=>getComputedStyle(el).backdropFilter);expect(backdrop).not.toBe('none');
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/footnotes.spec.ts:32:23
+
+    Error Context: test-results/footnotes-epub-footnote-op-1838e-by-Escape-and-works-offline-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/footnotes-epub-footnote-op-1838e-by-Escape-and-works-offline-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/footnotes-epub-footnote-op-1838e-by-Escape-and-works-offline-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+  1 passed (8.7s)

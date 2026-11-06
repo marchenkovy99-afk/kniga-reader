@@ -1,0 +1,62 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test:browser
+> node prepare-tests.mjs && playwright test --config playwright.config.ts
+
+[2m[WebServer] [22m(node:44) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 38 tests using 1 worker
+
+(node:52) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   1 [chromium] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (1.4s)
+  ✓   2 [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (1.7s)
+  ✓   3 [chromium] › e2e/ios-controls-clearance.spec.ts:61:3 › fb2: installed iPhone controls move down while book geometry and pages remain identical (798ms)
+  ✓   4 [chromium] › e2e/ios-controls-clearance.spec.ts:61:3 › epub: installed iPhone controls move down while book geometry and pages remain identical (950ms)
+  ✓   5 [chromium] › e2e/ios-controls-clearance.spec.ts:88:1 › ordinary iPhone browser keeps the existing toolbar position (572ms)
+  ✓   6 [chromium] › e2e/ios-controls-clearance.spec.ts:96:1 › a non-iPhone standalone app keeps its existing toolbar position (549ms)
+LIBRA_PERFORMANCE {"browser":"chromium","sourceBytes":1081445,"paragraphs":2400,"shellMs":102,"importMs":482,"firstOpenMs":437,"reopenMs":[669,638,668,667]}
+  ✓   7 [chromium] › e2e/performance.spec.ts:2:1 › large FB2 opens and survives repeated reading sessions with measured timings (5.7s)
+  ✓   8 [chromium] › e2e/runtime-touch.spec.ts:10:3 › fb2: first touch, duplicate click, hold selection, save quote and return to source (2.5s)
+  ✓   9 [chromium] › e2e/runtime-touch.spec.ts:10:3 › epub: first touch, duplicate click, hold selection, save quote and return to source (2.9s)
+  ✓  10 [chromium] › e2e/runtime-touch.spec.ts:93:1 › vertical movement and touch cancellation do not open controls (569ms)
+  ✓  11 [chromium] › e2e/runtime-touch.spec.ts:140:3 › fb2: complete cached app opens when its server becomes unavailable (905ms)
+  ✓  12 [chromium] › e2e/runtime-touch.spec.ts:140:3 › epub: complete cached app opens when its server becomes unavailable (1.3s)
+  ✓  13 [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources (637ms)
+  ✓  14 [chromium] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book (242ms)
+  ✓  15 [chromium] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload (1.5s)
+  ✓  16 [chromium] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work (2.9s)
+  ✓  17 [chromium] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book (2.1s)
+  ✓  18 [chromium] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap (1.3s)
+  ✓  19 [chromium] › e2e/upgrade-cache.spec.ts:5:1 › installed old PWA updates its cache without losing the book or reading position (2.6s)
+(node:387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓  20 [webkit] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (2.1s)
+  ✓  21 [webkit] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (2.3s)
+  ✓  22 [webkit] › e2e/ios-controls-clearance.spec.ts:61:3 › fb2: installed iPhone controls move down while book geometry and pages remain identical (1.5s)
+  ✓  23 [webkit] › e2e/ios-controls-clearance.spec.ts:61:3 › epub: installed iPhone controls move down while book geometry and pages remain identical (1.9s)
+  ✓  24 [webkit] › e2e/ios-controls-clearance.spec.ts:88:1 › ordinary iPhone browser keeps the existing toolbar position (1.2s)
+  ✓  25 [webkit] › e2e/ios-controls-clearance.spec.ts:96:1 › a non-iPhone standalone app keeps its existing toolbar position (1.6s)
+LIBRA_PERFORMANCE {"browser":"webkit","sourceBytes":1081445,"paragraphs":2400,"shellMs":254,"importMs":718,"firstOpenMs":627,"reopenMs":[639,524,816,569]}
+  ✓  26 [webkit] › e2e/performance.spec.ts:2:1 › large FB2 opens and survives repeated reading sessions with measured timings (7.3s)
+  ✓  27 [webkit] › e2e/runtime-touch.spec.ts:10:3 › fb2: first touch, duplicate click, hold selection, save quote and return to source (3.4s)
+  ✓  28 [webkit] › e2e/runtime-touch.spec.ts:10:3 › epub: first touch, duplicate click, hold selection, save quote and return to source (4.1s)
+  ✓  29 [webkit] › e2e/runtime-touch.spec.ts:93:1 › vertical movement and touch cancellation do not open controls (1.2s)
+  ✓  30 [webkit] › e2e/runtime-touch.spec.ts:140:3 › fb2: complete cached app opens when its server becomes unavailable (1.5s)
+  ✓  31 [webkit] › e2e/runtime-touch.spec.ts:140:3 › epub: complete cached app opens when its server becomes unavailable (1.9s)
+  ✓  32 [webkit] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources (1.3s)
+  ✓  33 [webkit] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book (722ms)
+  ✓  34 [webkit] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload (2.0s)
+  ✓  35 [webkit] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work (4.3s)
+  ✓  36 [webkit] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book (3.5s)
+  ✓  37 [webkit] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap (2.5s)
+  ✓  38 [webkit] › e2e/upgrade-cache.spec.ts:5:1 › installed old PWA updates its cache without losing the book or reading position (2.9s)
+
+  38 passed (1.4m)

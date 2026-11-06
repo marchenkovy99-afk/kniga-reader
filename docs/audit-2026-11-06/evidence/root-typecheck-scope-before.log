@@ -1,0 +1,185 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> kniga-reader@0.2.0 check
+> node --check reader/src/main.js && node --check reader/src/importer.js && node --check reader/src/pagination.js && node --check reader/src/cloud.js && tsc --noEmit
+
+release-hotfix/e2e/footnotes.spec.ts(6,21): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/footnotes.spec.ts(6,26): error TS7006: Parameter 'format' implicitly has an 'any' type.
+release-hotfix/e2e/footnotes.spec.ts(27,27): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(27,27): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(30,64): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(30,70): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(30,82): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(30,88): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(40,60): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(40,66): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(40,78): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/footnotes.spec.ts(40,84): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(6,28): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(7,29): error TS7031: Binding element 'standalone' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(11,21): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(22,24): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(23,23): error TS7006: Parameter 'format' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(24,13): error TS7006: Parameter 'element' implicitly has an 'any' type.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(26,29): error TS18047: 'frame' is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(27,14): error TS18047: 'doc' is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(29,61): error TS18047: 'text' is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(29,89): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(29,159): error TS18047: 'viewport' is possibly 'null'.
+release-hotfix/e2e/ios-controls-clearance.spec.ts(29,179): error TS18047: 'viewport' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(9,9): error TS7034: Variable 'errors' implicitly has type 'any[]' in some locations where its type cannot be determined.
+release-hotfix/e2e/runtime-touch.spec.ts(15,37): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(15,43): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(15,63): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(15,69): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(24,62): error TS2345: Argument of type 'Node | null' is not assignable to parameter of type 'Node'.
+  Type 'null' is not assignable to type 'Node'.
+release-hotfix/e2e/runtime-touch.spec.ts(24,83): error TS2345: Argument of type 'Node | null' is not assignable to parameter of type 'Node'.
+  Type 'null' is not assignable to type 'Node'.
+release-hotfix/e2e/runtime-touch.spec.ts(24,99): error TS18047: 'node' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(24,99): error TS18047: 'node.textContent' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(25,47): error TS18047: 'el.ownerDocument.defaultView' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(39,10): error TS7005: Variable 'errors' implicitly has an 'any[]' type.
+release-hotfix/e2e/runtime-touch.spec.ts(46,99): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(46,105): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(46,125): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(46,131): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(58,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.
+  Type 'undefined' is not assignable to type 'string | URL'.
+release-hotfix/e2e/runtime-touch.spec.ts(64,36): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/runtime-touch.spec.ts(64,53): error TS2339: Property 'port' does not exist on type 'string | AddressInfo'.
+  Property 'port' does not exist on type 'string'.
+release-hotfix/e2e/runtime-touch.spec.ts(72,17): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(3,20): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/today-smoke.spec.ts(4,22): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/today-smoke.spec.ts(5,28): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/e2e/today-smoke.spec.ts(19,81): error TS18047: 'after' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(19,95): error TS18047: 'before' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(19,112): error TS18047: 'after' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(19,126): error TS18047: 'before' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(22,27): error TS2532: Object is possibly 'undefined'.
+release-hotfix/e2e/today-smoke.spec.ts(22,27): error TS2532: Object is possibly 'undefined'.
+release-hotfix/e2e/today-smoke.spec.ts(22,27): error TS2684: The 'this' context of type '((v: any) => void) | undefined' is not assignable to method's 'this' of type '(this: SVGElement | HTMLElement, args_0: string) => void'.
+  Type 'undefined' is not assignable to type '(this: SVGElement | HTMLElement, args_0: string) => void'.
+release-hotfix/e2e/today-smoke.spec.ts(28,88): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(31,76): error TS18047: 'first' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(31,76): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,99): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,105): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,126): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,132): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,162): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(32,168): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(35,77): error TS18047: 'status' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(35,77): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(36,19): error TS18047: 'status' is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(36,19): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/today-smoke.spec.ts(51,3): error TS2322: Type '(handler: any, delay: any, ...args: any[]) => number' is not assignable to type '((handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number) & typeof setTimeout'.
+  Property '__promisify__' is missing in type '(handler: any, delay: any, ...args: any[]) => number' but required in type 'typeof setTimeout'.
+release-hotfix/e2e/today-smoke.spec.ts(51,23): error TS7006: Parameter 'handler' implicitly has an 'any' type.
+release-hotfix/e2e/today-smoke.spec.ts(51,31): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+release-hotfix/e2e/today-smoke.spec.ts(51,37): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+release-hotfix/e2e/upgrade-cache.spec.ts(8,22): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.
+  Type 'undefined' is not assignable to type 'string | URL'.
+release-hotfix/e2e/upgrade-cache.spec.ts(15,35): error TS2531: Object is possibly 'null'.
+release-hotfix/e2e/upgrade-cache.spec.ts(15,52): error TS2339: Property 'port' does not exist on type 'string | AddressInfo'.
+  Property 'port' does not exist on type 'string'.
+release-hotfix/e2e/upgrade-cache.spec.ts(24,106): error TS18048: 'registration' is possibly 'undefined'.
+release-hotfix/e2e/upgrade-cache.spec.ts(30,73): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string | RegExp | readonly (string | RegExp)[]'.
+  Type 'null' is not assignable to type 'string | RegExp | readonly (string | RegExp)[]'.
+release-hotfix/e2e/upgrade-cache.spec.ts(31,100): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/upgrade-cache.spec.ts(31,106): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/upgrade-cache.spec.ts(31,126): error TS18047: 'box' is possibly 'null'.
+release-hotfix/e2e/upgrade-cache.spec.ts(31,132): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(3,27): error TS2307: Cannot find module './support/epub-fixture' or its corresponding type declarations.
+release-hotfix/footnotes.spec.ts(6,21): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/footnotes.spec.ts(6,26): error TS7006: Parameter 'format' implicitly has an 'any' type.
+release-hotfix/footnotes.spec.ts(27,27): error TS2531: Object is possibly 'null'.
+release-hotfix/footnotes.spec.ts(27,27): error TS2531: Object is possibly 'null'.
+release-hotfix/footnotes.spec.ts(30,64): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(30,70): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(30,82): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(30,88): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(40,60): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(40,66): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(40,78): error TS18047: 'box' is possibly 'null'.
+release-hotfix/footnotes.spec.ts(40,84): error TS18047: 'box' is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(2,27): error TS2307: Cannot find module './support/epub-fixture' or its corresponding type declarations.
+release-hotfix/ios-controls-clearance.spec.ts(6,28): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(7,29): error TS7031: Binding element 'standalone' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(11,21): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(22,24): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(23,23): error TS7006: Parameter 'format' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(24,13): error TS7006: Parameter 'element' implicitly has an 'any' type.
+release-hotfix/ios-controls-clearance.spec.ts(26,29): error TS18047: 'frame' is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(27,14): error TS18047: 'doc' is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(29,61): error TS18047: 'text' is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(29,89): error TS2531: Object is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(29,159): error TS18047: 'viewport' is possibly 'null'.
+release-hotfix/ios-controls-clearance.spec.ts(29,179): error TS18047: 'viewport' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(5,27): error TS2307: Cannot find module './support/epub-fixture' or its corresponding type declarations.
+release-hotfix/runtime-touch.spec.ts(9,9): error TS7034: Variable 'errors' implicitly has type 'any[]' in some locations where its type cannot be determined.
+release-hotfix/runtime-touch.spec.ts(15,37): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(15,43): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(15,63): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(15,69): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(24,62): error TS2345: Argument of type 'Node | null' is not assignable to parameter of type 'Node'.
+  Type 'null' is not assignable to type 'Node'.
+release-hotfix/runtime-touch.spec.ts(24,83): error TS2345: Argument of type 'Node | null' is not assignable to parameter of type 'Node'.
+  Type 'null' is not assignable to type 'Node'.
+release-hotfix/runtime-touch.spec.ts(24,99): error TS18047: 'node' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(24,99): error TS18047: 'node.textContent' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(25,47): error TS18047: 'el.ownerDocument.defaultView' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(39,10): error TS7005: Variable 'errors' implicitly has an 'any[]' type.
+release-hotfix/runtime-touch.spec.ts(46,99): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(46,105): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(46,125): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(46,131): error TS18047: 'box' is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(58,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.
+  Type 'undefined' is not assignable to type 'string | URL'.
+release-hotfix/runtime-touch.spec.ts(64,36): error TS2531: Object is possibly 'null'.
+release-hotfix/runtime-touch.spec.ts(64,53): error TS2339: Property 'port' does not exist on type 'string | AddressInfo'.
+  Property 'port' does not exist on type 'string'.
+release-hotfix/runtime-touch.spec.ts(72,17): error TS2531: Object is possibly 'null'.
+release-hotfix/security-browser.spec.ts(3,27): error TS2307: Cannot find module './support/epub-fixture' or its corresponding type declarations.
+release-hotfix/today-smoke.spec.ts(3,20): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/today-smoke.spec.ts(4,22): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/today-smoke.spec.ts(5,28): error TS7006: Parameter 'page' implicitly has an 'any' type.
+release-hotfix/today-smoke.spec.ts(19,81): error TS18047: 'after' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(19,95): error TS18047: 'before' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(19,112): error TS18047: 'after' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(19,126): error TS18047: 'before' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(22,27): error TS2532: Object is possibly 'undefined'.
+release-hotfix/today-smoke.spec.ts(22,27): error TS2532: Object is possibly 'undefined'.
+release-hotfix/today-smoke.spec.ts(22,27): error TS2684: The 'this' context of type '((v: any) => void) | undefined' is not assignable to method's 'this' of type '(this: SVGElement | HTMLElement, args_0: string) => void'.
+  Type 'undefined' is not assignable to type '(this: SVGElement | HTMLElement, args_0: string) => void'.
+release-hotfix/today-smoke.spec.ts(28,88): error TS2531: Object is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(31,76): error TS18047: 'first' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(31,76): error TS2531: Object is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,99): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,105): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,126): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,132): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,162): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(32,168): error TS18047: 'box' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(35,77): error TS18047: 'status' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(35,77): error TS2531: Object is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(36,19): error TS18047: 'status' is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(36,19): error TS2531: Object is possibly 'null'.
+release-hotfix/today-smoke.spec.ts(51,3): error TS2322: Type '(handler: any, delay: any, ...args: any[]) => number' is not assignable to type '((handler: TimerHandler, timeout?: number | undefined, ...arguments: any[]) => number) & typeof setTimeout'.
+  Property '__promisify__' is missing in type '(handler: any, delay: any, ...args: any[]) => number' but required in type 'typeof setTimeout'.
+release-hotfix/today-smoke.spec.ts(51,23): error TS7006: Parameter 'handler' implicitly has an 'any' type.
+release-hotfix/today-smoke.spec.ts(51,31): error TS7006: Parameter 'delay' implicitly has an 'any' type.
+release-hotfix/today-smoke.spec.ts(51,37): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+release-hotfix/upgrade-cache.spec.ts(8,22): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.
+  Type 'undefined' is not assignable to type 'string | URL'.
+release-hotfix/upgrade-cache.spec.ts(15,35): error TS2531: Object is possibly 'null'.
+release-hotfix/upgrade-cache.spec.ts(15,52): error TS2339: Property 'port' does not exist on type 'string | AddressInfo'.
+  Property 'port' does not exist on type 'string'.
+release-hotfix/upgrade-cache.spec.ts(24,106): error TS18048: 'registration' is possibly 'undefined'.
+release-hotfix/upgrade-cache.spec.ts(30,73): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string | RegExp | readonly (string | RegExp)[]'.
+  Type 'null' is not assignable to type 'string | RegExp | readonly (string | RegExp)[]'.
+release-hotfix/upgrade-cache.spec.ts(31,100): error TS18047: 'box' is possibly 'null'.
+release-hotfix/upgrade-cache.spec.ts(31,106): error TS18047: 'box' is possibly 'null'.
+release-hotfix/upgrade-cache.spec.ts(31,126): error TS18047: 'box' is possibly 'null'.
+release-hotfix/upgrade-cache.spec.ts(31,132): error TS18047: 'box' is possibly 'null'.

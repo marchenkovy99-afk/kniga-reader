@@ -39,10 +39,32 @@ it('carries a book, bookmarks and settings to a second device, detects stale edi
  const result=await runCloudSync('u',s.transport,b.port);
  expect(result.conflicts.map(c=>c.key)).toEqual(['book:one']);expect(s.rows.get('book:one')!.payload.position).toMatchObject({chapter:4});
  s.rows.set('book:one',{...s.rows.get('book:one')!,revision:3,deleted:true,payload:{}});
- await runCloudSync('u',s.transport,b.port);await runCloudSync('u',s.transport,b.port);
+ const deletedConflict=await runCloudSync('u',s.transport,b.port);
+ expect(deletedConflict.conflicts.map(c=>c.key)).toEqual(['book:one']);
+ // An explicit user choice, rather than a background sync, may archive the edit.
+ await b.port.archive('u','one',3);await runCloudSync('u',s.transport,b.port);
  expect(b.books.has('one')).toBe(false);expect(s.rows.get('book:one')!.deleted).toBe(true);
 });
 it('rejects corrupt remote bytes before applying a download',async()=>{
  const a=device(),s=server();s.rows.set('book:bad',{key:'book:bad',revision:1,deleted:false,payload:{id:'bad',sha256:'0'.repeat(64),filename:'b.fb2',title:'Bad',author:'A',format:'fb2',importedAt:1,bookmarks:[],size:4,mime:'text/xml'}});s.files.set('u/'+'0'.repeat(64),new Blob(['oops']));
  await expect(runCloudSync('u',s.transport,a.port)).rejects.toThrow(/целостност/);expect(a.books.size).toBe(0);
+});
+
+it('does not archive pending offline edits when a remote tombstone arrives',async()=>{
+ const a=device(),s=server();
+ a.books.set('pending',{id:'pending',title:'Offline work',filename:'a.fb2',author:'',format:'fb2',file:new Blob(['original']),importedAt:1,bookmarks:[]});
+ a.entries.set('book:pending',{id:'u|book:pending',owner:'u',key:'book:pending',revision:1,pending:true,generation:2});
+ s.rows.set('book:pending',{key:'book:pending',revision:2,deleted:true,payload:{}});
+ const result=await runCloudSync('u',s.transport,a.port);
+ expect(result.conflicts.map(c=>c.key)).toEqual(['book:pending']);
+ expect(a.books.has('pending')).toBe(true);expect(a.entries.get('book:pending')?.pending).toBe(true);
+});
+it('does not replace a local file with a different hash advertised by the same remote book id',async()=>{
+ const a=device(),s=server();
+ a.books.set('immutable',{id:'immutable',title:'Original',filename:'a.fb2',author:'',format:'fb2',file:new Blob(['original']),importedAt:1,bookmarks:[]});
+ a.entries.set('book:immutable',{id:'u|book:immutable',owner:'u',key:'book:immutable',revision:1,pending:false,generation:1});
+ const {sha256}=await import('../cloudSync');const other=new Blob(['replacement']),hash=await sha256(other);
+ s.rows.set('book:immutable',{key:'book:immutable',revision:2,deleted:false,payload:{id:'immutable',sha256:hash,size:other.size,format:'fb2',bookmarks:[]}});s.files.set('u/'+hash,other);
+ await expect(runCloudSync('u',s.transport,a.port)).rejects.toThrow(/файл|байт/i);
+ expect(await a.books.get('immutable')!.file.text()).toBe('original');
 });

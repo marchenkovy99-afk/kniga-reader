@@ -1,0 +1,81 @@
+{
+  "url": "https://libra-standalone-preview-992vchg7n-marchenkovy99-3693.vercel.app/",
+  "files": [
+    {
+      "path": "icon-180.png",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "icon-512.png",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "icon-mark.svg",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "index.html",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "icon.svg",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "footnotes.js",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "reader-touch-fix.js",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "release.json",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "offline-shell.txt",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "sw.js",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "assets/src-BLsCKbRG.js",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "assets/index-SkfpHvwY.css",
+      "status": 200,
+      "sha256_match": true
+    },
+    {
+      "path": "assets/index-DMkgLOVA.js",
+      "status": 200,
+      "sha256_match": true
+    }
+  ],
+  "headers": {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' blob:; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self' blob: https://qwnkigorqsgugcctnfmj.supabase.co wss://qwnkigorqsgugcctnfmj.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY"
+  }
+}

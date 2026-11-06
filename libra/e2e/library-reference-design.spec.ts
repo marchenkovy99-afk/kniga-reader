@@ -27,6 +27,7 @@ test('reference-inspired library preserves import, favorites, filtering and read
  await expect(page.locator('.book-tile')).toHaveCount(1);
  await page.locator('.book-tile-menu').click();
  await expect(page.getByRole('button',{name:'Убрать из избранного'})).toBeVisible();
+ await page.locator('.book-tile-menu').click();
  await page.locator('.continue-card').click();
  await expect(page.locator('.book-flow')).toContainText('Первая страница книги.');
  await expect(page.locator('.reading-root')).toBeVisible();

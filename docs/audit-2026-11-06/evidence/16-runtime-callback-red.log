@@ -1,0 +1,49 @@
+✔ recovered release presents a conflict instead of archiving pending offline edits (2.63074ms)
+✔ recovered release refuses replacement bytes for an existing book id (5.825044ms)
+✔ recovered release cannot roll back a locally applied revision (4.764487ms)
+✔ recovered release archive transaction checks pending generation and account (2.71689ms)
+✔ recovered release ignores a late acknowledgment of an older server revision (1.609391ms)
+✔ recovered favorite cannot expose or overwrite another account book (2.693905ms)
+✔ recovered cover cannot expose or overwrite another account book (1.802259ms)
+✔ recovered save cannot expose or overwrite another account book (1.741448ms)
+✔ recovered remove cannot expose or overwrite another account book (1.744954ms)
+✖ recovered favorite rechecks the owner in the final asynchronous callback (2.539043ms)
+✖ recovered cover rechecks the owner in the final asynchronous callback (3.733582ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 9
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.389878
+
+✖ failing tests:
+
+test at release-hotfix/security-regressions.test.mjs:71:38
+✖ recovered favorite rechecks the owner in the final asynchronous callback (2.539043ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:82:6)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:71:38
+✖ recovered cover rechecks the owner in the final asynchronous callback (3.733582ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:82:6)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

@@ -21,6 +21,9 @@ function normalizedRuns(raw:InlineRun[]):InlineRun[]{
 }
 
 export function parseFB2(xml:string):ParsedFB2{
+  const markup=xml.replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->/g,'');
+  if(/<!DOCTYPE|<!ENTITY/i.test(markup))throw new Error('DTD и DOCTYPE в FB2 не поддерживаются');
+  if(xml.length>50*1024*1024)throw new Error('FB2 превышает лимит 50 МБ');
   const doc=new DOMParser().parseFromString(xml,'application/xml');
   if(doc.querySelector('parsererror'))throw new Error('FB2 содержит ошибку XML');
   const root=doc.documentElement;

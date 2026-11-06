@@ -1,0 +1,75 @@
+✔ recovered release presents a conflict instead of archiving pending offline edits (2.808987ms)
+✔ recovered release refuses replacement bytes for an existing book id (5.787539ms)
+✔ recovered release cannot roll back a locally applied revision (7.333053ms)
+✔ recovered release archive transaction checks pending generation and account (3.78556ms)
+✔ recovered release ignores a late acknowledgment of an older server revision (2.372053ms)
+✖ recovered favorite cannot expose or overwrite another account book (3.399602ms)
+✖ recovered cover cannot expose or overwrite another account book (6.207338ms)
+✖ recovered save cannot expose or overwrite another account book (3.281095ms)
+✖ recovered remove cannot expose or overwrite another account book (3.114194ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 5
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 157.521024
+
+✖ failing tests:
+
+test at release-hotfix/security-regressions.test.mjs:63:54
+✖ recovered favorite cannot expose or overwrite another account book (3.399602ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:66:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:63:54
+✖ recovered cover cannot expose or overwrite another account book (6.207338ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:66:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:63:54
+✖ recovered save cannot expose or overwrite another account book (3.281095ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:66:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:63:54
+✖ recovered remove cannot expose or overwrite another account book (3.114194ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:66:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

@@ -1,0 +1,58 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 test
+> vitest run src/__tests__
+
+
+ RUN  v5.1.0 /workspace/scratch/26c1ab5ee782/libra/libra
+
+ ❯ src/__tests__/cloud-storage.test.ts (10 tests | 1 failed) 112ms
+   × never adopts or deletes another account book through delayed library mutations 26ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > never adopts or deletes another account book through delayed library mutations
+AssertionError: expected { id: 'private-mutations', …(11) } to be undefined
+
+- Expected:
+undefined
+
++ Received:
+{
+  "author": "Author",
+  "bookmarks": [],
+  "file": Blob {
+    Symbol(kHandle): Blob {},
+    Symbol(kLength): 5,
+    Symbol(kType): "application/octet-stream",
+  },
+  "filename": "private-mutations.fb2",
+  "format": "fb2",
+  "id": "private-mutations",
+  "importedAt": 1,
+  "isFavorite": true,
+  "lastOpenedAt": undefined,
+  "position": undefined,
+  "quotes": [],
+  "title": "private-mutations",
+}
+
+ ❯ src/__tests__/cloud-storage.test.ts:88:53
+     86|  expect(await storage.getBook('private-mutations')).toBeUndefined();
+     87|  await storage.setBookFavorite('private-mutations',true);
+     88|  expect(await storage.getBook('private-mutations')).toBeUndefined();
+       |                                                     ^
+     89|  await storage.updateBookCover('private-mutations','data:image/png;bas…
+     90|  expect(await storage.getBook('private-mutations')).toBeUndefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 29 passed (30)
+      Tests  1 failed | 116 passed (117)
+   Start at  12:16:43
+   Duration  2.42s (environment 72%, tests 16%, import 6%, transform 4%, worker 1%)
+
+    Isolate  30 workers spawned · ~466ms startup each (spawn + environment, per file)
+             at least ~1.28s faster with isolate: false — reuses workers across files instead of one per file
+
