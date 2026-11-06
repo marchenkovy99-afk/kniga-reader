@@ -4,8 +4,8 @@
   exitingStyle.dataset.libraTouchRepair = 'true';
   exitingStyle.textContent = `
     .reading-root .sheet-scrim.sheet-exiting{pointer-events:none!important}
-    html.libra-ios-standalone .reading-root .reading-top{top:calc(var(--reader-safe-top) + 40px)}
-    html.libra-ios-standalone .reading-root .quote-mode-tip{top:calc(var(--reader-safe-top) + 42px)}
+    html.libra-ios-standalone .reading-root .reading-top{top:calc(var(--reader-safe-top) + 32px)}
+    html.libra-ios-standalone .reading-root .quote-mode-tip{top:calc(var(--reader-safe-top) + 34px)}
   `;
   document.head.appendChild(exitingStyle);
   // Offset only floating controls. The shared safe area and book viewport must

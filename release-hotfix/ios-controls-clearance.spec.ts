@@ -34,18 +34,18 @@ for(const format of ['fb2','epub']){
   await installMode(page,true);await open(page,format);
   await expect(page.locator('html')).toHaveClass(/libra-ios-standalone/);
   const installed=await metrics(page,format);
-  await expect(page.locator('.reading-top')).toHaveCSS('top','99px');
+  await expect(page.locator('.reading-top')).toHaveCSS('top','91px');
   const height=await page.locator('.reading-top').evaluate(el=>el.getBoundingClientRect().height);
   await page.evaluate(()=>document.documentElement.classList.remove('libra-ios-standalone'));
   const original=await metrics(page,format);
   await expect(page.locator('.reading-top')).toHaveCSS('top','67px');
   expect(installed).toEqual(original);
   await page.evaluate(()=>document.documentElement.classList.add('libra-ios-standalone'));
-  await expect(page.locator('.reading-top')).toHaveCSS('top','99px');
+  await expect(page.locator('.reading-top')).toHaveCSS('top','91px');
   expect(await metrics(page,format)).toEqual(original);
   expect(await page.locator('.reading-top').evaluate(el=>el.getBoundingClientRect().height)).toBeCloseTo(height,3);
   await page.getByRole('button',{name:'Цитата',exact:true}).click();
-  await expect(page.locator('.quote-mode-tip')).toHaveCSS('top','101px');
+  await expect(page.locator('.quote-mode-tip')).toHaveCSS('top','93px');
   expect(await metrics(page,format)).toEqual(original);
  });
 }
