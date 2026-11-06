@@ -96,19 +96,18 @@ export async function getBook(id:string):Promise<StoredBook|undefined>{
  ]);
  return record&&visible(id,await allCloudEntries())?hydrate(record,state):undefined;
 }
-export async function saveBook(book:StoredBook):Promise<void>{
+export async function saveBook(book:StoredBook,expectedOwner:string|null=activeOwner):Promise<void>{
+ const owner=expectedOwner;if(owner!==activeOwner)throw Error('Учётная запись изменилась. Повторите импорт');
  const {file,...metadata}=book;
  const record:PersistedBook={...metadata,fileBytes:await file.arrayBuffer(),fileType:file.type};
  const database=await db();
- await new Promise<void>((resolve,reject)=>{const tx=database.transaction(['books','cloud'],'readwrite');tx.objectStore('books').put(record);queue(tx,'book:'+book.id);tx.oncomplete=()=>{changed();resolve()};tx.onerror=()=>reject(tx.error)});
+ await new Promise<void>((resolve,reject)=>{const tx=database.transaction(['books','cloud'],'readwrite');guardBookWrite(tx,book.id,owner,()=>{tx.objectStore('books').put(record);queue(tx,'book:'+book.id)});tx.onabort=()=>reject(new Error('Книга принадлежит другому аккаунту или учётная запись изменилась'));tx.oncomplete=()=>{changed();resolve()};tx.onerror=()=>reject(tx.error)});
 }
 /** Delete both file and reading state as one atomic operation. */
 export function deleteBook(id:string):Promise<void>{
- return db().then(database=>new Promise((resolve,reject)=>{
+ const owner=activeOwner;return db().then(database=>new Promise((resolve,reject)=>{
   const tx=database.transaction(['books','reading','cloud'],'readwrite');
-  tx.objectStore('books').delete(id);
-  tx.objectStore('reading').delete(id);
-  queue(tx,'book:'+id,true);
+  guardBookWrite(tx,id,owner,()=>{tx.objectStore('books').delete(id);tx.objectStore('reading').delete(id);queue(tx,'book:'+id,true)});
   tx.oncomplete=()=>{changed();resolve()};
   tx.onerror=()=>reject(tx.error);
   tx.onabort=()=>reject(tx.error??new Error('Deletion aborted'));
@@ -213,6 +212,10 @@ export async function mergeBackupBooks(books:StoredBook[]):Promise<{added:number
 
 function allCloudEntries(){return db().then(database=>new Promise<CloudEntry[]>((resolve,reject)=>{const req=database.transaction('cloud').objectStore('cloud').getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)}))}
 function visible(id:string,entries:CloudEntry[]){const bindings=entries.filter(r=>r.key==='book:'+id);return !bindings.length||bindings.some(r=>r.owner===activeOwner&&!r.deleted)}
+function guardBookWrite(tx:IDBTransaction,id:string,owner:string|null,write:()=>void){
+ const request=tx.objectStore('cloud').getAll();
+ request.onsuccess=()=>{if(owner!==activeOwner||!visible(id,request.result as CloudEntry[])){tx.abort();return}write()};
+}
 export async function getCloudEntries(owner:string){return (await allCloudEntries()).filter(r=>r.owner===owner)}
 export async function cloudDeviceState(){await db();return {owner:activeOwner,enabled:cloudEnabled,hidden:(await allCloudEntries()).some(r=>r.owner!==activeOwner)}}
 export async function setCloudAccount(owner:string|null){
@@ -223,6 +226,7 @@ export async function setCloudAccount(owner:string|null){
 export async function attachLocalLibrary(owner:string){
  if(owner!==activeOwner)throw Error('Учётная запись изменилась');
  const entries=await allCloudEntries(),books=await listBooks();const database=await db();
+ if(owner!==activeOwner)throw Error('Учётная запись изменилась');
  cloudEnabled=true;
  await new Promise<void>((resolve,reject)=>{const tx=database.transaction(['cloud','preferences'],'readwrite');
  tx.objectStore('preferences').put({owner,enabled:true},'cloud-device');tx.objectStore('preferences').put(true,'cloud-enabled:'+owner);
@@ -240,11 +244,21 @@ export async function attachLocalLibrary(owner:string){
 }
 export async function acknowledgeCloudEntry(sent:CloudEntry,revision:number){
  const database=await db();await new Promise<void>((resolve,reject)=>{const tx=database.transaction('cloud','readwrite'),store=tx.objectStore('cloud'),req=store.get(sent.id);
- req.onsuccess=()=>{const now=req.result as CloudEntry|undefined;if(now)store.put({...now,revision,pending:now.generation!==sent.generation})};tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
+ req.onsuccess=()=>{const now=req.result as CloudEntry|undefined;if(now&&now.revision<revision&&!(now.deleted&&!now.pending))store.put({...now,revision,pending:now.generation!==sent.generation})};tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
 }
-export async function archiveCloudBook(owner:string,id:string,revision:number){
- const entry:CloudEntry={id:owner+'|book:'+id,owner,key:'book:'+id,revision,pending:false,generation:0,deleted:true};
- const database=await db();await new Promise<void>((resolve,reject)=>{const tx=database.transaction('cloud','readwrite');tx.objectStore('cloud').put(entry);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});changed();
+export async function archiveCloudBook(owner:string,id:string,revision:number,expectedGeneration?:number):Promise<boolean>{
+ if(owner!==activeOwner)return false;
+ const database=await db();let applied=false;
+ await new Promise<void>((resolve,reject)=>{
+  const tx=database.transaction('cloud','readwrite'),store=tx.objectStore('cloud'),key=owner+'|book:'+id,req=store.get(key);
+  req.onsuccess=()=>{
+   const old=req.result as CloudEntry|undefined;
+   if(owner!==activeOwner||(old&&old.revision>=revision)||(old?.pending&&old.generation!==expectedGeneration))return;
+   store.put({id:key,owner,key:'book:'+id,revision,pending:false,generation:(old?.generation??0)+1,deleted:true} satisfies CloudEntry);applied=true;
+  };
+  tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error??new Error('Архивирование прервано'));
+ });
+ if(applied)changed();return applied;
 }
 /** Applies server state only if no local edit arrived while downloading. */
 export async function applyCloudRecord(owner:string,key:string,revision:number,book?:StoredBook,settings?:ReaderSettings,expectedGeneration?:number){
@@ -253,7 +267,7 @@ export async function applyCloudRecord(owner:string,key:string,revision:number,b
  if(book&&entries.some(r=>r.key===key&&r.owner!==owner))throw Error('Книга принадлежит другой учётной записи на устройстве');
  const bytes=book?await book.file.arrayBuffer():undefined,database=await db();
  return new Promise<boolean>((resolve,reject)=>{const tx=database.transaction(['books','reading','preferences','cloud'],'readwrite'),store=tx.objectStore('cloud'),id=owner+'|'+key,req=store.get(id);let applied=false;
- req.onsuccess=()=>{if(owner!==activeOwner)return;const old=req.result as CloudEntry|undefined;if(old?.pending&&old.generation!==expectedGeneration)return;if(old?.deleted)return;
+ req.onsuccess=()=>{if(owner!==activeOwner)return;const old=req.result as CloudEntry|undefined;if(old&&old.revision>=revision)return;if(old?.pending&&old.generation!==expectedGeneration)return;if(old?.deleted)return;
  if(book){const {file,...meta}=book;tx.objectStore('books').put({...meta,fileBytes:bytes!,fileType:file.type});tx.objectStore('reading').put({id:book.id,position:book.position,bookmarks:book.bookmarks,quotes:book.quotes||[],lastOpenedAt:book.lastOpenedAt})}
  if(settings)tx.objectStore('preferences').put(settings,'reader:'+owner);
  store.put({id,owner,key,revision,pending:false,generation:old?.generation??0} satisfies CloudEntry);applied=true};
@@ -262,17 +276,11 @@ export async function applyCloudRecord(owner:string,key:string,revision:number,b
 
 /** Persist a favorite flag atomically without loading or rewriting book bytes. */
 export async function setBookFavorite(id:string,isFavorite:boolean):Promise<void>{
- const database=await db();
+ const owner=activeOwner,database=await db();
  await new Promise<void>((resolve,reject)=>{
   const tx=database.transaction(['books','cloud'],'readwrite');
   const store=tx.objectStore('books');
-  const req=store.get(id);
-  req.onsuccess=()=>{
-   const book=req.result as PersistedBook|undefined;
-   if(!book){tx.abort();return}
-   store.put({...book,isFavorite});
-   queue(tx,'book:'+id);
-  };
+  guardBookWrite(tx,id,owner,()=>{const req=store.get(id);req.onsuccess=()=>{if(owner!==activeOwner){tx.abort();return}const book=req.result as PersistedBook|undefined;if(!book){tx.abort();return}store.put({...book,isFavorite});queue(tx,'book:'+id)}});
   tx.oncomplete=()=>{changed();resolve()};
   tx.onerror=()=>reject(tx.error);
   tx.onabort=()=>reject(tx.error??new Error('Книга не найдена'));
@@ -282,16 +290,10 @@ export async function setBookFavorite(id:string,isFavorite:boolean):Promise<void
 /** Restore artwork without deleting book bytes, reading progress or bookmarks. */
 export async function updateBookCover(id:string,cover:string):Promise<void>{
  if(!cover.startsWith('data:image/')||cover.length>2_100_000)return;
- const database=await db();
+ const owner=activeOwner,database=await db();
  await new Promise<void>((resolve,reject)=>{
   const tx=database.transaction(['books','cloud'],'readwrite');
-  const store=tx.objectStore('books'),req=store.get(id);
-  req.onsuccess=()=>{
-   const book=req.result as PersistedBook|undefined;
-   if(!book||book.cover)return;
-   store.put({...book,cover});
-   queue(tx,'book:'+id);
-  };
+  const store=tx.objectStore('books');guardBookWrite(tx,id,owner,()=>{const req=store.get(id);req.onsuccess=()=>{if(owner!==activeOwner){tx.abort();return}const book=req.result as PersistedBook|undefined;if(!book||book.cover)return;store.put({...book,cover});queue(tx,'book:'+id)}});
   tx.oncomplete=()=>{changed();resolve()};
   tx.onerror=()=>reject(tx.error);
   tx.onabort=()=>reject(tx.error);

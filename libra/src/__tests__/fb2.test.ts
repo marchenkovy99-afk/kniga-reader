@@ -57,3 +57,7 @@ describe('FB2',()=>{
  it('rejects broken XML',()=>expect(()=>parseFB2('<FictionBook><body>')).toThrow());
  it('rejects unsupported documents',()=>expect(()=>parseFB2('<html/>')).toThrow());
 });
+
+it('rejects DTD and custom entities before parsing untrusted FB2',()=>{
+ expect(()=>parseFB2('<!DOCTYPE FictionBook [<!ENTITY secret "expanded">]><FictionBook><body><section><p>&secret;</p></section></body></FictionBook>')).toThrow(/DTD|DOCTYPE/);
+});

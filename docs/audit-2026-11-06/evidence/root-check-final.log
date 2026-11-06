@@ -1,0 +1,5 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> kniga-reader@0.2.0 check
+> node --check reader/src/main.js && node --check reader/src/importer.js && node --check reader/src/pagination.js && node --check reader/src/cloud.js && tsc --noEmit
+

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, type ReaderSettings, type ReaderPosition, type StoredBook, type Format } from './domain';
-import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover } from './storage';
+import { listBooks, deleteBook, loadSettings, saveBook, saveSettings, setBookFavorite, updateBookCover, cloudDeviceState } from './storage';
 import { parseFB2 } from './fb2';
 import { decodeFB2Blob } from './fb2Encoding';
 import { seedParsedFB2, forgetParsedFB2 } from './reader/parsedFB2Cache';
@@ -59,8 +59,10 @@ export default function App(){
  },[hydrated,books]);
 
  async function importFiles(list:FileList){
+   const files=Array.from(list);
    setLoading(true);setError('');
-   for(const file of Array.from(list)){
+   let importOwner:string|null;try{importOwner=(await cloudDeviceState()).owner}catch(e){setError(String(e));setLoading(false);return}
+   for(const file of files){
      try{
        const format=supported(file.name);
        if(!format)throw new Error('Поддерживаются только FB2 и EPUB');
@@ -87,7 +89,7 @@ export default function App(){
        }
        const book:StoredBook={id,filename:file.name,title,author,format,file:blob,cover,
          importedAt:Date.now(),bookmarks:[]};
-       await saveBook(book);
+       await saveBook(book,importOwner);
      }catch(e){setError('Не удалось импортировать '+file.name+': '+(e instanceof Error?e.message:String(e)))}
    }
    await refresh();setLoading(false);

@@ -1,0 +1,61 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 test
+> vitest run src/__tests__
+
+
+ RUN  v5.1.0 /workspace/scratch/26c1ab5ee782/libra/libra
+
+ ❯ src/__tests__/cloud-storage.test.ts (9 tests | 2 failed) 118ms
+   × preserves an edit that arrives before a remote tombstone transaction 25ms
+   × ignores a late upload acknowledgment after a newer revision has already been applied 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > preserves an edit that arrives before a remote tombstone transaction
+AssertionError: expected undefined to be false // Object.is equality
+
+- Expected:
+false
+
++ Received:
+undefined
+
+ ❯ src/__tests__/cloud-storage.test.ts:71:74
+     69|  const snapshot=(await storage.getCloudEntries('archive-race')).find(e…
+     70|  await storage.savePosition('archive-race',{chapter:7,page:0,fraction:…
+     71|  expect(await storage.archiveCloudBook('archive-race','archive-race',2…
+       |                                                                          ^
+     72|  expect(await storage.archiveCloudBook('archive-race','archive-race',2…
+     73|  expect((await storage.getBook('archive-race'))?.position?.chapter).to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > ignores a late upload acknowledgment after a newer revision has already been applied
+AssertionError: expected 2 to be 5 // Object.is equality
+
+- Expected
++ Received
+
+- 5
++ 2
+
+ ❯ src/__tests__/cloud-storage.test.ts:81:97
+     79|  const sent=(await storage.getCloudEntries('ack-race')).find(e=>e.key=…
+     80|  await storage.acknowledgeCloudEntry(sent,5);await storage.acknowledge…
+     81|  expect((await storage.getCloudEntries('ack-race')).find(e=>e.key==='b…
+       |                                                                                                 ^
+     82| });
+     83|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 29 passed (30)
+      Tests  2 failed | 114 passed (116)
+   Start at  12:01:49
+   Duration  3.23s (environment 69%, tests 16%, import 7%, transform 6%, worker 1%)
+
+    Isolate  30 workers spawned · ~599ms startup each (spawn + environment, per file)
+             at least ~1.65s faster with isolate: false — reuses workers across files instead of one per file
+

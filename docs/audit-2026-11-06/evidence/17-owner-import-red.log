@@ -1,0 +1,65 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 test
+> vitest run src/__tests__
+
+
+ RUN  v5.1.0 /workspace/scratch/26c1ab5ee782/libra/libra
+
+ ❯ src/__tests__/cloud-storage.test.ts (11 tests | 2 failed) 105ms
+   × never adopts or deletes another account book through delayed library mutations 18ms
+   × fences a new import when its owner changes while the original bytes are being read 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > never adopts or deletes another account book through delayed library mutations
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ src/__tests__/cloud-storage.test.ts:87:65
+     85|  await storage.setCloudAccount('mutations-b');await storage.attachLoca…
+     86|  expect(await storage.getBook('private-mutations')).toBeUndefined();
+     87|  await expect(storage.setBookFavorite('private-mutations',true)).rejec…
+       |                                                                 ^
+     88|  expect(await storage.getBook('private-mutations')).toBeUndefined();
+     89|  await expect(storage.updateBookCover('private-mutations','data:image/…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > fences a new import when its owner changes while the original bytes are being read
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ src/__tests__/cloud-storage.test.ts:107:23
+    105|  await storage.setCloudAccount('slow-import-b');await storage.attachLo…
+    106|  resume(new TextEncoder().encode('private import').buffer);
+    107|  await expect(pending).rejects.toThrow();
+       |                       ^
+    108|  expect(await storage.getBook('slow-import')).toBeUndefined();
+    109| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 29 passed (30)
+      Tests  2 failed | 116 passed (118)
+   Start at  12:18:06
+   Duration  2.43s (environment 71%, tests 17%, import 6%, transform 5%, worker 1%)
+
+    Isolate  30 workers spawned · ~462ms startup each (spawn + environment, per file)
+             at least ~1.27s faster with isolate: false — reuses workers across files instead of one per file
+

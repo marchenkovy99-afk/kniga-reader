@@ -83,11 +83,11 @@ test('changing margins never pushes Russian text outside page, including mid-boo
   const audit=await geometry(page);
   expect(audit.errors,'Margins '+margin+' font '+font+': '+audit.errors.join('; ')).toEqual([]);
   expect(audit.visible,'Blank page after margin/font change').toBeGreaterThan(0);
-  expect(await flow.innerText()).toBe(original);
+  await expect.poll(()=>flow.innerText()).toBe(original);
  }
  await page.reload();
  await page.locator('.continue-card').click();
- expect(await page.locator('.book-flow').innerText()).toBe(original);
+ await expect.poll(()=>page.locator('.book-flow').innerText()).toBe(original);
  const audit=await geometry(page);
  expect(audit.errors,'After reload '+audit.errors.join('; ')).toEqual([]);
 });

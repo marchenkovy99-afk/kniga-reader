@@ -1,0 +1,368 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:32) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22mnpm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+[2m[WebServer] [22m(node:45) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 124 tests using 2 workers
+
+(node:80) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:80) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:81) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓    1 [chromium-iphone] › e2e/anchors.spec.ts:27:1 › font adjustment and reopen preserve source position and all text (2.8s)
+  ✓    2 [chromium-iphone] › e2e/backup.spec.ts:16:1 › backup export and additive restore recover exact book bytes, bookmarks and reading position (2.9s)
+  ✓    4 [chromium-iphone] › e2e/backup.spec.ts:106:1 › invalid backup never deletes or changes an existing book (1.2s)
+  ✓    3 [chromium-iphone] › e2e/book-navigation.spec.ts:5:1 › whole-book slider, page jump, hidden footer and restored final character (2.7s)
+  ✓    5 [chromium-iphone] › e2e/bookmarks.spec.ts:6:1 › saved bookmark has the correct state and reopens its own page (2.2s)
+  ✓    6 [chromium-iphone] › e2e/book-navigation.spec.ts:90:1 › FB2 contents show the exact start page of every measured chapter (1.2s)
+  ✓    7 [chromium-iphone] › e2e/bookmarks.spec.ts:84:1 › bookmarks survive a full reload and reopen at the saved page (2.0s)
+  ✓    9 [chromium-iphone] › e2e/chapter-turn-stability.spec.ts:6:1 › chapter boundary keeps page geometry fixed and does not animate across the previous chapter (1.4s)
+  ✓    8 [chromium-iphone] › e2e/chapter-boundaries.spec.ts:9:1 › switching between chapters preserves last page and all body content (3.2s)
+  ✓   10 [chromium-iphone] › e2e/clear-first-line.spec.ts:6:1 › zero top margin never paints first reading line against iPhone clip or status bar (1.3s)
+  ✓   11 [chromium-iphone] › e2e/clear-reader.spec.ts:2:1 › reading canvas has no blur or visible footer and recovers a complete standard line (1.0s)
+  ✓   12 [chromium-iphone] › e2e/clipping-guard.spec.ts:25:1 › real glyph overflow raises an error and exposes the complete chapter through vertical scrolling (1.9s)
+  ✓   14 [chromium-iphone] › e2e/clipping-guard.spec.ts:85:1 › safe chapter navigation resets the next chapter to its start and the previous chapter to its end (1.4s)
+  ✓   15 [chromium-iphone] › e2e/density.spec.ts:6:1 › type sizes 14, 18, 24 preserve chapter content and avoid massive page gaps (1.8s)
+  ✓   13 [chromium-iphone] › e2e/cloud-sync.spec.ts:139:1 › two isolated devices synchronize exact book bytes, bookmarks, preferences and durable offline edits (5.9s)
+  ✓   16 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:5:1 › EPUB chapter turns never expose an intermediate first page or moving heading (2.0s)
+  ✓   17 [chromium-iphone] › e2e/epub-reader.spec.ts:66:1 › real EPUB stays readable across font, margin and palette adjustments (2.9s)
+  ✓   18 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:106:1 › outgoing EPUB snapshot preserves visible text coordinates during chapter loading (1.9s)
+[2m[WebServer] [22m12:24:21 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   20 [chromium-iphone] › e2e/epub-chapter-frames.spec.ts:168:1 › FB2 picker is unrestricted on iPhone while unsupported imports are rejected (919ms)
+  ✓   21 [chromium-iphone] › e2e/fb2-epub-only.spec.ts:2:1 › LIBRA imports only FB2 and EPUB and never exposes a PDF reading flow (1.0s)
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:23 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:24 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:24 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:24 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:24 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:24 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   19 [chromium-iphone] › e2e/epub-reader.spec.ts:118:1 › EPUB2 NCX navigation opens later chapter with wide table and inline image (3.0s)
+  ✓   23 [chromium-iphone] › e2e/epub-reader.spec.ts:199:1 › library sorting orders imported books and displays progress metadata (1.3s)
+  ✓   22 [chromium-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (2.5s)
+  ✓   25 [chromium-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.4s)
+  ✓   24 [chromium-iphone] › e2e/epub-reader.spec.ts:217:1 › EPUB final source paragraph is reachable after font and margin reflow (4.2s)
+  ✓   26 [chromium-iphone] › e2e/illustrations-typography.spec.ts:23:3 › fb2 artwork remains original on OLED and viewer returns to the same position (2.7s)
+  ✓   27 [chromium-iphone] › e2e/epub-reader.spec.ts:310:1 › EPUB slider reaches final glyph and persists progress without rounded keyboard stalls (3.4s)
+  ✓   28 [chromium-iphone] › e2e/illustrations-typography.spec.ts:23:3 › epub artwork remains original on OLED and viewer returns to the same position (3.6s)
+  ✓   30 [chromium-iphone] › e2e/illustrations-typography.spec.ts:113:1 › FB2 emphasis, notes and legacy bookmarks survive richer markup (2.3s)
+  ✓   29 [chromium-iphone] › e2e/epub-reader.spec.ts:372:1 › EPUB uses a distinct page number per turn and keeps zero-margin frame static (4.0s)
+  ✓   31 [chromium-iphone] › e2e/illustrations-typography.spec.ts:153:1 › EPUB import finishes resource loading before releasing the metadata reader (1.3s)
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   32 [chromium-iphone] › e2e/epub-reader.spec.ts:425:1 › EPUB clipped source block triggers recovery that exposes its full text (1.4s)
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:38 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+[2m[WebServer] [22m12:24:39 PM [vite] (client) [Unhandled error] Error: ResizeObserver loop completed with undelivered notifications.
+[2m[WebServer] [22m > ../../../../../@vite/client:374:50
+[2m[WebServer] [22m
+  ✓   33 [chromium-iphone] › e2e/illustrations-typography.spec.ts:171:1 › quickly closing and reopening EPUB does not destroy pending renderer startup (2.0s)
+  ✓   34 [chromium-iphone] › e2e/epub-reader.spec.ts:443:1 › near-end EPUB stays in reading filter until actual last page (4.4s)
+  ✓   36 [chromium-iphone] › e2e/epub-reader.spec.ts:503:1 › publisher justified EPUB is rendered with equal word gaps and keeps original text (2.6s)
+  ✓   35 [chromium-iphone] › e2e/large-fb2.spec.ts:11:1 › 2400-paragraph chapter retains original text across taps, font change and reload (7.7s)
+  ✓   37 [chromium-iphone] › e2e/last-page-and-design.spec.ts:10:1 › last page remains accessible with large text and narrow asymmetric margins (2.4s)
+  ✓   38 [chromium-iphone] › e2e/legacy-encodings.spec.ts:5:1 › legacy Windows-1251 FB2 keeps Cyrillic during import and after reload (1.4s)
+  ✓   39 [chromium-iphone] › e2e/last-page-and-design.spec.ts:65:1 › library displays attractive real-metadata jackets without synthetic images or gradients (1.0s)
+  ✓   40 [chromium-iphone] › e2e/library-import-no-plus.spec.ts:3:1 › library has no header plus and still imports books via settings (1.0s)
+  ✓   41 [chromium-iphone] › e2e/library-reference-design.spec.ts:3:1 › reference-inspired library preserves import, favorites, filtering and reader theme (1.9s)
+  ✓   43 [chromium-iphone] › e2e/library-reference-design.spec.ts:77:1 › library keeps narrow iPhone controls inside viewport (642ms)
+  ✓   44 [chromium-iphone] › e2e/media-overflow-guard.spec.ts:4:1 › tall image fits its page and tall table remains fully accessible on a narrow screen (1.7s)
+  ✓   45 [chromium-iphone] › e2e/migration.spec.ts:8:1 › upgrades legacy library to additive v3 cloud storage while preserving book bytes and reading state (941ms)
+  ✓   42 [chromium-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (7.4s)
+  ✓   47 [chromium-iphone] › e2e/oversized-table.spec.ts:4:1 › giant table opens full content in separate scrollable viewer without blocking the book (1.0s)
+  ✓   48 [chromium-iphone] › e2e/quote-selection.spec.ts:6:1 › FB2 quote action selects text without intercepting book gestures, saves and returns to source (2.1s)
+  ✓   49 [chromium-iphone] › e2e/quote-selection.spec.ts:74:1 › EPUB content selection opens quote popover and saves original selected text (2.0s)
+  ✓   50 [chromium-iphone] › e2e/quote-selection.spec.ts:125:1 › first touch opens controls and holding book text starts quotation without a mode button (2.0s)
+  ✓   51 [chromium-iphone] › e2e/reader-themes.spec.ts:24:1 › theme color matches every shell panel, reader chrome and iPhone status-bar metadata (2.5s)
+  ✓   46 [chromium-iphone] › e2e/no-clipped-content.spec.ts:128:1 › every fragment fits a real page and final source character is reachable after dense reflow (12.9s)
+  ✓   52 [chromium-iphone] › e2e/reader-zones.spec.ts:6:1 › tap zones use centered reader width on wide iPad/desktop viewport (1.9s)
+  ✓   54 [chromium-iphone] › e2e/reading-state-order.spec.ts:5:1 › outdated async reading-state write cannot rewind position, bookmarks survive (1.0s)
+  ✓   53 [chromium-iphone] › e2e/reading-density-ink.spec.ts:5:1 › compact OLED text survives reload and retains all book text (2.2s)
+  ✓   56 [chromium-iphone] › e2e/russian-justify-hyphens.spec.ts:6:1 › Russian FB2 paragraphs justify, hyphenate, retain the exact book text and do not clip (1.3s)
+  ✓   55 [chromium-iphone] › e2e/reading.spec.ts:9:1 › iPhone reader keeps all 180 paragraphs in DOM during paging (1.8s)
+  ✓   57 [chromium-iphone] › e2e/stale-chapter-recovery.spec.ts:3:1 › an invalid saved chapter opens real content and preserves original bytes and bookmarks (1.5s)
+  ✓   58 [chromium-iphone] › e2e/reading.spec.ts:34:1 › OLED background is consistent across page shell and metadata (1.4s)
+  ✓   60 [chromium-iphone] › e2e/typography.spec.ts:6:1 › legacy book remains readable with even spaces and extended persistent typography (2.5s)
+  ✓   61 [chromium-iphone] › e2e/typography.spec.ts:80:1 › new LIBRA icon and iPhone touch icon have installable PNG assets (596ms)
+(node:1298) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1298) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   59 [chromium-iphone] › e2e/typographic-boundaries.spec.ts:73:1 › all source text and line fragments survive asymmetric margins, high font size and viewport changes (6.8s)
+  ✓   62 [webkit-iphone] › e2e/anchors.spec.ts:27:1 › font adjustment and reopen preserve source position and all text (3.7s)
+  ✓   63 [chromium-iphone] › e2e/typographic-boundaries.spec.ts:162:1 › separate margin controls, hyphenation and reset remain usable (2.4s)
+(node:1468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   64 [webkit-iphone] › e2e/backup.spec.ts:16:1 › backup export and additive restore recover exact book bytes, bookmarks and reading position (4.9s)
+  ✓   66 [webkit-iphone] › e2e/backup.spec.ts:106:1 › invalid backup never deletes or changes an existing book (2.0s)
+  ✓   65 [webkit-iphone] › e2e/book-navigation.spec.ts:5:1 › whole-book slider, page jump, hidden footer and restored final character (5.5s)
+  ✓   68 [webkit-iphone] › e2e/book-navigation.spec.ts:90:1 › FB2 contents show the exact start page of every measured chapter (2.0s)
+  ✓   67 [webkit-iphone] › e2e/bookmarks.spec.ts:6:1 › saved bookmark has the correct state and reopens its own page (3.6s)
+  ✓   70 [webkit-iphone] › e2e/bookmarks.spec.ts:84:1 › bookmarks survive a full reload and reopen at the saved page (3.0s)
+  ✓   69 [webkit-iphone] › e2e/chapter-boundaries.spec.ts:9:1 › switching between chapters preserves last page and all body content (5.4s)
+  ✓   71 [webkit-iphone] › e2e/chapter-turn-stability.spec.ts:6:1 › chapter boundary keeps page geometry fixed and does not animate across the previous chapter (2.8s)
+  ✓   72 [webkit-iphone] › e2e/clear-first-line.spec.ts:6:1 › zero top margin never paints first reading line against iPhone clip or status bar (2.7s)
+  ✓   73 [webkit-iphone] › e2e/clear-reader.spec.ts:2:1 › reading canvas has no blur or visible footer and recovers a complete standard line (1.7s)
+  ✓   74 [webkit-iphone] › e2e/clipping-guard.spec.ts:25:1 › real glyph overflow raises an error and exposes the complete chapter through vertical scrolling (3.0s)
+  ✓   76 [webkit-iphone] › e2e/clipping-guard.spec.ts:85:1 › safe chapter navigation resets the next chapter to its start and the previous chapter to its end (2.2s)
+  ✓   77 [webkit-iphone] › e2e/density.spec.ts:6:1 › type sizes 14, 18, 24 preserve chapter content and avoid massive page gaps (3.4s)
+  ✓   75 [webkit-iphone] › e2e/cloud-sync.spec.ts:139:1 › two isolated devices synchronize exact book bytes, bookmarks, preferences and durable offline edits (9.5s)
+  ✓   78 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:5:1 › EPUB chapter turns never expose an intermediate first page or moving heading (3.0s)
+  ✓   79 [webkit-iphone] › e2e/epub-reader.spec.ts:66:1 › real EPUB stays readable across font, margin and palette adjustments (5.0s)
+  ✓   80 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:106:1 › outgoing EPUB snapshot preserves visible text coordinates during chapter loading (3.6s)
+  ✓   82 [webkit-iphone] › e2e/epub-chapter-frames.spec.ts:168:1 › FB2 picker is unrestricted on iPhone while unsupported imports are rejected (1.6s)
+  ✓   83 [webkit-iphone] › e2e/fb2-epub-only.spec.ts:2:1 › LIBRA imports only FB2 and EPUB and never exposes a PDF reading flow (1.5s)
+  ✓   81 [webkit-iphone] › e2e/epub-reader.spec.ts:118:1 › EPUB2 NCX navigation opens later chapter with wide table and inline image (5.5s)
+  ✓   84 [webkit-iphone] › e2e/geometry.spec.ts:78:1 › FB2 preserves text and fits fragments across iPhone and iPad geometries (3.0s)
+  ✓   85 [webkit-iphone] › e2e/epub-reader.spec.ts:199:1 › library sorting orders imported books and displays progress metadata (1.8s)
+  ✓   86 [webkit-iphone] › e2e/geometry.spec.ts:126:1 › a tall image remains scaled inside one page without discarding later text (1.9s)
+  ✓   88 [webkit-iphone] › e2e/illustrations-typography.spec.ts:23:3 › fb2 artwork remains original on OLED and viewer returns to the same position (5.2s)
+  ✓   87 [webkit-iphone] › e2e/epub-reader.spec.ts:217:1 › EPUB final source paragraph is reachable after font and margin reflow (6.5s)
+  ✓   90 [webkit-iphone] › e2e/epub-reader.spec.ts:310:1 › EPUB slider reaches final glyph and persists progress without rounded keyboard stalls (5.7s)
+  ✓   89 [webkit-iphone] › e2e/illustrations-typography.spec.ts:23:3 › epub artwork remains original on OLED and viewer returns to the same position (6.3s)
+  ✓   92 [webkit-iphone] › e2e/illustrations-typography.spec.ts:113:1 › FB2 emphasis, notes and legacy bookmarks survive richer markup (2.8s)
+  ✓   93 [webkit-iphone] › e2e/illustrations-typography.spec.ts:153:1 › EPUB import finishes resource loading before releasing the metadata reader (1.5s)
+  ✓   91 [webkit-iphone] › e2e/epub-reader.spec.ts:372:1 › EPUB uses a distinct page number per turn and keeps zero-margin frame static (5.0s)
+  ✓   95 [webkit-iphone] › e2e/epub-reader.spec.ts:425:1 › EPUB clipped source block triggers recovery that exposes its full text (2.0s)
+  ✓   94 [webkit-iphone] › e2e/illustrations-typography.spec.ts:171:1 › quickly closing and reopening EPUB does not destroy pending renderer startup (3.7s)
+  ✓   96 [webkit-iphone] › e2e/epub-reader.spec.ts:443:1 › near-end EPUB stays in reading filter until actual last page (7.6s)
+  ✓   97 [webkit-iphone] › e2e/large-fb2.spec.ts:11:1 › 2400-paragraph chapter retains original text across taps, font change and reload (6.3s)
+  ✓   99 [webkit-iphone] › e2e/last-page-and-design.spec.ts:10:1 › last page remains accessible with large text and narrow asymmetric margins (3.3s)
+  ✓   98 [webkit-iphone] › e2e/epub-reader.spec.ts:503:1 › publisher justified EPUB is rendered with equal word gaps and keeps original text (3.9s)
+  ✓  100 [webkit-iphone] › e2e/last-page-and-design.spec.ts:65:1 › library displays attractive real-metadata jackets without synthetic images or gradients (1.4s)
+  ✓  101 [webkit-iphone] › e2e/legacy-encodings.spec.ts:5:1 › legacy Windows-1251 FB2 keeps Cyrillic during import and after reload (1.7s)
+  ✓  102 [webkit-iphone] › e2e/library-import-no-plus.spec.ts:3:1 › library has no header plus and still imports books via settings (1.6s)
+  ✓  103 [webkit-iphone] › e2e/library-reference-design.spec.ts:3:1 › reference-inspired library preserves import, favorites, filtering and reader theme (3.4s)
+  ✓  105 [webkit-iphone] › e2e/library-reference-design.spec.ts:77:1 › library keeps narrow iPhone controls inside viewport (1.2s)
+  ✓  106 [webkit-iphone] › e2e/media-overflow-guard.spec.ts:4:1 › tall image fits its page and tall table remains fully accessible on a narrow screen (2.8s)
+  ✓  107 [webkit-iphone] › e2e/migration.spec.ts:8:1 › upgrades legacy library to additive v3 cloud storage while preserving book bytes and reading state (1.3s)
+  ✓  104 [webkit-iphone] › e2e/margins-regression.spec.ts:69:1 › changing margins never pushes Russian text outside page, including mid-book (8.6s)
+  ✓  109 [webkit-iphone] › e2e/oversized-table.spec.ts:4:1 › giant table opens full content in separate scrollable viewer without blocking the book (1.5s)
+  ✓  110 [webkit-iphone] › e2e/quote-selection.spec.ts:6:1 › FB2 quote action selects text without intercepting book gestures, saves and returns to source (3.2s)
+  ✓  111 [webkit-iphone] › e2e/quote-selection.spec.ts:74:1 › EPUB content selection opens quote popover and saves original selected text (3.1s)
+  ✓  112 [webkit-iphone] › e2e/quote-selection.spec.ts:125:1 › first touch opens controls and holding book text starts quotation without a mode button (2.7s)
+  ✓  113 [webkit-iphone] › e2e/reader-themes.spec.ts:24:1 › theme color matches every shell panel, reader chrome and iPhone status-bar metadata (4.4s)
+  ✓  114 [webkit-iphone] › e2e/reader-zones.spec.ts:6:1 › tap zones use centered reader width on wide iPad/desktop viewport (3.7s)
+  ✓  115 [webkit-iphone] › e2e/reading-density-ink.spec.ts:5:1 › compact OLED text survives reload and retains all book text (3.6s)
+  ✓  116 [webkit-iphone] › e2e/reading-state-order.spec.ts:5:1 › outdated async reading-state write cannot rewind position, bookmarks survive (1.3s)
+  ✓  117 [webkit-iphone] › e2e/reading.spec.ts:9:1 › iPhone reader keeps all 180 paragraphs in DOM during paging (1.4s)
+  ✓  108 [webkit-iphone] › e2e/no-clipped-content.spec.ts:128:1 › every fragment fits a real page and final source character is reachable after dense reflow (26.3s)
+  ✓  119 [webkit-iphone] › e2e/russian-justify-hyphens.spec.ts:6:1 › Russian FB2 paragraphs justify, hyphenate, retain the exact book text and do not clip (1.5s)
+  ✓  118 [webkit-iphone] › e2e/reading.spec.ts:34:1 › OLED background is consistent across page shell and metadata (2.2s)
+  ✓  120 [webkit-iphone] › e2e/stale-chapter-recovery.spec.ts:3:1 › an invalid saved chapter opens real content and preserves original bytes and bookmarks (1.7s)
+  ✓  122 [webkit-iphone] › e2e/typography.spec.ts:6:1 › legacy book remains readable with even spaces and extended persistent typography (3.6s)
+  ✓  123 [webkit-iphone] › e2e/typography.spec.ts:80:1 › new LIBRA icon and iPhone touch icon have installable PNG assets (956ms)
+  ✓  121 [webkit-iphone] › e2e/typographic-boundaries.spec.ts:73:1 › all source text and line fragments survive asymmetric margins, high font size and viewport changes (7.8s)
+  ✓  124 [webkit-iphone] › e2e/typographic-boundaries.spec.ts:162:1 › separate margin controls, hyphenation and reset remain usable (3.0s)
+
+  124 passed (3.4m)

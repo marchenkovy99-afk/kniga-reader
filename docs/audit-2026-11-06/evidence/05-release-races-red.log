@@ -1,0 +1,53 @@
+✔ recovered release presents a conflict instead of archiving pending offline edits (3.307944ms)
+✔ recovered release refuses replacement bytes for an existing book id (4.815393ms)
+✔ recovered release cannot roll back a locally applied revision (5.12103ms)
+✖ recovered release archive transaction checks pending generation and account (2.629058ms)
+✖ recovered release ignores a late acknowledgment of an older server revision (2.506023ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.840447
+
+✖ failing tests:
+
+test at release-hotfix/security-regressions.test.mjs:40:1
+✖ recovered release archive transaction checks pending generation and account (2.629058ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - false
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:44:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:48:1
+✖ recovered release ignores a late acknowledgment of an older server revision (2.506023ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 5
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:52:50)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processImmediate (node:internal/timers:541:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 5,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

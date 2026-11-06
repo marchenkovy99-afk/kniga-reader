@@ -44,3 +44,13 @@ yarn-error.log*
 # OS metadata
 .DS_Store
 /public/reader/
+
+# Local audit/browser outputs
+/release-hotfix/e2e/
+/release-hotfix/node_modules
+/release-hotfix/test-results/
+/libra/test-results/
+/libra/playwright-report/
+/test-results/
+
+/release-hotfix/.original-release/

@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-06",
+  "base_commit": "8d0fdb60fb88a01ac6ea680f89aaa8eaafb65ee3",
+  "unit_tests": 120,
+  "source_e2e": {
+    "passed": 124,
+    "failed": 0,
+    "engines": [
+      "Chromium",
+      "WebKit"
+    ]
+  },
+  "preserved_release_e2e": {
+    "passed": 38,
+    "failed": 0,
+    "engines": [
+      "Chromium",
+      "WebKit"
+    ]
+  },
+  "compiled_security_regressions": 11,
+  "legacy_unit_tests": 187,
+  "offline_build_tests": 3,
+  "preview_url": "https://libra-standalone-preview-992vchg7n-marchenkovy99-3693.vercel.app/",
+  "production_deployed": false,
+  "production_ready": false,
+  "blockers": [
+    "matching typed source for preserved release missing",
+    "physical iOS PWA acceptance not performed",
+    "real multi-account staging API/RLS and session expiry tests not performed"
+  ],
+  "external_preview": {
+    "webkit_passed": 8,
+    "chromium_failed_before_application_execution": 8,
+    "limitation": "ERR_EMPTY_RESPONSE in sandbox browser network; local Chromium suite passed"
+  },
+  "preview_asset_hashes_verified": 14
+}

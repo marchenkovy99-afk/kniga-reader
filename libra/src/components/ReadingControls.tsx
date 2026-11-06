@@ -116,7 +116,7 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
     setMarkError('Не удалось сохранить закладку');
    }finally{setMarkBusy(false)}
  }
- return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")+(quoteMode?" reading-quote-mode":"")}>
+ return <div data-book-id={book.id} className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")+(quoteMode?" reading-quote-mode":"")}>
    <div className="reading-content" ref={content}>{children}</div>
    <div className="reading-zones" role="presentation"
      onTouchStart={e=>{

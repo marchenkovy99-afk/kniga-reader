@@ -1,0 +1,153 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> libra-reader@0.1.0 test
+> vitest run src/__tests__
+
+
+ RUN  v3.2.7 /workspace/scratch/26c1ab5ee782/libra/libra
+
+ ✓ src/__tests__/epub-transition.test.ts (1 test) 49ms
+ ✓ src/__tests__/book-media.test.ts (4 tests) 102ms
+ ✓ src/__tests__/clippingGuard.test.ts (11 tests) 111ms
+ ✓ src/__tests__/epub-appearance.test.ts (9 tests) 119ms
+ ✓ src/__tests__/reading-touch-regressions.test.tsx (3 tests) 168ms
+ ✓ src/__tests__/floating-controls.test.tsx (1 test) 185ms
+ ✓ src/__tests__/anchor-index.test.ts (3 tests) 443ms
+   ✓ indexed chapter anchors > reuses one traversal across page flips and font relayout  417ms
+ ✓ src/__tests__/ios-file-picker.test.tsx (1 test) 101ms
+ ✓ src/__tests__/fb2-encoding.test.ts (4 tests) 26ms
+ ❯ src/__tests__/fb2.test.ts (8 tests | 1 failed) 57ms
+   ✓ FB2 > keeps legacy block indices for whitespace-only paragraphs and verse lines 16ms
+   ✓ FB2 > retains safe inline emphasis, namespace-independent footnotes and original flattened text 8ms
+   ✓ FB2 > resolves images through the actual xlink namespace and deduplicates binary sources 6ms
+   ✓ FB2 > reads nested chapters without lost paragraphs 5ms
+   ✓ FB2 > keeps section headings, images inside paragraphs, tables and later text in order 4ms
+   ✓ FB2 > rejects broken XML 3ms
+   ✓ FB2 > rejects unsupported documents 2ms
+   × rejects DTD and custom entities before parsing untrusted FB2 11ms
+     → expected [Function] to throw an error
+ ✓ src/__tests__/illustration-viewer.test.tsx (1 test) 84ms
+ ✓ src/__tests__/book-block.test.tsx (1 test) 32ms
+ ✓ src/__tests__/theme.test.ts (2 tests) 31ms
+ ✓ src/__tests__/anchors.test.ts (5 tests) 38ms
+ ✓ src/__tests__/quote-word-selection.test.ts (2 tests) 19ms
+ ✓ src/__tests__/parsed-cache.test.ts (2 tests) 43ms
+ ✓ src/__tests__/reader-settings.test.ts (8 tests) 15ms
+ ✓ src/__tests__/dark-theme-legibility.test.ts (3 tests) 19ms
+ ✓ src/__tests__/quotes-storage.test.ts (2 tests) 58ms
+ ❯ src/__tests__/cloud-storage.test.ts (7 tests | 1 failed) 37ms
+   ✓ keeps local bytes, scopes books to accounts, and durably queues offline mutations 16ms
+   ✓ does not clear a newer offline edit while acknowledging an earlier upload 2ms
+   ✓ archives remote deletions and cannot reattach them 2ms
+   ✓ keeps reader preferences separate when switching accounts 2ms
+   ✓ ignores a late reader write after its owning account has changed 3ms
+   ✓ preserves account preferences selected before first attach instead of restoring old anonymous preferences 2ms
+   × never lets a stale remote download roll back an already applied revision 9ms
+     → expected true to be false // Object.is equality
+ ❯ src/__tests__/cloud-sync.test.ts (4 tests | 2 failed) 74ms
+   ✓ carries a book, bookmarks and settings to a second device, detects stale edits and preserves tombstones 31ms
+   ✓ rejects corrupt remote bytes before applying a download 8ms
+   × does not archive pending offline edits when a remote tombstone arrives 21ms
+     → expected [] to deeply equal [ 'book:pending' ]
+   × does not replace a local file with a different hash advertised by the same remote book id 13ms
+     → promise resolved "{ conflicts: [], applied: 1 }" instead of rejecting
+ ✓ src/__tests__/covers.test.ts (2 tests) 16ms
+ ✓ src/__tests__/bookmarks.test.ts (4 tests) 4ms
+ ✓ src/__tests__/pagination.test.ts (6 tests) 15ms
+ ✓ src/__tests__/cloud-sync-plan.test.ts (5 tests) 29ms
+ ✓ src/__tests__/book-pagination.test.ts (4 tests) 5ms
+ ✓ src/__tests__/epub-lifecycle.test.ts (2 tests) 11ms
+ ✓ src/__tests__/library-epub.test.ts (3 tests) 7ms
+ ✓ src/__tests__/epub-physical-pages.test.ts (3 tests) 6ms
+ ✓ src/__tests__/reading-state-order.test.ts (3 tests) 4ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/__tests__/cloud-storage.test.ts > never lets a stale remote download roll back an already applied revision
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/__tests__/cloud-storage.test.ts:63:87
+     61|  await storage.applyCloudRecord('revision-race','book:revision-race',5…
+     62|  const stale={...fresh,position:{chapter:1,page:0,fraction:.1,updatedA…
+     63|  expect(await storage.applyCloudRecord('revision-race','book:revision-…
+       |                                                                                       ^
+     64|  expect((await storage.getBook('revision-race'))?.position?.chapter).t…
+     65| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/__tests__/cloud-sync.test.ts > does not archive pending offline edits when a remote tombstone arrives
+AssertionError: expected [] to deeply equal [ 'book:pending' ]
+
+- Expected
++ Received
+
+- [
+-   "book:pending",
+- ]
++ []
+
+ ❯ src/__tests__/cloud-sync.test.ts:56:41
+     54|  s.rows.set('book:pending',{key:'book:pending',revision:2,deleted:true…
+     55|  const result=await runCloudSync('u',s.transport,a.port);
+     56|  expect(result.conflicts.map(c=>c.key)).toEqual(['book:pending']);
+       |                                         ^
+     57|  expect(a.books.has('pending')).toBe(true);expect(a.entries.get('book:…
+     58| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/__tests__/cloud-sync.test.ts > does not replace a local file with a different hash advertised by the same remote book id
+AssertionError: promise resolved "{ conflicts: [], applied: 1 }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "applied": 1,
++   "conflicts": [],
+  }
+
+ ❯ src/__tests__/cloud-sync.test.ts:65:51
+     63|  const {sha256}=await import('../cloudSync');const other=new Blob(['re…
+     64|  s.rows.set('book:immutable',{key:'book:immutable',revision:2,deleted:…
+     65|  await expect(runCloudSync('u',s.transport,a.port)).rejects.toThrow(/ф…
+       |                                                   ^
+     66|  expect(await a.books.get('immutable')!.file.text()).toBe('original');
+     67| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/__tests__/fb2.test.ts > rejects DTD and custom entities before parsing untrusted FB2
+AssertionError: expected [Function] to throw an error
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ src/__tests__/fb2.test.ts:62:153
+     60| 
+     61| it('rejects DTD and custom entities before parsing untrusted FB2',()=>{
+     62|  expect(()=>parseFB2('<!DOCTYPE FictionBook [<!ENTITY secret "expanded…
+       |                                                                                                                                                         ^
+     63| });
+     64| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  3 failed | 27 passed (30)
+      Tests  4 failed | 110 passed (114)
+   Start at  11:48:02
+   Duration  3.11s (transform 1.44s, setup 0ms, collect 2.94s, tests 1.91s, environment 9.32s, prepare 2.64s)
+

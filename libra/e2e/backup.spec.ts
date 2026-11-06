@@ -48,7 +48,7 @@ test('backup export and additive restore recover exact book bytes, bookmarks and
  await page.getByLabel('Выбрать резервную копию LIBRA').setInputFiles({
   name:'backup.libra.json',mimeType:'application/json',buffer:saved
  });
- await expect(page.getByRole('status')).toContainText('Добавлено книг: 1');
+ await expect(page.locator('.backup-feedback')).toContainText('Добавлено книг: 1');
  await page.getByRole('button',{name:'Библиотека'}).click();
  await expect(page.locator('.book-tile')).toHaveCount(1);
  await page.locator('.continue-card').click();

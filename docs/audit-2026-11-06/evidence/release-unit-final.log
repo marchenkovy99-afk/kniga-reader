@@ -1,0 +1,19 @@
+✔ recovered release presents a conflict instead of archiving pending offline edits (2.985061ms)
+✔ recovered release refuses replacement bytes for an existing book id (5.588771ms)
+✔ recovered release cannot roll back a locally applied revision (4.613921ms)
+✔ recovered release archive transaction checks pending generation and account (3.921513ms)
+✔ recovered release ignores a late acknowledgment of an older server revision (1.750091ms)
+✔ recovered favorite cannot expose or overwrite another account book (2.883148ms)
+✔ recovered cover cannot expose or overwrite another account book (1.808359ms)
+✔ recovered save cannot expose or overwrite another account book (1.950071ms)
+✔ recovered remove cannot expose or overwrite another account book (1.763622ms)
+✔ recovered favorite rechecks the owner in the final asynchronous callback (2.402509ms)
+✔ recovered cover rechecks the owner in the final asynchronous callback (2.991741ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 145.294023

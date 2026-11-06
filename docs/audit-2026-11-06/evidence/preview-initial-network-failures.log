@@ -1,0 +1,274 @@
+
+Running 16 tests using 1 worker
+
+(node:18) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   1 [chromium] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (226ms)
+(node:96) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:96) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   2 [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (181ms)
+(node:174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   3 [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources (175ms)
+(node:254) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:254) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   4 [chromium] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book (134ms)
+(node:332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   5 [chromium] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload (128ms)
+(node:413) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:413) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   6 [chromium] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work (126ms)
+(node:493) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:493) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   7 [chromium] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book (150ms)
+(node:573) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:573) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✘   8 [chromium] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap (155ms)
+(node:653) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:653) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+  ✓   9 [webkit] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (11.1s)
+  ✓  10 [webkit] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline (14.6s)
+  ✓  11 [webkit] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources (10.3s)
+  ✓  12 [webkit] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book (14.6s)
+  ✓  13 [webkit] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload (13.7s)
+  ✓  14 [webkit] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work (17.0s)
+  ✓  15 [webkit] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book (14.1s)
+  ✓  16 [webkit] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap (11.3s)
+
+
+  1) [chromium] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+       5 | const fb2='<FictionBook xmlns:l="http://www.w3.org/1999/xlink"><description><title-info><book-title>Сноски</book-title></title-info></description><body><section><p>Слово<a type="note" l:href="#n1"><sup>1</sup></a> и продолжение.</p>'+('<p>'+'Обычный текст книги. '.repeat(3)+'Конец.</p>').repeat(20)+'</section></body><body name="notes"><section id="n1"><title><p>1</p></title><p>'+text.replaceAll('<','&lt;').replaceAll('>','&gt;')+'</p></section></body></FictionBook>';
+       6 | async function open(page,format){
+    >  7 |  await page.goto('/');
+         |             ^
+       8 |  let buffer=Buffer.from(fb2);
+       9 |  if(format==='epub'){
+      10 |   const zip=await JSZip.loadAsync(epubFixture(false,'Footnotes EPUB',12));
+        at open (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/footnotes.spec.ts:7:13)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/footnotes.spec.ts:25:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/footnotes-fb2-footnote-ope-514e7-by-Escape-and-works-offline-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/footnotes-fb2-footnote-ope-514e7-by-Escape-and-works-offline-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+       5 | const fb2='<FictionBook xmlns:l="http://www.w3.org/1999/xlink"><description><title-info><book-title>Сноски</book-title></title-info></description><body><section><p>Слово<a type="note" l:href="#n1"><sup>1</sup></a> и продолжение.</p>'+('<p>'+'Обычный текст книги. '.repeat(3)+'Конец.</p>').repeat(20)+'</section></body><body name="notes"><section id="n1"><title><p>1</p></title><p>'+text.replaceAll('<','&lt;').replaceAll('>','&gt;')+'</p></section></body></FictionBook>';
+       6 | async function open(page,format){
+    >  7 |  await page.goto('/');
+         |             ^
+       8 |  let buffer=Buffer.from(fb2);
+       9 |  if(format==='epub'){
+      10 |   const zip=await JSZip.loadAsync(epubFixture(false,'Footnotes EPUB',12));
+        at open (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/footnotes.spec.ts:7:13)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/footnotes.spec.ts:25:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/footnotes-epub-footnote-op-1838e-by-Escape-and-works-offline-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/footnotes-epub-footnote-op-1838e-by-Escape-and-works-offline-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+       8 |  const source=await archive.file('OEBPS/one.xhtml')!.async('string');
+       9 |  archive.file('OEBPS/one.xhtml',source.replace('</head>','<style>@import url("https://audit.invalid/style.css");</style></head>').replace('<body>','<body><script>parent.__auditPwned=true</script><img src="https://audit.invalid/pixel.png" onerror="parent.__auditPwned=true"/><iframe src="https://audit.invalid/frame"></iframe>'));
+    > 10 |  await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'security.epub',mimeType:'application/epub+zip',buffer:await archive.generateAsync({type:'nodebuffer'})});
+         |             ^
+      11 |  await page.locator('.continue-card').click();await expect(page.locator('.epub-mount iframe')).toBeVisible();
+      12 |  await expect(page.frameLocator('.epub-mount iframe').locator('p').first()).toContainText('Passage 0');
+      13 |  await page.frameLocator('.epub-mount iframe').locator('img').evaluate(async(img:HTMLImageElement)=>{if(!img.complete)await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;setTimeout(resolve,500)})});
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/security-browser.spec.ts:10:13
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/security-browser-untrusted-48ebc-d-remote-tracking-resources-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/security-browser-untrusted-48ebc-d-remote-tracking-resources-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+      15 | });
+      16 | test('FB2 custom entities are rejected without saving a partial book',async({page})=>{
+    > 17 |  await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'entities.fb2',mimeType:'text/xml',buffer:Buffer.from('<!DOCTYPE FictionBook [<!ENTITY x "expanded">]><FictionBook><body><section><p>&x;</p></section></body></FictionBook>')});
+         |             ^
+      18 |  await expect(page.locator('.app-error')).toContainText(/DTD|DOCTYPE/);await expect(page.locator('.book-tile')).toHaveCount(0);
+      19 | });
+      20 |
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/security-browser.spec.ts:17:13
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/security-browser-FB2-custo-cfaac-thout-saving-a-partial-book-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/security-browser-FB2-custo-cfaac-thout-saving-a-partial-book-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+      1 | import {test,expect} from '@playwright/test';
+      2 | const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сегодняшние обновления</book-title></title-info></description><body><section><title><p>Первая глава</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Текст для проверки сохранения страницы. '.repeat(25))+'</p>').join('')+'</section><section><title><p>Вторая глава</p></title><p>Следующая глава книги.</p></section></body></FictionBook>';
+    > 3 | async function add(page){await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'today.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});}
+        |                                     ^
+      4 | async function ready(page){await expect(page.locator('.book-flow')).toBeVisible();await expect(page.locator('.reading-status')).toContainText(/\d+ \/ \d+/);}
+      5 | async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await page.touchscreen.tap(point.clientX,point.clientY);}
+      6 | test('read/unread book moves between filters and survives reload',async({page})=>{
+        at add (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:3:37)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:7:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/today-smoke-read-unread-bo-d5bee-filters-and-survives-reload-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/today-smoke-read-unread-bo-d5bee-filters-and-survives-reload-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+      1 | import {test,expect} from '@playwright/test';
+      2 | const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сегодняшние обновления</book-title></title-info></description><body><section><title><p>Первая глава</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Текст для проверки сохранения страницы. '.repeat(25))+'</p>').join('')+'</section><section><title><p>Вторая глава</p></title><p>Следующая глава книги.</p></section></body></FictionBook>';
+    > 3 | async function add(page){await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'today.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});}
+        |                                     ^
+      4 | async function ready(page){await expect(page.locator('.book-flow')).toBeVisible();await expect(page.locator('.reading-status')).toContainText(/\d+ \/ \d+/);}
+      5 | async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await page.touchscreen.tap(point.clientX,point.clientY);}
+      6 | test('read/unread book moves between filters and survives reload',async({page})=>{
+        at add (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:3:37)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:16:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/today-smoke-panels-overlay-7d859-marks-and-exact-reopen-work-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/today-smoke-panels-overlay-7d859-marks-and-exact-reopen-work-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+      1 | import {test,expect} from '@playwright/test';
+      2 | const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сегодняшние обновления</book-title></title-info></description><body><section><title><p>Первая глава</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Текст для проверки сохранения страницы. '.repeat(25))+'</p>').join('')+'</section><section><title><p>Вторая глава</p></title><p>Следующая глава книги.</p></section></body></FictionBook>';
+    > 3 | async function add(page){await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'today.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});}
+        |                                     ^
+      4 | async function ready(page){await expect(page.locator('.book-flow')).toBeVisible();await expect(page.locator('.reading-status')).toContainText(/\d+ \/ \d+/);}
+      5 | async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await page.touchscreen.tap(point.clientX,point.clientY);}
+      6 | test('read/unread book moves between filters and survives reload',async({page})=>{
+        at add (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:3:37)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:44:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/today-smoke-first-touch-st-1f606-sing-and-reopening-the-book-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/today-smoke-first-touch-st-1f606-sing-and-reopening-the-book-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap 
+
+    Error: page.goto: net::ERR_EMPTY_RESPONSE at https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/
+    Call log:
+    [2m  - navigating to "https://libra-standalone-preview-qvliemrmn-marchenkovy99-3693.vercel.app/", waiting until "load"[22m
+
+
+      1 | import {test,expect} from '@playwright/test';
+      2 | const book='<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0"><description><title-info><book-title>Сегодняшние обновления</book-title></title-info></description><body><section><title><p>Первая глава</p></title>'+Array.from({length:30},(_,i)=>'<p>Фрагмент '+i+'. '+('Текст для проверки сохранения страницы. '.repeat(25))+'</p>').join('')+'</section><section><title><p>Вторая глава</p></title><p>Следующая глава книги.</p></section></body></FictionBook>';
+    > 3 | async function add(page){await page.goto('/');await page.locator('input[type=file]').first().setInputFiles({name:'today.fb2',mimeType:'application/xml',buffer:Buffer.from(book)});}
+        |                                     ^
+      4 | async function ready(page){await expect(page.locator('.book-flow')).toBeVisible();await expect(page.locator('.reading-status')).toContainText(/\d+ \/ \d+/);}
+      5 | async function touchCenter(page){const zones=page.locator('.reading-zones'),box=await zones.boundingBox(),point={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};await page.touchscreen.tap(point.clientX,point.clientY);}
+      6 | test('read/unread book moves between filters and survives reload',async({page})=>{
+        at add (/workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:3:37)
+        at /workspace/scratch/26c1ab5ee782/libra/release-hotfix/e2e/today-smoke.spec.ts:53:8
+
+    attachment #1: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/today-smoke-an-exiting-set-64bf7-onsume-the-next-central-tap-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/today-smoke-an-exiting-set-64bf7-onsume-the-next-central-tap-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8 failed
+    [chromium] › e2e/footnotes.spec.ts:28:39 › fb2: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+    [chromium] › e2e/footnotes.spec.ts:28:39 › epub: footnote opens on a real touch, stays on the same page, closes by Escape and works offline 
+    [chromium] › e2e/security-browser.spec.ts:4:1 › untrusted EPUB cannot execute scripts or load remote tracking resources 
+    [chromium] › e2e/security-browser.spec.ts:38:1 › FB2 custom entities are rejected without saving a partial book 
+    [chromium] › e2e/today-smoke.spec.ts:27:1 › read/unread book moves between filters and survives reload 
+    [chromium] › e2e/today-smoke.spec.ts:62:1 › panels overlay text; dark headings, half-point fonts, chapter pages, bookmarks and exact reopen work 
+    [chromium] › e2e/today-smoke.spec.ts:157:1 › first touch still opens controls after repeatedly closing and reopening the book 
+    [chromium] › e2e/today-smoke.spec.ts:171:1 › an exiting settings panel does not consume the next central tap 
+  8 passed (1.9m)

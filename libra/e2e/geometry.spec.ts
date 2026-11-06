@@ -91,7 +91,7 @@ test('FB2 preserves text and fits fragments across iPhone and iPad geometries',a
   const audit=await inspect(page);
   expect(audit.fragments,'No layout fragments at '+JSON.stringify(size)).toBeGreaterThan(100);
   expect(audit.errors,'Clipped fragments at '+JSON.stringify(size)+': '+audit.errors.join('; ')).toEqual([]);
-  expect(await flow.innerText(),'Content changed at '+JSON.stringify(size)).toBe(text);
+  await expect.poll(()=>flow.innerText(),{message:'Content changed at '+JSON.stringify(size)}).toBe(text);
  }
 });
 

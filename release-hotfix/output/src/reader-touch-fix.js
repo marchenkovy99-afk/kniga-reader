@@ -1,3 +1,4 @@
+import './footnotes.js';
 // LIBRA reader gesture repair, layered onto the exact published application.
 (() => {
   const exitingStyle = document.createElement('style');

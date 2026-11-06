@@ -182,10 +182,15 @@ test('EPUB final source paragraph is reachable after font and margin reflow',asy
  const mount=page.locator('.epub-mount');
  let accessible=false;
  for(let i=0;i<100;i++){
-  const inner=await frame.locator('body > p:last-of-type').evaluate(el=>{
+  // Reflow legitimately replaces the iframe. Capture from the host document
+  // atomically so WebKit cannot detach the frame between locator resolution and evaluate.
+  const inner=await page.evaluate(()=>{
+   const doc=(document.querySelector('.epub-mount iframe') as HTMLIFrameElement|null)?.contentDocument;
+   const el=doc?.querySelector('body > p:last-of-type');if(!el)return null;
    const rect=el.getBoundingClientRect();
    return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height};
   });
+  if(!inner){await expect(frame.locator('body')).toContainText('END OF BOOK');continue;}
   const [iframeBox,mountBox]=await Promise.all([
    outer.boundingBox(),mount.boundingBox()
   ]);

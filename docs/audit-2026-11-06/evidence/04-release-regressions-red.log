@@ -1,0 +1,61 @@
+✖ recovered release presents a conflict instead of archiving pending offline edits (3.31232ms)
+✖ recovered release refuses replacement bytes for an existing book id (5.565484ms)
+✖ recovered release cannot roll back a locally applied revision (6.465882ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.537579
+
+✖ failing tests:
+
+test at release-hotfix/security-regressions.test.mjs:18:1
+✖ recovered release presents a conflict instead of archiving pending offline edits (3.31232ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:20:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:22:1
+✖ recovered release refuses replacement bytes for an existing book id (5.565484ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:26:2)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /файл/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at release-hotfix/security-regressions.test.mjs:28:1
+✖ recovered release cannot roll back a locally applied revision (6.465882ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/security-regressions.test.mjs:33:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
