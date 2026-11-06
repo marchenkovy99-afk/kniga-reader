@@ -101,6 +101,16 @@ export async function syncReadingTimeCloud(){
  if(!cloudSync||typeof navigator!=='undefined'&&navigator.onLine===false)return;
  try{await cloudSync();status('synced');}catch(error){status('pending');throw error;}
 }
+export function paintLibraryReadingTime(win,doc){
+ const store=browserStore(win);
+ for(const card of doc.querySelectorAll('[data-library-book][data-reading-owner]')){
+  const progress=card.querySelector('.continue-progress-label,.book-tile-meta');if(!progress)continue;
+  let label=card.querySelector('[data-libra-library-time]');
+  if(!label){label=doc.createElement('span');label.dataset.libraLibraryTime='';label.style.cssText='display:block;color:var(--muted);font-size:13px;line-height:1.4;font-variant-numeric:tabular-nums;white-space:normal';progress.before(label);}
+  const total=store.summary(card.dataset.readingOwner,card.dataset.libraryBook,dayKey(new Date())).total;
+  const text='Чтение · '+formatReadingTime(total);if(label.textContent!==text)label.textContent=text;
+ }
+}
 export function attachReadingTime(win,doc){
  let root=null,key=null,stats=null,suspended=false,lastError=false;
  const timeStore=browserStore(win);
@@ -129,10 +139,10 @@ export function attachReadingTime(win,doc){
   const next=doc.querySelector('.reading-root[data-book-id][data-reading-owner]');
   const nextKey=next?`libra-reading-time:v1:${encodeURIComponent(next.dataset.readingOwner)}:${encodeURIComponent(next.dataset.bookId)}`:null;
   if(root!==next||key!==nextKey){const previous=root;clock.setActive(false);root=next;key=nextKey;stats=key?read():null;if(previous)win.dispatchEvent(new win.Event('libra-reading-time-flush'));}
-  clock.setActive(eligible());paint();
+  clock.setActive(eligible());paint();paintLibraryReadingTime(win,doc);
  }
  const observer=new win.MutationObserver(update);
- observer.observe(doc.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-ready','data-book-id','data-reading-owner','style']});
+ observer.observe(doc.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-ready','data-book-id','data-reading-owner','data-library-book','style']});
  const hide=()=>{suspended=true;clock.setActive(false);paint();win.dispatchEvent(new win.Event('libra-reading-time-flush'));};
  const show=()=>{suspended=false;update();};
  const visibility=()=>{if(doc.visibilityState==='visible')show();else hide();};

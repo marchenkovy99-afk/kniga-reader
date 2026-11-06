@@ -35,7 +35,9 @@ export function patchRelease(source){
  replace('importedAt:Date.now(),bookmarks:[]})}catch(e){l(`Не удалось импортировать', 'importedAt:Date.now(),bookmarks:[]},importOwner)}catch(e){l(`Не удалось импортировать');
  replace('let t=await he(),n=await ae(),r=await A();E=!0,', 'let t=await he(),n=await ae(),r=await A();if(e!==T)throw Error(`Учётная запись изменилась`);E=!0,');
  replace('"data-book-id":e.id', '"data-book-id":e.id,"data-reading-owner":T||"guest"');
- replace('function Ta(e){', 'configureLibraReadingTimeCloud({client:wa,deviceState:F,listBooks:async()=> (await P(T)).filter(x=>x.key.startsWith("book:")&&!x.deleted).map(x=>({id:x.key.slice(5)}))});function Ta(e){');
+ replace('className:`reference-feature book-tile`,', 'className:`reference-feature book-tile`,"data-library-book":j.id,"data-reading-owner":T||"guest",');
+ replace('className:`book-tile`,"data-menu-open":x===e.id', 'className:`book-tile`,"data-library-book":e.id,"data-reading-owner":T||"guest","data-menu-open":x===e.id');
+ replace('function Ta(e){' , 'configureLibraReadingTimeCloud({client:wa,deviceState:F,listBooks:async()=> (await P(T)).filter(x=>x.key.startsWith("book:")&&!x.deleted).map(x=>({id:x.key.slice(5)}))});function Ta(e){');
  replace('async function Ma(e,t,n=Ea){', 'async function Ma(e,t,n=Ea){if(typeof window!=="undefined")await syncLibraReadingTimeCloud().catch(()=>{});');
  return 'import {configureReadingTimeCloud as configureLibraReadingTimeCloud,syncReadingTimeCloud as syncLibraReadingTimeCloud} from "../reading-time.js";\n'+source;
 }

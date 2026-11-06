@@ -42,3 +42,13 @@ test('switching books or accounts keeps separate totals and library time is excl
   root.remove();s.advance(0);s.advance(3000);assert.equal(s.saved().total,1000);
  }finally{s.stop();s.win.close();}
 });
+test('library shows each book time beside its progress and refreshes after cloud changes',()=>{
+ const s=setup();try{
+  const card=s.win.document.createElement('div');card.dataset.libraryBook='a';card.dataset.readingOwner='user-1';card.innerHTML='<span class="continue-author">Автор</span><span class="continue-progress-label">17% прочитано</span>';s.win.document.body.append(card);
+  s.advance(1000);const label=card.querySelector('[data-libra-library-time]');assert.ok(label);assert.equal(label.textContent,'Чтение · 1 сек');assert.equal(label.nextElementSibling.className,'continue-progress-label');
+  s.win.document.querySelector('.reading-root').remove();s.advance(0);
+  s.win.localStorage.setItem('libra-reading-time:v2:user-1:a:other:2026-11-06','120000');s.win.dispatchEvent(new s.win.Event('libra-reading-time-change'));
+  assert.equal(label.textContent,'Чтение · 2 мин');assert.equal(card.querySelectorAll('[data-libra-library-time]').length,1);
+  card.dataset.readingOwner='other-user';s.advance(0);assert.equal(label.textContent,'Чтение · 0 сек');
+ }finally{s.stop();s.win.close();}
+});
