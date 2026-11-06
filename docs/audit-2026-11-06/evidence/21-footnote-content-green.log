@@ -3,36 +3,28 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 > test
 > node --test security-regressions.test.mjs footnote-content.test.mjs
 
-✔ empty anchor inside numbered heading (51.973785ms)
-✔ number inside anchor followed by multiple paragraphs (7.421222ms)
-✔ anchor inside paragraph resolves full paragraph (5.0801ms)
-✔ explicit semantic aside retains all paragraphs (5.383495ms)
-✔ number-only target is not a successful footnote (4.759819ms)
-✔ long note is never truncated (17.0375ms)
-✔ named anchor (6.206722ms)
-✔ line breaks and safe literal markup (5.481993ms)
-✔ missing target (6.001451ms)
-✔ FB2 anchor on title resolves the whole corresponding section only (7.481431ms)
-Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'querySelectorAll')]
-    at reportException (/workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/helpers/runtime-script-errors.js:66:24)
-    at notifyMutationObservers (/workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:169:9)
-    at /workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:133:5 TypeError: Cannot read properties of undefined (reading 'querySelectorAll')
-    at MutationObserver.eval (eval at <anonymous> (file:///workspace/scratch/26c1ab5ee782/libra/release-hotfix/footnote-content.test.mjs:36:9), <anonymous>:107:31)
-    at MutationObserver.invokeTheCallbackFunction (/workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/generated/MutationCallback.js:19:26)
-    at notifyMutationObservers (/workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:160:22)
-    at /workspace/scratch/26c1ab5ee782/libra/libra/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:133:5
-✔ FB2 click reads the original local file and renders the exact complete note (42.421388ms)
-✔ recovered release presents a conflict instead of archiving pending offline edits (2.982413ms)
-✔ recovered release refuses replacement bytes for an existing book id (5.593332ms)
-✔ recovered release cannot roll back a locally applied revision (5.331348ms)
-✔ recovered release archive transaction checks pending generation and account (3.402164ms)
-✔ recovered release ignores a late acknowledgment of an older server revision (2.112729ms)
-✔ recovered favorite cannot expose or overwrite another account book (3.161797ms)
-✔ recovered cover cannot expose or overwrite another account book (1.862882ms)
-✔ recovered save cannot expose or overwrite another account book (2.142952ms)
-✔ recovered remove cannot expose or overwrite another account book (1.934146ms)
-✔ recovered favorite rechecks the owner in the final asynchronous callback (2.292081ms)
-✔ recovered cover rechecks the owner in the final asynchronous callback (3.699595ms)
+✔ empty anchor inside numbered heading (61.878211ms)
+✔ number inside anchor followed by multiple paragraphs (12.071816ms)
+✔ anchor inside paragraph resolves full paragraph (9.669603ms)
+✔ explicit semantic aside retains all paragraphs (10.06331ms)
+✔ number-only target is not a successful footnote (7.968944ms)
+✔ long note is never truncated (21.894795ms)
+✔ named anchor (7.728115ms)
+✔ line breaks and safe literal markup (10.623808ms)
+✔ missing target (7.62976ms)
+✔ FB2 anchor on title resolves the whole corresponding section only (9.224946ms)
+✔ FB2 click reads the original local file and renders the exact complete note (93.671984ms)
+✔ recovered release presents a conflict instead of archiving pending offline edits (3.556527ms)
+✔ recovered release refuses replacement bytes for an existing book id (6.848495ms)
+✔ recovered release cannot roll back a locally applied revision (6.5926ms)
+✔ recovered release archive transaction checks pending generation and account (4.044472ms)
+✔ recovered release ignores a late acknowledgment of an older server revision (2.134431ms)
+✔ recovered favorite cannot expose or overwrite another account book (3.987929ms)
+✔ recovered cover cannot expose or overwrite another account book (2.53641ms)
+✔ recovered save cannot expose or overwrite another account book (2.78892ms)
+✔ recovered remove cannot expose or overwrite another account book (2.703926ms)
+✔ recovered favorite rechecks the owner in the final asynchronous callback (3.107248ms)
+✔ recovered cover rechecks the owner in the final asynchronous callback (4.398622ms)
 ℹ tests 22
 ℹ suites 0
 ℹ pass 22
@@ -40,4 +32,4 @@ Error: Uncaught [TypeError: Cannot read properties of undefined (reading 'queryS
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 559.545428
+ℹ duration_ms 700.805456

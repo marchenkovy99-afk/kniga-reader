@@ -27,6 +27,8 @@ test('FB2 anchor on title resolves the whole corresponding section only',()=>{
 test('FB2 click reads the original local file and renders the exact complete note',async()=>{
  const dom=new JSDOM('<div class="reading-root" data-book-id="test"><a data-note="n16">[16]</a></div>',{url:'https://reader.test/',runScripts:'outside-only'});
  const {window}=dom;
+ const observers=[],NativeObserver=window.MutationObserver;
+ window.MutationObserver=class extends NativeObserver{constructor(callback){super(callback);observers.push(this)}};
  window.indexedDB=new IDBFactory();window.Blob=Blob;window.TextDecoder=TextDecoder;window.readFootnote=read;
  const expected='От Рождества Христова (лат.).\n\n'+long+'\n\nКонец примечания 16.';
  const xml='<FictionBook><body name="notes"><section><title><p id="n16">16</p></title>'+expected.split('\n\n').map(p=>'<p>'+p+'</p>').join('')+'</section><section id="n17"><p>ЧУЖАЯ СНОСКА</p></section></body></FictionBook>';
@@ -39,5 +41,6 @@ test('FB2 click reads the original local file and renders the exact complete not
  assert.equal(window.document.querySelector('.libra-note-text').textContent,expected);
  assert.equal(window.document.querySelector('.reading-root').dataset.bookId,'test');
  window.document.querySelector('.libra-note-card button').click();
- assert.equal(window.document.querySelector('.libra-note-card'),null);dom.window.close();
+ assert.equal(window.document.querySelector('.libra-note-card'),null);
+ for(const observer of observers)observer.disconnect();dom.window.close();
 });

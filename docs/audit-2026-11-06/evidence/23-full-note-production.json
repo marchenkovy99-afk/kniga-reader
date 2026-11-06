@@ -1,0 +1,23 @@
+{
+  "main": "https://libra-standalone-preview.vercel.app/",
+  "deployment": "dpl_6DXVh3TShnKmcuoTiSFG7gwP7J8n",
+  "matchedFiles": 15,
+  "offlineBuild": "bfc56cc955b78bca",
+  "files": [
+    "manifest.webmanifest",
+    "footnotes.js",
+    "sw.js",
+    "offline-shell.txt",
+    "icon-mark.svg",
+    "icon-180.png",
+    "icon-512.png",
+    "index.html",
+    "icon.svg",
+    "release.json",
+    "footnote-content.js",
+    "reader-touch-fix.js",
+    "assets/index-SkfpHvwY.css",
+    "assets/index-DMkgLOVA.js",
+    "assets/src-BLsCKbRG.js"
+  ]
+}
