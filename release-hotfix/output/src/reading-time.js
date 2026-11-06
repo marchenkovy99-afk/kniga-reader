@@ -5,8 +5,8 @@ export function createReadingClock({now=()=>performance.now(),onTime}){
  return {flush,setActive(value){const next=Boolean(value);if(next===active)return;flush();active=next;}};
 }
 export function formatReadingTime(ms){
- const seconds=Math.floor(Math.max(0,Number(ms)||0)/1000),minutes=Math.floor(seconds/60);
- return minutes>=60?`${Math.floor(minutes/60)} ч ${minutes%60} мин`:minutes?`${minutes} мин`:`${seconds} сек`;
+ const minutes=Math.floor(Math.max(0,Number(ms)||0)/60000);
+ return minutes>=60?`${Math.floor(minutes/60)} ч ${minutes%60} мин`:`${minutes} мин`;
 }
 const dayKey=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const componentPrefix='libra-reading-time:v2:';
@@ -39,7 +39,22 @@ export function createReadingTimeStore(storage,replica){
    if(old.total>today)put(owner,{book_id:book,replica_id:legacy,day:'1970-01-01',total_ms:Math.round(old.total-today)});
   }storage.setItem(marker,'1');
  }
- function summary(owner,book,day){migrate(owner,book);let total=0,today=0;for(const row of entries(owner))if(row.book_id===book){total+=row.total_ms;if(row.day===day)today+=row.total_ms;}return {total,today,day,version:2};}
+ function recoverUnscoped(owner,book){
+  const malformed=value=>value==='true'||value==='false'||value.includes('=>')||/^\s*(?:async\s+)?function\b/.test(value);
+  if(malformed(owner))return;
+  const sources=new Set();for(let i=0;i<storage.length;i++){
+   const key=storage.key(i);if(!key?.startsWith(componentPrefix)&&!key?.startsWith('libra-reading-time:v1:'))continue;
+   const parts=key.split(':');let oldOwner,oldBook;try{oldOwner=decodeURIComponent(parts[2]);oldBook=decodeURIComponent(parts[3]);}catch{continue;}
+   if(oldBook===book&&malformed(oldOwner))sources.add(oldOwner);
+  }
+  for(const oldOwner of sources){
+   const claim='libra-reading-time-recovered-owner:'+encodeURIComponent(oldOwner)+':'+encodeURIComponent(book),claimed=storage.getItem(claim);
+   if(claimed&&claimed!==owner)continue;
+   migrate(oldOwner,book);const rows=entries(oldOwner).filter(row=>row.book_id===book);if(!rows.length)continue;
+   storage.setItem(claim,owner);for(const row of rows)put(owner,row);
+  }
+ }
+ function summary(owner,book,day){recoverUnscoped(owner,book);migrate(owner,book);let total=0,today=0;for(const row of entries(owner))if(row.book_id===book){total+=row.total_ms;if(row.day===day)today+=row.total_ms;}return {total,today,day,version:2};}
  function add(owner,book,ms,day){
   migrate(owner,book);const row={book_id:book,replica_id:replica,day,total_ms:0};const key=componentKey(owner,row);
   storage.setItem(key,number(key)+Math.round(ms));

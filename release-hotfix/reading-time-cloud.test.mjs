@@ -41,3 +41,10 @@ test('guest totals attach to the first connected account only and keep their rep
  const a=createReadingTimeStore(storage(),'a');a.add('guest','a',1000,'2026-11-06');a.adoptGuest('first',['a']);a.adoptGuest('first',['a']);a.adoptGuest('second',['a']);
  assert.equal(a.summary('first','a','2026-11-06').total,1000);assert.equal(a.summary('second','a','2026-11-06').total,0);
 });
+test('recovers reading time stored under the old callback scope without duplicate adoption',()=>{
+ const a=createReadingTimeStore(storage(),'session');const wrong='(x,y)=>openFootnote(x,y)';
+ a.add(wrong,'a',120000,'2026-11-06');
+ assert.equal(a.summary('account','a','2026-11-06').total,120000);
+ assert.equal(a.summary('account','a','2026-11-06').total,120000);
+ assert.equal(a.summary('other','a','2026-11-06').total,0);
+});

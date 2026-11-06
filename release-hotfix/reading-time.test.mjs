@@ -13,8 +13,8 @@ test('does not count a suspended timer or a previous book after switching',()=>{
  now+=1000;clock.setActive(false);assert.equal(total,1000);
  now+=3000;clock.flush();assert.equal(total,1000);
 });
-test('formats seconds, minutes and hours without losing small sessions',()=>{
- assert.equal(formatReadingTime(12500),'12 сек');assert.equal(formatReadingTime(120000),'2 мин');assert.equal(formatReadingTime(3720000),'1 ч 2 мин');
+test('formats hours and minutes without displaying seconds',()=>{
+ assert.equal(formatReadingTime(12500),'0 мин');assert.equal(formatReadingTime(120000),'2 мин');assert.equal(formatReadingTime(3720000),'1 ч 2 мин');
 });
 import {JSDOM} from 'jsdom';
 import {attachReadingTime} from './reading-time.js';
@@ -26,7 +26,7 @@ function setup(){
 }
 test('reader integration saves time, excludes dialogs and hidden screens, and survives reopening',()=>{
  const s=setup();try{
-  s.advance(1200);assert.equal(s.saved().total,1200);assert.match(s.win.document.querySelector('[data-libra-reading-time]').textContent,/1 сек/);
+  s.advance(1200);assert.equal(s.saved().total,1200);assert.match(s.win.document.querySelector('[data-libra-reading-time]').textContent,/0 мин/);
   const modal=s.win.document.createElement('div');modal.className='sheet-scrim';s.win.document.querySelector('.reading-root').append(modal);
   s.advance(0);s.advance(4000);assert.equal(s.saved().total,1200);modal.remove();s.advance(0);s.advance(1000);assert.equal(s.saved().total,2200);
   Object.defineProperty(s.win.document,'visibilityState',{value:'hidden',configurable:true});s.win.document.dispatchEvent(new s.win.Event('visibilitychange'));s.advance(3000);assert.equal(s.saved().total,2200);
@@ -45,10 +45,10 @@ test('switching books or accounts keeps separate totals and library time is excl
 test('library shows each book time beside its progress and refreshes after cloud changes',()=>{
  const s=setup();try{
   const card=s.win.document.createElement('div');card.dataset.libraryBook='a';card.dataset.readingOwner='user-1';card.innerHTML='<span class="continue-author">Автор</span><span class="continue-progress-label">17% прочитано</span>';s.win.document.body.append(card);
-  s.advance(1000);const label=card.querySelector('[data-libra-library-time]');assert.ok(label);assert.equal(label.textContent,'Чтение · 1 сек');assert.equal(label.nextElementSibling.className,'continue-progress-label');
+  s.advance(1000);const label=card.querySelector('[data-libra-library-time]');assert.ok(label);assert.equal(label.textContent,'Чтение · 0 мин');assert.equal(label.nextElementSibling.className,'continue-progress-label');
   s.win.document.querySelector('.reading-root').remove();s.advance(0);
   s.win.localStorage.setItem('libra-reading-time:v2:user-1:a:other:2026-11-06','120000');s.win.dispatchEvent(new s.win.Event('libra-reading-time-change'));
   assert.equal(label.textContent,'Чтение · 2 мин');assert.equal(card.querySelectorAll('[data-libra-library-time]').length,1);
-  card.dataset.readingOwner='other-user';s.advance(0);assert.equal(label.textContent,'Чтение · 0 сек');
+  card.dataset.readingOwner='other-user';s.advance(0);assert.equal(label.textContent,'Чтение · 0 мин');
  }finally{s.stop();s.win.close();}
 });
