@@ -45,9 +45,9 @@ const build=createHash('sha256').update(JSON.stringify(hashes)).digest('hex').sl
 sw=sw.replace(/const CACHE_NAME = CACHE_PREFIX \+ '[^']+';/,"const CACHE_NAME = CACHE_PREFIX + '"+build+"';").replace(/const PRECACHE_URLS = .*;/,'const PRECACHE_URLS = '+JSON.stringify(urls)+';').replace(/const PRECACHE_HASHES = .*;/,'const PRECACHE_HASHES = '+JSON.stringify(hashes)+';');
 await fs.writeFile(path.join(root,'sw.js'),sw);
 await fs.writeFile(path.join(root,'release.json'),JSON.stringify({
- release:'2026-11-06-reading-time',baseCommit:'8d0fdb6',
- features:['visible book reading time with local persistence','existing November 6 reader interface','glass footnotes in FB2 and EPUB','revision and offline deletion race guards','DTD rejection','remote EPUB resource blocking'],
- recoveryBaseDeployment:'dpl_C6pMj1A1abRKbtpeUpbswhJVqcwC',repairRevision:8,offlineBuild:build,
+ release:'2026-11-06-reading-time-cloud',baseCommit:'8d0fdb6',
+ features:['per-book reading time with grow-only cloud sync and offline retry','existing November 6 reader interface','glass footnotes in FB2 and EPUB','revision and offline deletion race guards','DTD rejection','remote EPUB resource blocking'],
+ recoveryBaseDeployment:'dpl_C6pMj1A1abRKbtpeUpbswhJVqcwC',repairRevision:9,offlineBuild:build,
  patchSha256:createHash('sha256').update(await fs.readFile(path.join(here,'security-patches.mjs'))).digest('hex')
 }));
 await fs.writeFile(path.join(output,'vercel.json'),JSON.stringify({version:2,framework:null,buildCommand:'',installCommand:'',outputDirectory:'src',headers:[

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test security-regressions.test.mjs footnote-content.test.mjs reading-time.test.mjs",
+    "test": "node --test security-regressions.test.mjs footnote-content.test.mjs reading-time.test.mjs reading-time-cloud.test.mjs",
     "test:browser": "node prepare-tests.mjs && playwright test --config playwright.config.ts"
   },
   "devDependencies": {
