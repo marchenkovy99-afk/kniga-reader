@@ -1,0 +1,36 @@
+name: LIBRA touch and quote regression checks
+on:
+  push:
+    branches: ['fix/libra-first-tap-and-quote-selection']
+    paths:
+      - 'libra/src/components/ReadingControls.tsx'
+      - 'libra/src/quoteSelection.ts'
+      - 'libra/e2e/quote-selection.spec.ts'
+      - '.github/workflows/libra-touch-regressions.yml'
+permissions:
+  contents: read
+jobs:
+  touch-and-quotes:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: libra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install reader and browser test runner
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @playwright/test@1.56.1
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify reader taps and quote selection in both engines
+        run: npx playwright test e2e/quote-selection.spec.ts e2e/reader-zones.spec.ts --config playwright.config.ts --workers=2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libra-touch-quote-results
+          path: libra/test-results
+          if-no-files-found: ignore

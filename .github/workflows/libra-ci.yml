@@ -1,7 +1,7 @@
 name: LIBRA standalone reader checks
 on:
   push:
-    branches: ['feature/libra-standalone-v1', 'feature/libra-comfort-dark-release']
+    branches: ['feature/libra-standalone-v1', 'feature/libra-comfort-dark-release', 'fix/libra-first-tap-and-quote-selection']
     paths:
       - 'libra/**'
       - '.github/workflows/libra-ci.yml'
@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: libra
@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: error
   browser:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: libra

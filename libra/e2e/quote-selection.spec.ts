@@ -57,3 +57,27 @@ test('EPUB content selection opens quote popover and saves original selected tex
  await page.getByRole('button',{name:'Цитаты',exact:true}).click();
  await expect(page.locator('.saved-quote blockquote')).toContainText('Passage');
 });
+
+test('first touch opens controls and holding book text starts quotation without a mode button',async({page})=>{
+ await page.goto('/');
+ await page.locator('input[type=file]').setInputFiles({name:'hold.fb2',mimeType:'application/xml',buffer:Buffer.from(fb2)});
+ await page.locator('.continue-card').click();
+ await expect(page.locator('.book-flow')).toBeVisible();
+ const zones=page.locator('.reading-zones');
+ const box=(await zones.boundingBox())!;
+ const center={identifier:1,clientX:box.x+box.width/2,clientY:box.y+box.height/2};
+ await zones.dispatchEvent('touchstart',{touches:[center],changedTouches:[center]});
+ await zones.dispatchEvent('touchend',{touches:[],changedTouches:[center]});
+ await expect(page.locator('.reading-top')).toHaveClass(/visible/);
+ await page.getByRole('button',{name:'Скрыть управление чтением'}).click();
+ const point=await page.locator('.book-paragraph').first().evaluate(el=>{
+  const text=el.firstChild!,range=document.createRange();range.setStart(text,0);range.setEnd(text,7);
+  const rect=range.getClientRects()[0];return {identifier:2,clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2};
+ });
+ await zones.dispatchEvent('touchstart',{touches:[point],changedTouches:[point]});
+ await expect(page.getByRole('group',{name:'Действия с выделенной цитатой'})).toBeVisible();
+ await zones.dispatchEvent('touchend',{touches:[],changedTouches:[point]});
+ await expect.poll(()=>page.evaluate(()=>window.getSelection()?.toString())).toBe('Фрагмент');
+ await page.getByRole('button',{name:'Сохранить цитату'}).click();
+ await expect(page.getByRole('status')).toContainText('Цитата сохранена');
+});

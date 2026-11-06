@@ -1,0 +1,40 @@
+name: LIBRA current release browser checks
+on:
+  push:
+    branches: ['fix/libra-first-tap-and-quote-selection']
+    paths: ['release-hotfix/runtime-touch.spec.ts','release-hotfix/playwright.config.ts','release-hotfix/today-smoke.spec.ts','release-hotfix/ios-controls-clearance.spec.ts','.github/workflows/libra-current-release-checks.yml']
+permissions:
+  contents: read
+jobs:
+  current-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runner
+        run: npm install --prefix release-hotfix --ignore-scripts --no-save --package-lock=false --no-audit --no-fund @playwright/test@1.56.1
+      - name: Recreate verified current release
+        run: node release-hotfix/build.mjs
+      - name: Prepare exact-release tests
+        run: |
+          mkdir -p release-hotfix/e2e/support
+          cp release-hotfix/runtime-touch.spec.ts release-hotfix/e2e/
+          cp release-hotfix/today-smoke.spec.ts release-hotfix/e2e/
+          cp release-hotfix/ios-controls-clearance.spec.ts release-hotfix/e2e/
+          cp libra/e2e/support/epub-fixture.ts release-hotfix/e2e/support/
+      - name: Install Chromium and WebKit
+        working-directory: release-hotfix
+        run: npx playwright install --with-deps chromium webkit
+      - name: Verify current published build in both browser engines
+        working-directory: release-hotfix
+        env:
+          BASE_URL: https://libra-standalone-preview-k1knczd20-marchenkovy99-3693.vercel.app
+        run: npx playwright test --config playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libra-current-release-results
+          path: release-hotfix/test-results
+          if-no-files-found: ignore

@@ -1,7 +1,7 @@
 import { useEffect,useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icons';
 import type { ReaderSettings, ReaderPosition, StoredBook, SavedQuote } from '../domain';
-import type {QuoteCapture} from '../quoteSelection';
+import {selectQuoteWord,type QuoteCapture} from '../quoteSelection';
 import { toggleBookmark, addQuote } from '../storage';
 import { sameBookmark } from '../bookmarks';
 import { fontStack,resetTypography,readingInk,maximumTextPreset,balancePageMargins } from '../readerSettings';
@@ -34,14 +34,26 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
  const restoreFocus=useRef<HTMLElement|null>(null);
  const marked=bookmarks.some(saved=>sameBookmark(saved,position));
  const touch=useRef<{x:number;y:number}|null>(null);
- const ignoreClick=useRef(false);
+ const ignoreClickUntil=useRef(0);
+ const longPress=useRef<number|null>(null);
+ const held=useRef(false);
+ const quotePoint=useRef<{x:number;y:number}|null>(null);
+ const content=useRef<HTMLDivElement>(null);
+ const clearLongPress=()=>{if(longPress.current!==null)window.clearTimeout(longPress.current);longPress.current=null};
+ useEffect(()=>()=>clearLongPress(),[]);
+ useEffect(()=>{
+  if(!quoteMode||!quotePoint.current||!content.current)return;
+  const point=quotePoint.current;quotePoint.current=null;
+  selectQuoteWord(content.current,point.x,point.y);
+  window.dispatchEvent(new Event('libra-quote-selection'));
+ },[quoteMode]);
  useEffect(()=>{setQuoteMode(false);setQuoteCapture(null)},[book.id]);
  useEffect(()=>{
-  if(!quoteMode||!quoteSelection)return;
-  const check=()=>{const next=quoteSelection();if(next)setQuoteCapture(old=>old?.text===next.text&&old.rect.top===next.rect.top&&old.rect.left===next.rect.left?old:next)};
+  if(!quoteSelection)return;
+  const check=()=>{const next=quoteSelection();if(next){setQuoteMode(true);setPanels(false);setQuoteCapture(old=>old?.text===next.text&&old.rect.top===next.rect.top&&old.rect.left===next.rect.left?old:next)}};
   // WebKit's EPUB iframe can miss forwarded selectionchange events. Poll only
   // while quote mode is active, without triggering rerenders for stable ranges.
-  const poll=window.setInterval(check,200);
+  const poll=quoteMode?window.setInterval(check,200):undefined;
   document.addEventListener('selectionchange',check);
   window.addEventListener('pointerup',check);
   window.addEventListener('keyup',check);
@@ -105,21 +117,41 @@ export function ReadingControls({book,settings,onSettings,onBack,onNext,onPrevio
    }finally{setMarkBusy(false)}
  }
  return <div className={"reading-root "+(interactiveContent?"reading-interactive":"")+(modalContentOpen?" reading-modal-open":"")+(safeMode?" reading-scroll-safe":"")+(quoteMode?" reading-quote-mode":"")}>
-   <div className="reading-content">{children}</div>
+   <div className="reading-content" ref={content}>{children}</div>
    <div className="reading-zones" role="presentation"
-     onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}}
+     onTouchStart={e=>{
+       clearLongPress();touch.current=null;held.current=false;
+       if(modalContentOpen||e.touches.length!==1)return;
+       const point={x:e.touches[0].clientX,y:e.touches[0].clientY};
+       touch.current=point;
+       if(!sheet&&quoteSelection)longPress.current=window.setTimeout(()=>{
+         longPress.current=null;held.current=true;quotePoint.current=point;
+         ignoreClickUntil.current=Date.now()+800;
+         setPanels(false);setQuoteCapture(null);setQuoteMode(true);
+       },450);
+     }}
+     onTouchMove={e=>{
+       const start=touch.current;
+       if(!start||e.touches.length!==1){clearLongPress();touch.current=null;return}
+       if(Math.abs(e.touches[0].clientX-start.x)>10||Math.abs(e.touches[0].clientY-start.y)>10)clearLongPress();
+     }}
+     onTouchCancel={()=>{clearLongPress();touch.current=null;held.current=false;ignoreClickUntil.current=Date.now()+800}}
      onTouchEnd={e=>{
-       if(!touch.current)return;
-       const dx=e.changedTouches[0].clientX-touch.current.x;
-       const dy=e.changedTouches[0].clientY-touch.current.y;
-       touch.current=null;
+       clearLongPress();
+       const start=touch.current;touch.current=null;
+       if(!start||!e.changedTouches.length||modalContentOpen)return;
+       ignoreClickUntil.current=Date.now()+800;
+       if(held.current){held.current=false;return}
+       const point=e.changedTouches[0],dx=point.clientX-start.x,dy=point.clientY-start.y;
        if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.3){
-         ignoreClick.current=true;
          if(dx<0)onNext();else onPrevious();
-         window.setTimeout(()=>{ignoreClick.current=false},350);
+       }else if(Math.abs(dx)<=10&&Math.abs(dy)<=10){
+         if(!sheet&&onContentTap?.(point.clientX,point.clientY))return;
+         const box=e.currentTarget.getBoundingClientRect();onTap(point.clientX,box.left,box.width);
        }
      }}
-     onClick={e=>{if(ignoreClick.current||modalContentOpen)return;if(!sheet&&onContentTap?.(e.clientX,e.clientY))return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
+     onContextMenu={e=>{if(held.current)e.preventDefault()}}
+     onClick={e=>{if(Date.now()<ignoreClickUntil.current||modalContentOpen)return;if(!sheet&&onContentTap?.(e.clientX,e.clientY))return;const box=e.currentTarget.getBoundingClientRect();onTap(e.clientX,box.left,box.width)}} />
    <button className="reading-status" aria-label="Показать управление чтением" aria-expanded={panels} onClick={()=>setPanels(v=>!v)} disabled={modalContentOpen}>
     <span>{pageNumber&&totalPages?`${pageNumber} / ${totalPages}`:caption}</span><span>{progress}%</span>
     <i aria-hidden="true"><i style={{width:progress+'%'}}/></i>

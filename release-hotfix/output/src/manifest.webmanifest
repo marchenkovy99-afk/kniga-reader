@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "LIBRA — персональная библиотека",
+  "short_name": "LIBRA",
+  "description": "Чтение электронных книг без лишнего",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F4EF",
+  "theme_color": "#F7F4EF",
+  "icons": [
+    {"src": "./icon-180.png?v=5", "sizes":"180x180", "type":"image/png", "purpose":"any"},
+    {"src": "./icon-512.png?v=5", "sizes":"512x512", "type":"image/png", "purpose":"any maskable"},
+    {"src": "./icon.svg?v=5", "sizes":"any", "type":"image/svg+xml", "purpose":"any"}
+  ]
+}

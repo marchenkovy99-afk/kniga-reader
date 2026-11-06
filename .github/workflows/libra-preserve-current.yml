@@ -1,0 +1,26 @@
+name: Preserve current LIBRA release
+on:
+  push:
+    branches: ['fix/libra-first-tap-and-quote-selection']
+    paths: ['release-hotfix/build.mjs','release-hotfix/reader-touch-fix.js','.github/workflows/libra-preserve-current.yml']
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/libra-first-tap-and-quote-selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node release-hotfix/build.mjs
+      - name: Preserve verified published assets
+        run: |
+          git add release-hotfix/output
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Preserve exact current Libra release with first-tap and quote repair"
+          git push origin HEAD:fix/libra-first-tap-and-quote-selection
