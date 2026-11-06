@@ -1,7 +1,16 @@
 {
- "name":"libra-preserved-release-qa",
- "private":true,
- "type":"module",
- "scripts":{"build":"node build.mjs","test":"node --test security-regressions.test.mjs","test:browser":"node prepare-tests.mjs && playwright test --config playwright.config.ts"},
- "devDependencies":{"@playwright/test":"1.56.1","fake-indexeddb":"6.2.5","jszip":"3.10.1"}
+  "name": "libra-preserved-release-qa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test security-regressions.test.mjs footnote-content.test.mjs",
+    "test:browser": "node prepare-tests.mjs && playwright test --config playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "fake-indexeddb": "6.2.5",
+    "jszip": "3.10.1",
+    "jsdom": "26.1.0"
+  }
 }

@@ -1,3 +1,4 @@
+import {readFootnote} from './footnote-content.js';
 // Footnote reader for the preserved release. Imported files remain in IndexedDB;
 // note text is rendered with textContent, never publisher HTML.
 (() => {
@@ -46,16 +47,12 @@
    tx.oncomplete=()=>{const item=read.result;if(!item){reject(Error('Книга не найдена на устройстве'));return}resolve({item,file:item.file instanceof Blob?item.file:new Blob([item.fileBytes],{type:item.fileType})})};tx.onerror=()=>reject(tx.error);
   })}finally{database.close()}
  }
- function targetText(doc,id){
-  const node=doc.getElementById(id);if(!node)return null;
-  // An empty backlink anchor commonly precedes the actual footnote paragraph.
-  return (node.textContent?.trim()?node:node.closest('aside,li,p,section')||node.parentElement)?.textContent?.trim()||null;
- }
  async function resolve(link){
   const ref=link.dataset.note||link.getAttribute('href')||'',id=decodeURIComponent(ref.includes('#')?ref.slice(ref.indexOf('#')+1):ref);
   if(!id)throw Error('В ссылке не указан текст сноски');
+  const options={label:link.textContent||'',targetIds:Array.from(link.ownerDocument.querySelectorAll('[data-note],a[href]')).map(a=>a.getAttribute('data-note')||(a.getAttribute('href')||'').split('#')[1]).filter(Boolean)};
   if(!link.hasAttribute('data-note')&&ref.startsWith('#')){
-   const same=targetText(link.ownerDocument,id);if(same)return same;
+   const same=readFootnote(link.ownerDocument,id,options);if(same)return same;
   }
   const {item,file}=await activeFile();
   if(item.format==='fb2'){
@@ -65,15 +62,15 @@
    const xml=new TextDecoder(encoding).decode(buffer);
    if(/<!DOCTYPE|<!ENTITY/i.test(xml.replace(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>/g,'')))throw Error('DTD в книге не поддерживается');
    const doc=new DOMParser().parseFromString(xml,'application/xml');
-   const node=Array.from(doc.getElementsByTagName('*')).find(n=>n.getAttribute('id')===id);
-   if(node)return Array.from(node.children).map(n=>n.textContent?.trim()).filter(Boolean).join('\n\n')||node.textContent;
+   options.targetIds=Array.from(doc.getElementsByTagName('*')).filter(n=>n.localName==='a').map(n=>(n.getAttributeNS('http://www.w3.org/1999/xlink','href')||n.getAttribute('href')||'').split('#')[1]).filter(Boolean);
+   const text=readFootnote(doc,id,options);if(text)return text;
   }else if(item.format==='epub'){
    const {default:ePub}=await import('./assets/src-BLsCKbRG.js');const book=ePub(await file.arrayBuffer());
    try{
     await book.ready;
     const base=link.ownerDocument.querySelector('base')?.getAttribute('href')||'';
     const url=new URL(ref,new URL(base,'https://book.invalid/'));
-    const doc=await book.archive.request(url.pathname);const text=targetText(doc,id);if(text)return text;
+    const doc=await book.archive.request(url.pathname);const text=readFootnote(doc,id,options);if(text)return text;
    }finally{book.destroy()}
   }
   throw Error('Текст сноски отсутствует в файле книги');
