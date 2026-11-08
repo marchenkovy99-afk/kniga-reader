@@ -1,0 +1,12 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {resolve} from 'node:path';
+const root=resolve(import.meta.dirname,'../src'),hash=s=>createHash('sha256').update(s).digest('hex');
+let sw=readFileSync(root+'/sw.js','utf8');
+const urls=JSON.parse(sw.match(/const PRECACHE_URLS = (.*);/)[1]);
+const hashes=Object.fromEntries(urls.map(path=>[path,hash(readFileSync(root+path))]));
+const build=hash(JSON.stringify(hashes)).slice(0,16);
+sw=sw.replace(/const CACHE_NAME = CACHE_PREFIX \+ '[^']+';/,`const CACHE_NAME = CACHE_PREFIX + '${build}';`).replace(/const PRECACHE_HASHES = .*;/,`const PRECACHE_HASHES = ${JSON.stringify(hashes)};`);
+writeFileSync(root+'/sw.js',sw);
+const release=JSON.parse(readFileSync(root+'/release.json'));Object.assign(release,{release:'2026-11-08-fluid-page-turns',repairRevision:17,offlineBuild:build,pageTurnsSha256:hash(readFileSync(root+'/page-turns.js'))});writeFileSync(root+'/release.json',JSON.stringify(release));
+console.log('Pinned offline build',build,urls.length,'assets');

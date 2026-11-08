@@ -1,0 +1,25 @@
+{
+  "deployment": "dpl_BBvNQjfHmHXy3pqRt17RbKjMrGzX",
+  "url": "https://libra-standalone-preview.vercel.app/",
+  "files": {
+    "assets/index-DMkgLOVA.js": "33eef6d8906ffcd284096b6354bbb4065f1a696b02dfbd474d1fb7804902ea15",
+    "assets/index-SkfpHvwY.css": "ad3d5a1f7cf576eec0b9a0afc30814dfd9285a9cf05c94426b21eb9f80ae1fc7",
+    "assets/src-BLsCKbRG.js": "ecc98e1c3f246e4bda7075e4df11700c955c58981287d52453413536b5342853",
+    "icon-180.png": "cd9d28659f5e81fee3d0e62dedd4d53247fd33de33a1784b17291b3e97f4c9b3",
+    "icon-512.png": "fe112cc2be03d21d2573d2a1e8553e3c6e8b6eb902ef2b6d0f62d140eec0d1b0",
+    "icon-mark.svg": "479f6af96e42d0ff4a5528b4e37a1a52abb612f0529f3bb45ae207c2aa254238",
+    "icon.svg": "c4c3d22f07e4c23f4e4393077809caf57c3cdd5330b330ceee788cee710fd58b",
+    "manifest.webmanifest": "31bee5f2a5b712e7062e7aefb0a429cd1fdcf1e5cb99a7949303abf086a0d076",
+    "offline-shell.txt": "22e0dbebbe2a7e9656eb68df4d4dbedf5aa2c464b9d7ab5bf794c6cca148da14",
+    "reader-touch-fix.js": "db9fa8548ce5bb021ddad7cdfa0d535536402b9db5945aa8f9b6eff1ce78cc99",
+    "footnotes.js": "d7a7a50934cd6e9c9f5cf0a38f6f4fe09a4a1ea2cba9967d000b842813c0226f",
+    "footnote-content.js": "2d7a1341ea4aa1e0f0c84481677616248669c511a63f739621f9678476251960",
+    "reading-time.js": "bb3fd8e7d6790e0e545715b1c6134778f2d9b0e55d720be50e62d190c3cecf83",
+    "page-turns.js": "de2a5467898867e2f5987fc135f31fc22639a6de35ebb4098804dd6820522fe3",
+    "epub-snapshot.js": "d492a0eca6b652ad1aecee0256d7ba4baa37cfad6d4a56365a6643eb37c46ada",
+    "adjacent-pages.js": "d422fa8a330d9c6b61e8678436bfa83551244ca2e61250896796f5ad1f52fe31",
+    "index.html": "22e0dbebbe2a7e9656eb68df4d4dbedf5aa2c464b9d7ab5bf794c6cca148da14",
+    "sw.js": "25fceee3d3bda33da35a07ec61055579e9a452f73f59a69110e4ca8728b87ae7",
+    "release.json": "edd2c04489ab9d32fa8b54af4fe046bbe8eaf7507a1ab3ab878d43ed6490d843"
+  }
+}

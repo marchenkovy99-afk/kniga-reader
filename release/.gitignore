@@ -1,0 +1,5 @@
+node_modules/
+.openai/
+src/qa.html
+src/qa.js
+src/fixture.epub
