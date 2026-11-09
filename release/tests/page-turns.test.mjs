@@ -34,6 +34,13 @@ async function fixture({delay=0,reduced=false,epub=false,epubSettle=()=>Promise.
 test('a prepared touch and drag perform no geometry reads or cloning',async()=>{
  const f=await fixture();try{f.reset();f.touch('touchstart',300);f.touch('touchmove',240);await f.tick();assert.equal(f.offset(),-60);assert.equal(f.stats().reads,0);assert.equal(f.stats().clones,0)}finally{f.close()}
 });
+test('EPUB resize ignores a rendition whose manager is being replaced',async()=>{
+ const f=await fixture({epub:true});try{
+  f.view.libraEpubPreview.state().rendition.currentLocation=()=>{throw new TypeError('manager is not ready')};
+  f.view.style.height='600px';await Promise.resolve();await f.tick(300);await f.tick(300);
+  assert.equal(f.stats().navigations,0);
+ }finally{f.close()}
+});
 test('release continues immediately while the live page is still loading',async()=>{
  const f=await fixture({delay:500});try{f.touch('touchstart',300);f.touch('touchmove',150);await f.tick();const before=f.offset();f.touch('touchend',150);await f.tick();assert.ok(f.offset()<before,`${f.offset()} must continue past ${before}`);assert.equal(f.stats().navigations,0);await f.tick(300);assert.equal(f.stats().navigations,1);assert.ok(f.r.querySelector('[data-libra-page-turn]'),'hold preview until real page ready');await f.tick(510);await f.tick();assert.equal(f.r.querySelector('[data-libra-page-turn]')?.dataset.active,undefined)}finally{f.close()}
 });

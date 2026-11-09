@@ -11,12 +11,13 @@ export function attachPageTurns(win=window,doc=win.document){
  if(diagnostics)win.libraPageTurnMetrics=metrics;
  const tapQueue=[];let queueTimer=0,paintFrame=0,pendingPaint=null;
  let previewState=null,warmTimer=0;
+ const locationOf=rendition=>{try{return rendition?.currentLocation()}catch{return null}};
  // A cheap identity check prevents a seek/settings render from activating
  // old visual planes before the idle geometry preparation can run.
  const identity=r=>{
   const view=r.querySelector('.reading-content .page-viewport')||r.querySelector('.reading-content .epub-mount');
   const fb2=view?.libraFb2Preview?.state(),epub=view?.libraEpubPreview?.state();
-  return JSON.stringify([r.dataset.bookId,fb2||epub?null:status(r),r.dataset.pageAnimation,view?.getAttribute('style'),view?.querySelector('.book-flow')?.style.transform,fb2?.key,fb2?.chapter,fb2?.page,epub?.key,epub?.rendition?.currentLocation()?.start?.cfi]);
+  return JSON.stringify([r.dataset.bookId,fb2||epub?null:status(r),r.dataset.pageAnimation,view?.getAttribute('style'),view?.querySelector('.book-flow')?.style.transform,fb2?.key,fb2?.chapter,fb2?.page,epub?.key,locationOf(epub?.rendition)?.start?.cfi]);
  };
  const previewKey=r=>{
   const view=r.querySelector('.reading-content .page-viewport')||r.querySelector('.reading-content .epub-mount');if(!view)return '';
@@ -44,7 +45,8 @@ export function attachPageTurns(win=window,doc=win.document){
  }
  function liveSettled(r){
   const api=r.querySelector('.reading-content .epub-mount')?.libraEpubPreview;if(!api)return true;
-  const state=api.state(),loc=api.physical(state.rendition?.currentLocation());if(!loc?.cfi)return false;
+  const state=api.state(),location=locationOf(state.rendition);if(!location)return false;
+  const loc=api.physical(location);if(!loc?.cfi)return false;
   // During EPUB restoration the iframe can briefly show the CFI's containing
   // screen before React restores the saved physical page. Do not cache that
   // intermediate screen as an interactive neighbor.
@@ -119,7 +121,7 @@ export function attachPageTurns(win=window,doc=win.document){
  const boundary=(r,d)=>{
   const view=r.querySelector('.reading-content .page-viewport')||r.querySelector('.reading-content .epub-mount');
   const fb2=view?.libraFb2Preview?.state();if(fb2?.total>0)return d<0?fb2.chapter===0&&fb2.page<=0:fb2.chapter===fb2.total-1&&fb2.page>=fb2.pages-1;
-  const api=view?.libraEpubPreview,epub=api?.state(),loc=epub?.rendition&&api.physical(epub.rendition.currentLocation());
+  const api=view?.libraEpubPreview,epub=api?.state(),location=locationOf(epub?.rendition),loc=location&&api.physical(location);
   if(loc?.cfi&&epub.spine.length)return d<0?loc.index===epub.spine[0].index&&loc.page<=1:loc.index===epub.spine.at(-1).index&&loc.page>=loc.total;
   const page=position(r);return page&&(d<0?page.page<=1:page.page>=page.total);
  };
@@ -249,7 +251,7 @@ export function attachPageTurns(win=window,doc=win.document){
   }
   if(!commit){finish();return;}
   const before=status(s.r);
-  const location=()=>{const view=s.r.querySelector('.reading-content .page-viewport')||s.r.querySelector('.reading-content .epub-mount'),fb2=view?.libraFb2Preview?.state(),epub=view?.libraEpubPreview?.state();return fb2?JSON.stringify([fb2.chapter,fb2.page]):epub?.rendition?.currentLocation()?.start?.cfi||null;};
+  const location=()=>{const view=s.r.querySelector('.reading-content .page-viewport')||s.r.querySelector('.reading-content .epub-mount'),fb2=view?.libraFb2Preview?.state(),epub=view?.libraEpubPreview?.state();return fb2?JSON.stringify([fb2.chapter,fb2.page]):locationOf(epub?.rendition)?.start?.cfi||null;};
   const beforeLocation=location();
   const ready=()=>{
    if(settlement!==phase||phase.ready)return;
