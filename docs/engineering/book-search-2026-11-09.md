@@ -74,7 +74,7 @@ the query generation. Readable non-linear EPUB spine sections are included.
 FB2 table targets account for the preceding cells' text. Existing literal
 normalization and UTF-16 source mappings are retained.
 
-Validation: release Node tests (46), root Node tests (187), preserved-release
+Validation: release Node tests (47), root Node tests (187), preserved-release
 security/footnote/reading-time tests (38), and release core-preservation check.
 Regression tests were observed failing before the corresponding repairs.
 The offline manifest was regenerated with exact asset hashes.
@@ -86,3 +86,9 @@ a stale renderer's ready flag alone is insufficient.
 Physical iPhone, Safari/PWA and local WebKit verification remain unavailable
 in this executor. Cloud Chromium checks do not establish those results.
 No authenticated cloud test or personal book upload is required by the QA page.
+
+The stress suite also reproduced a stale-library reopening race. The existing
+library reload is now awaited before switching out of the reader, preventing
+a quick tile click from reopening a book with its pre-search position. This
+two-statement callback replacement is explicitly reversed by verify-release
+in addition to the two search adapters; the remaining original core is intact.

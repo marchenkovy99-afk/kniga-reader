@@ -5,3 +5,7 @@ export const adapters=[
  ['element.libraEpubPreview={state:', 'element.libraEpubPreview={position:()=>f.current,settled:()=>g&&!l.current&&!!s.current?.manager&&h.current===P.current&&!!i.current&&Math.abs(i.current.clientWidth-T.width)<1&&Math.abs(i.current.clientHeight-T.height)<1,navigate:async target=>{ve(()=>s.current.display(target));await p.current},state:']
 ];
 export const searchTags='    <link rel="stylesheet" href="/book-search.css">\n    <script type="module" src="/book-search.js"></script>\n';
+// Expose the library only after its displayed book records include saved progress.
+export const libraryNavigationAdapters=[
+ ['function b(){a(null),m()}', 'async function b(){await m();a(null)}']
+];

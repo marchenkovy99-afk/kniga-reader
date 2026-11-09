@@ -21,3 +21,10 @@ test('FB2 Return prefers its text anchor over an obsolete physical page',async()
 test('FB2 fallback can settle even when paginated readiness is false',()=>{
  const {api,context}=fb2();context.R=false;context.ie=true;context.g={type:'overflow'};assert.equal(api.settled(),true);
 });
+
+test('returning to the library waits for fresh persisted book positions',async()=>{
+ const {libraryNavigationAdapters}=await import('../scripts/search-adapters.mjs');
+ let finish,opened=false;const pending=new Promise(resolve=>finish=resolve),ctx=vm.createContext({m:()=>pending,a:()=>opened=true});
+ vm.runInContext((libraryNavigationAdapters?.[0]?.[1]||'function b(){a(null),m()}')+';globalThis.back=b',ctx);
+ const operation=ctx.back();assert.equal(opened,false,'stale library must not be exposed before progress reload');finish();await operation;assert.equal(opened,true);
+});

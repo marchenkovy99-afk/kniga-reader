@@ -23,10 +23,11 @@ async function engineStable(){
  let since=0,last='';await until(()=>{const api=source(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!api||!view||api.settled?.()===false||document.querySelector('.reading-root')?.dataset.searchNavigating)return since=0;const state=api.state(),geometry=state.geometry||state,key=state.key+':'+view.clientHeight+':'+view.clientWidth;if(geometry.height!==undefined&&Math.abs(geometry.height-view.clientHeight)>1||geometry.width!==undefined&&Math.abs(geometry.width-view.clientWidth)>1||document.querySelector('.book-search-nav')&&findButton('Завершить поиск')?.disabled){since=0;return false;}if(last!==key){last=key;since=0;}if(!since)since=performance.now();return performance.now()-since>700;});
 }
 async function stress(format){
+ const click=async name=>{const button=await until(()=>{const b=findButton(name);return b&&!b.disabled?b:null;});button.click();};
  for(let cycle=0;cycle<20;cycle++){
   const origin=source().position();
   if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();
-  findButton('Поиск по книге').click();input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);
+  await click('Поиск по книге');input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);
   input('не существует');assert(document.querySelectorAll('.book-search-result').length===0,format+': stale results removed '+cycle);
   input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);
   const hit=cycle%2;document.querySelectorAll('.book-search-result')[hit].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent===`${hit+1} / 2`&&!findButton('Завершить поиск')?.disabled);
@@ -35,12 +36,12 @@ async function stress(format){
   await engineStable();await until(visiblePhrase);await pause(350);
   assert(visiblePhrase(),format+': match survives late viewport resize '+cycle);
   if(cycle%2===0){
-   findButton('Вернуться к исходному месту').click();await until(()=>!document.querySelector('.book-search-nav'));await engineStable();
+   await click('Вернуться к исходному месту');await until(()=>!document.querySelector('.book-search-nav'));await engineStable();
    assert(source().position().chapter===origin.chapter,format+': explicit Return '+cycle);
   }else{
-   findButton('Завершить поиск').click();await until(()=>!document.querySelector('.book-search-nav'));await engineStable();await pause(2000);
+   await click('Завершить поиск');await until(()=>!document.querySelector('.book-search-nav'));await engineStable();await pause(2000);
    assert(source().position().chapter===hit&&visiblePhrase(),format+': Close preserves exact text after two seconds '+cycle);
-   const bookId=document.querySelector('.reading-root').dataset.bookId;findButton('В библиотеку').click();await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===hit&&source().settled?.()!==false);await pause(500);
+   const bookId=document.querySelector('.reading-root').dataset.bookId;await click('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===hit&&source().settled?.()!==false);await pause(500);
    assert(visiblePhrase(),format+': reopened book shows found text '+cycle);
   }
  }
