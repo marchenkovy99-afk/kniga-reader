@@ -38,3 +38,5 @@ html.libra-ios-standalone .book-search-panel{padding-top:calc(var(--reader-safe-
 .book-search-highlights{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden}
 .book-search-highlights i{position:absolute;border-radius:3px;background:var(--accent);opacity:.27;pointer-events:none}
 @media(max-width:360px){.book-search-panel{padding-inline:18px}.book-search-header h2{font-size:27px}.book-search-nav{left:6px;right:6px}.book-search-query span:not(.book-search-icon){max-width:74px}.book-search-nav output{padding-inline:3px}.reading-root .reading-tools button{font-size:10px}}
+
+.reading-root[data-search-navigating]>.reading-zones{pointer-events:none!important}

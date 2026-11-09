@@ -19,3 +19,15 @@ test('closing an EPUB search cancels further chapter loads',async()=>{
  const f=await fixture(api,true);
  try{f.query('слово');await until(()=>calls===1);f.root.querySelector('[aria-label="Закрыть поиск"]').click();resolve(new f.dom.window.DOMParser().parseFromString('<html><body><p>слово</p></body></html>','text/html'));await pause(80);assert.equal(calls,1);}finally{f.dispose();f.dom.window.close();}
 });
+
+test('editing the query immediately removes stale results before debounce',async()=>{
+ const f=await fixture({state:()=>({}),position:()=>({chapter:0,page:0}),chapters:()=>[{blocks:[{text:'Первое слово и второе слово'}]}]});
+ try{f.query('первое');await until(()=>f.root.querySelector('.book-search-result'));f.query('второе');assert.equal(f.root.querySelectorAll('.book-search-result:not(:disabled)').length,0,'old matches must not remain clickable');await until(()=>f.root.querySelector('.book-search-result mark')?.textContent==='второе');}finally{f.dispose();f.dom.window.close();}
+});
+
+test('EPUB matches in a non-linear but readable spine section are searchable',async()=>{
+ let doc;const section={index:1,url:'notes',linear:'no',cfiFromRange:()=> 'notes-hit'};
+ const f=await fixture({position:()=>({cfi:'origin'}),state:()=>({book:{ready:Promise.resolve(),spine:{spineItems:[section],hooks:{content:{trigger:async()=>{}}}},load:async()=>doc}})},true);
+ doc=new f.dom.window.DOMParser().parseFromString('<html><body><p>Редкая заметка</p></body></html>','text/html');
+ try{f.query('редкая');await until(()=>f.root.querySelector('.book-search-count')?.textContent==='Ничего не найдено'||f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,1);}finally{f.dispose();f.dom.window.close();}
+});

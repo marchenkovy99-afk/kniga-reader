@@ -51,3 +51,38 @@ geometry; EPUB redisplays the selected CFI through its navigation queue. Only
 the separately labeled Return button reads the pre-search origin. Added unit
 regressions for close versus return and browser scenarios `?stay=1` and
 `?stay=same`, including library exit/reopen.
+
+## Navigation repair, 9 November 2026
+
+The repair uses source anchors rather than previously measured page numbers.
+FB2 adapter seeking gives anchors precedence even across chapters. EPUB reports
+queue/layout readiness. Search waits for stable live geometry, verifies a
+positive-area intersection of the requested source range with the viewport,
+and waits for pending manual navigation before capturing a Close target.
+
+Manual movement is recorded from edge taps, horizontal gestures, page keys,
+range inputs and fallback scrolling. Center taps do not discard the selected
+match. Container/font/visualViewport changes reconcile an active match only;
+an idle or closed search never opens itself on a resize. The search launcher
+is disabled during asynchronous navigation/close/return so a new session
+cannot race a previous restoration. FB2 scrolling fallback has separate
+readiness, source scrolling and position persistence through the existing
+storage function.
+
+Search query edits remove old rows immediately, and row handlers validate
+the query generation. Readable non-linear EPUB spine sections are included.
+FB2 table targets account for the preceding cells' text. Existing literal
+normalization and UTF-16 source mappings are retained.
+
+Validation: release Node tests (46), root Node tests (187), preserved-release
+security/footnote/reading-time tests (38), and release core-preservation check.
+Regression tests were observed failing before the corresponding repairs.
+The offline manifest was regenerated with exact asset hashes.
+Browser tests use a disposable origin and `?stress=1`, with 20 alternating
+same/other-chapter cycles, delayed container resizing, close/return and reopen.
+The QA script checks live engine geometry and the public search busy state;
+a stale renderer's ready flag alone is insufficient.
+
+Physical iPhone, Safari/PWA and local WebKit verification remain unavailable
+in this executor. Cloud Chromium checks do not establish those results.
+No authenticated cloud test or personal book upload is required by the QA page.

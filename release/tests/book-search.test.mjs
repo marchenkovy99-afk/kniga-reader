@@ -29,3 +29,14 @@ test('bounds repeated results and supports cancellation',()=>{
  const index=createTextIndex([{text:'а '.repeat(30000)}]);assert.equal(findMatches(index,'а',{limit:10000}).length,10000);
  const controller=new AbortController();controller.abort();assert.throws(()=>findMatches(index,'а',{signal:controller.signal}),{name:'AbortError'});
 });
+
+test('emoji and a split inline word preserve literal UTF-16 source boundaries',()=>{
+ const index=createTextIndex([{text:'😀 Руко',block:2},{text:'писи',block:2,separatorBefore:''},{text:'\u00a0не\nгорят.',block:2,separatorBefore:''}]);
+ const [hit]=findMatches(index,'рукописи не горят.');assert.equal(hit.start,3);assert.equal(hit.end,21);assert.equal(hit.first.offset,3);assert.equal(hit.last.offset,10);
+});
+
+test('FB2 table targets include text from preceding cells in the same block',async()=>{
+ const {matchTarget}=await import('../src/book-search-core.js');
+ const index=createTextIndex([{text:'Первая',block:4,cell:0},{text:'Нужное слово',block:4,cell:1}]);const [hit]=findMatches(index,'слово');
+ assert.deepEqual(matchTarget({...hit,chapter:2,entry:{index}}),{chapter:2,anchor:{block:4,textNode:0,offset:13}});
+});

@@ -1,6 +1,6 @@
 const out=document.querySelector('#qa-output'),results=[],params=new URLSearchParams(location.search);document.documentElement.dataset.qaWidth=params.get('width')||'390';
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(fn,timeout=15000){const start=performance.now();while(!fn()){if(performance.now()-start>timeout)throw Error('Timeout: '+String(fn));await pause(30)}return fn()}
+async function until(fn,timeout=45000){const start=performance.now();while(!fn()){if(performance.now()-start>timeout)throw Error('Timeout: '+String(fn));await pause(30)}return fn()}
 function assert(ok,text){results.push({pass:!!ok,text});out.textContent=JSON.stringify({status:'RUNNING',results},null,2);if(!ok)throw Error(text);}
 const errors=[];window.addEventListener('error',e=>errors.push(e.error?.stack||e.message));window.addEventListener('unhandledrejection',e=>errors.push(e.reason?.stack||String(e.reason)));
 const findButton=name=>[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')===name||b.textContent.trim()===name);
@@ -13,8 +13,41 @@ async function importBook(format){
  const existing=new Set([...document.querySelectorAll('[data-library-book]')].map(n=>n.dataset.libraryBook));
  const bytes=format==='fb2'?fb2:await(await fetch('/search-fixture.epub')).arrayBuffer();const dt=new DataTransfer();dt.items.add(new File([bytes],`search.${format}`,{type:format==='fb2'?'application/xml':'application/epub+zip'}));const file=document.querySelector('input[type=file]');file.files=dt.files;file.dispatchEvent(new Event('change',{bubbles:true}));const tile=await until(()=>[...document.querySelectorAll('[data-library-book]')].find(n=>!existing.has(n.dataset.libraryBook)&&n.textContent.includes(format==='epub'?'EPUB':'FB2')));tile.querySelector('.book-tile-open').click();await until(()=>source()?.position?.()&&(format==='epub'?source().position().cfi:source().settled?.()));await pause(500);
 }
+function visiblePhrase(){
+ const mount=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!mount)return false;
+ const view=mount.getBoundingClientRect(),docs=mount.classList.contains('epub-mount')?[...mount.querySelectorAll('iframe')].map(f=>({doc:f.contentDocument,box:f.getBoundingClientRect()})):[{doc:mount,box:{left:0,top:0}}];
+ for(const {doc,box}of docs){for(const p of doc?.querySelectorAll('p')||[]){if(!p.textContent.startsWith('Рукописи не горят.'))continue;const walker=(p.ownerDocument).createTreeWalker(p,4),node=walker.nextNode();if(!node)continue;const range=p.ownerDocument.createRange();range.setStart(node,0);range.setEnd(node,Math.min(4,node.length));for(const rect of range.getClientRects()){const x=rect.left+box.left,y=rect.top+box.top;if(rect.width>0&&rect.height>0&&x>=view.left-1&&x<view.right&&y>=view.top-1&&y<view.bottom)return true;}}}
+ return false;
+}
+async function engineStable(){
+ let since=0,last='';await until(()=>{const api=source(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!api||!view||api.settled?.()===false||document.querySelector('.reading-root')?.dataset.searchNavigating)return since=0;const state=api.state(),geometry=state.geometry||state,key=state.key+':'+view.clientHeight+':'+view.clientWidth;if(geometry.height!==undefined&&Math.abs(geometry.height-view.clientHeight)>1||geometry.width!==undefined&&Math.abs(geometry.width-view.clientWidth)>1||document.querySelector('.book-search-nav')&&findButton('Завершить поиск')?.disabled){since=0;return false;}if(last!==key){last=key;since=0;}if(!since)since=performance.now();return performance.now()-since>700;});
+}
+async function stress(format){
+ for(let cycle=0;cycle<20;cycle++){
+  const origin=source().position();
+  if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();
+  findButton('Поиск по книге').click();input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);
+  input('не существует');assert(document.querySelectorAll('.book-search-result').length===0,format+': stale results removed '+cycle);
+  input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);
+  const hit=cycle%2;document.querySelectorAll('.book-search-result')[hit].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent===`${hit+1} / 2`&&!findButton('Завершить поиск')?.disabled);
+  assert(source().position().chapter===hit&&visiblePhrase(),format+': exact visible match '+cycle);
+  document.querySelector('.reading-root').style.height=(cycle%2?690:750)+'px';
+  await engineStable();await until(visiblePhrase);await pause(350);
+  assert(visiblePhrase(),format+': match survives late viewport resize '+cycle);
+  if(cycle%2===0){
+   findButton('Вернуться к исходному месту').click();await until(()=>!document.querySelector('.book-search-nav'));await engineStable();
+   assert(source().position().chapter===origin.chapter,format+': explicit Return '+cycle);
+  }else{
+   findButton('Завершить поиск').click();await until(()=>!document.querySelector('.book-search-nav'));await engineStable();await pause(2000);
+   assert(source().position().chapter===hit&&visiblePhrase(),format+': Close preserves exact text after two seconds '+cycle);
+   const bookId=document.querySelector('.reading-root').dataset.bookId;findButton('В библиотеку').click();await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===hit&&source().settled?.()!==false);await pause(500);
+   assert(visiblePhrase(),format+': reopened book shows found text '+cycle);
+  }
+ }
+ assert(errors.length===0,format+': no runtime errors');out.textContent=JSON.stringify({status:'PASS',cycles:20,format,results},null,2);document.title='PASS: 20 search cycles '+format;
+}
 try{
- const format=params.get('format')||'fb2';await importBook(format);
+ const format=params.get('format')||'fb2';await importBook(format);if(params.has('stress')){await stress(format);throw {scene:true};}
  if(params.get('theme')){document.querySelector('.reading-status').click();findButton('Текст').click();await until(()=>document.querySelector(`.theme-swatch[data-option="${params.get('theme')}"]`));document.querySelector(`.theme-swatch[data-option="${params.get('theme')}"]`).click();document.querySelector('.sheet-scrim:not(.sheet-exiting) [aria-label="Закрыть"]').click();await pause(400);}
  const initial=source().position();
  if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();await until(()=>findButton('Поиск по книге'));findButton('Поиск по книге').click();await until(()=>document.querySelector('.book-search-panel'));

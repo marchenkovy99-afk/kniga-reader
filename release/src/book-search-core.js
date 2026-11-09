@@ -47,3 +47,12 @@ export function findMatches(index,query,{limit=10000,signal}={}) {
   }
   return found;
 }
+
+/** A source location survives changes to physical page dimensions. */
+export function matchTarget(match){
+  if(match.cfi)return {chapter:match.chapter,cfi:match.cfi};
+  const unit=match.first.unit;
+  const prefix=unit.cell===undefined?0:match.entry.index.entries.reduce((sum,entry)=>
+    sum+(entry.unit.block===unit.block&&entry.unit.cell<unit.cell?entry.unit.text.length:0),0);
+  return {chapter:match.chapter,anchor:{block:unit.block,textNode:0,offset:prefix+match.first.offset}};
+}
