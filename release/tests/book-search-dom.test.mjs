@@ -31,3 +31,8 @@ test('EPUB matches in a non-linear but readable spine section are searchable',as
  doc=new f.dom.window.DOMParser().parseFromString('<html><body><p>Редкая заметка</p></body></html>','text/html');
  try{f.query('редкая');await until(()=>f.root.querySelector('.book-search-count')?.textContent==='Ничего не найдено'||f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,1);}finally{f.dispose();f.dom.window.close();}
 });
+
+test('search waits for FB2 chapter parsing instead of caching an empty index',async()=>{
+ let loaded=false;const f=await fixture({state:()=>({}),position:()=>({chapter:0,page:0}),chapters:()=>loaded?[{blocks:[{text:'Искомое слово'}]}]:[]});
+ try{f.query('слово');await pause(240);assert.notEqual(f.root.querySelector('.book-search-count')?.textContent,'Ничего не найдено');loaded=true;await until(()=>f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,1);}finally{f.dispose();f.dom.window.close();}
+});

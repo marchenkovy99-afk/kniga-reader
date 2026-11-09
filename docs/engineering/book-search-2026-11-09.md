@@ -74,7 +74,7 @@ the query generation. Readable non-linear EPUB spine sections are included.
 FB2 table targets account for the preceding cells' text. Existing literal
 normalization and UTF-16 source mappings are retained.
 
-Validation: release Node tests (47), root Node tests (187), preserved-release
+Validation: release Node tests (48), root Node tests (187), preserved-release
 security/footnote/reading-time tests (38), and release core-preservation check.
 Regression tests were observed failing before the corresponding repairs.
 The offline manifest was regenerated with exact asset hashes.
@@ -92,3 +92,7 @@ library reload is now awaited before switching out of the reader, preventing
 a quick tile click from reopening a book with its pre-search position. This
 two-statement callback replacement is explicitly reversed by verify-release
 in addition to the two search adapters; the remaining original core is intact.
+
+A further RED→GREEN regression covers search before FB2 parsing completes: the
+index builder now waits for chapters (or the EPUB Book) rather than caching an
+empty index during startup. Closing search cancels this wait.

@@ -84,6 +84,7 @@ export function installBookSearch(root){
   const controller=new AbortController();indexController=controller;const signal=controller.signal;
   const cancel=()=>controller.abort();lifetime.signal.addEventListener('abort',cancel,{once:true});
   indexing=(async()=>{
+   await until(()=>{const api=adapter(root);return api&&(api.chapters?api.chapters().length>0:api.state()?.book);},signal);
    const api=adapter(root),state=api?.state();if(!state)throw Error('Книга ещё открывается');const output=[];
    if(api.chapters){
     for(const [chapter,item]of api.chapters().entries()){
