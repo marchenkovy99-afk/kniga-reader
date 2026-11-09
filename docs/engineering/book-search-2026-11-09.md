@@ -42,3 +42,12 @@ Limits: no physical iPhone/Safari PWA or 120 Hz device test. Automatic keyboard
 focus restoration after closing can fall back to reader controls; this browser
 did not reliably restore the launch button despite it being visible and enabled.
 Touch operation and access to controls are tested independently of focus.
+
+## Search dismissal correction
+
+Closing the bottom search capsule explicitly preserves the selected text anchor
+while page height is restored. FB2 resolves the source anchor under the new
+geometry; EPUB redisplays the selected CFI through its navigation queue. Only
+the separately labeled Return button reads the pre-search origin. Added unit
+regressions for close versus return and browser scenarios `?stay=1` and
+`?stay=same`, including library exit/reopen.

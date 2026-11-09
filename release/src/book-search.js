@@ -24,7 +24,7 @@ function matchRange(match){const doc=match.first.unit.node.ownerDocument,range=d
 
 export function installBookSearch(root){
  if(root.dataset.bookSearchInstalled)return ()=>{};root.dataset.bookSearchInstalled='true';
- let query='',matches=[],active=-1,generation=0,indexes=null,indexing=null,indexController=null,panel=null,panelSnapshot=null,nav=null,origin=null,timer,disposed=false,navigating=false,navVersion=0,highlight=null;
+ let query='',matches=[],active=-1,generation=0,indexes=null,indexing=null,indexController=null,panel=null,panelSnapshot=null,nav=null,origin=null,timer,disposed=false,navigating=false,navVersion=0,highlight=null,activePosition=null;
  const lifetime=new AbortController();let inert=[];
  const tool=button('Поиск по книге','search',()=>open());tool.className='book-search-launch';tool.append(document.createTextNode('Поиск'));root.querySelector('.reading-tools')?.append(tool);
  const clearHighlight=()=>{highlight?.remove();highlight=null;};
@@ -112,11 +112,22 @@ export function installBookSearch(root){
  }
  function showNav(){
   if(nav)return;nav=el('div','book-search-nav');nav.setAttribute('role','region');nav.setAttribute('aria-label','Совпадения в книге');const bar=el('div','book-search-nav-bar'),label=button('Показать результаты поиска','search',open);label.className='book-search-query';label.append(el('span','',query));const count=el('output');count.setAttribute('aria-live','polite');
-  bar.append(label,count,button('Предыдущее совпадение','up',()=>go(active-1)),button('Следующее совпадение','down',()=>go(active+1)),button('Завершить поиск','close',()=>closeAll()));
-  const back=button('Вернуться к чтению',null,async()=>{if(navigating)return;const target=origin;closeAll(false);await frame();await frame();try{await restore(target);focusTool();}catch(error){console.error(error);}});back.className='book-search-return';nav.append(bar,back);root.append(nav);
+  bar.append(label,count,button('Предыдущее совпадение','up',()=>go(active-1)),button('Следующее совпадение','down',()=>go(active+1)),button('Завершить поиск','close',finishSearch));
+  const back=button('Вернуться к исходному месту',null,async()=>{if(navigating)return;const target=origin;closeAll(false);await frame();await frame();try{await restore(target);focusTool();}catch(error){console.error(error);}});back.textContent='Вернуться';back.className='book-search-return';nav.append(bar,back);root.append(nav);
  }
  function updateNav(){if(!nav)return;nav.querySelector('.book-search-query>span:last-child').textContent=query;nav.querySelector('output').textContent=`${active+1} / ${matches.length}`;nav.querySelector('[aria-label="Предыдущее совпадение"]').disabled=navigating||active<=0;nav.querySelector('[aria-label="Следующее совпадение"]').disabled=navigating||active>=matches.length-1;nav.querySelector('.book-search-return').disabled=navigating;nav.querySelector('[aria-label="Завершить поиск"]').disabled=navigating;nav.querySelector('[aria-label="Показать результаты поиска"]').disabled=navigating;}
- async function restore(position){const api=adapter(root);if(!api||!position)return;if(api.seek){await until(()=>{const view=root.querySelector('.reading-content .page-viewport'),api=adapter(root);return view&&api?.settled()&&Math.abs(api.state().height-view.clientHeight)<1;},lifetime.signal);await adapter(root).seek(position);await until(()=>{const current=adapter(root)?.state();return current?.chapter===position.chapter&&current.page===position.page&&adapter(root)?.settled();},lifetime.signal);}else await api.navigate(typeof position==='string'?position:position.cfi);}
+ async function finishSearch(){
+  if(navigating)return;
+  const current=adapter(root)?.position?.();
+  const same=activePosition&&current&&(current.cfi?current.cfi===activePosition.cfi:current.chapter===activePosition.chapter&&current.page===activePosition.page);
+  const match=same?matches[active]:null;
+  // Keep the found text as the anchor while removing the footer changes the
+  // page height. A close action never reads the pre-search origin.
+  const selected=match?.cfi?{...current,cfi:match.cfi}:match&&match.first.unit.cell===undefined?{...current,anchor:{block:match.first.unit.block,textNode:0,offset:match.first.offset}}:current;
+  closeAll(false);await frame();await frame();
+  try{await restore(selected,true);focusTool();}catch(error){if(!disposed)console.error('Libra search close:',error);}
+ }
+ async function restore(position,preserveAnchor=false){const api=adapter(root);if(!api||!position)return;if(api.seek){await until(()=>{const view=root.querySelector('.reading-content .page-viewport'),api=adapter(root);return view&&api?.settled()&&Math.abs(api.state().height-view.clientHeight)<1;},lifetime.signal);let page=position.page;if(preserveAnchor&&adapter(root).resume)page=adapter(root).resume(position);else await adapter(root).seek(position);await until(()=>{const current=adapter(root)?.state();return current?.chapter===position.chapter&&current.page===page&&adapter(root)?.settled();},lifetime.signal);}else await api.navigate(typeof position==='string'?position:position.cfi);}
  async function go(number){
   if(navigating||number<0||number>=matches.length)return;root.querySelector('.book-table-panel header button')?.click();navigating=true;const version=++navVersion,match=matches[number];
   closePanel();root.classList.add('book-search-browsing');showNav();updateNav();clearHighlight();
@@ -130,7 +141,7 @@ export function installBookSearch(root){
     try{renderer=api.render(host,match.chapter);const measured=await renderer.ready;const flow=measured.flow,a=matchBlock(flow,match.first.unit);if(!a)throw Error('Фрагмент недоступен');const point=textPoint(a,a.matches('.book-table-launch')?0:match.first.offset),range=document.createRange();range.setStart(point.node,Math.min(point.offset,Math.max(0,point.node.length-1)));range.setEnd(point.node,Math.min(point.node.length,point.offset+1));const rect=range.getClientRects()[0];if(!rect)throw Error('Не удалось определить страницу');const x=rect.left-flow.getBoundingClientRect().left,page=Math.max(0,Math.min(measured.count-1,Math.floor((x+12)/measured.stride)));if(version!==navVersion)return;await restore({chapter:match.chapter,page});}
     finally{renderer?.destroy();host.remove();}
    }
-   if(disposed||version!==navVersion)return;await frame();await frame();if(match.first.unit.cell!==undefined){const launch=root.querySelector(`.reading-content .book-flow [data-block-index="${match.first.unit.block}"].book-table-launch`);if(launch){launch.click();await frame();await frame();const cell=root.querySelectorAll('.book-table-panel td')[match.first.unit.cell],scroll=root.querySelector('.book-table-scroll');if(cell&&scroll)scroll.scrollTop=Math.max(0,cell.offsetTop-scroll.clientHeight/3);root.classList.add('book-search-browsing');}}active=number;paint(match);nav.querySelector('[aria-label="Показать результаты поиска"]')?.focus({preventScroll:true});
+   if(disposed||version!==navVersion)return;await frame();await frame();if(match.first.unit.cell!==undefined){const launch=root.querySelector(`.reading-content .book-flow [data-block-index="${match.first.unit.block}"].book-table-launch`);if(launch){launch.click();await frame();await frame();const cell=root.querySelectorAll('.book-table-panel td')[match.first.unit.cell],scroll=root.querySelector('.book-table-scroll');if(cell&&scroll)scroll.scrollTop=Math.max(0,cell.offsetTop-scroll.clientHeight/3);root.classList.add('book-search-browsing');}}active=number;activePosition=adapter(root)?.position?.();paint(match);nav.querySelector('[aria-label="Показать результаты поиска"]')?.focus({preventScroll:true});
   }catch(error){if(!disposed&&version===navVersion){open();status('Не удалось перейти. Попробуй ещё раз.');console.error('Libra search navigation:',error);}}
   finally{navigating=false;updateNav();}
  }

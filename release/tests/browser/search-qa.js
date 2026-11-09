@@ -24,14 +24,23 @@ try{
  assert(document.querySelectorAll('.book-search-result mark').length===2,format+': phrase crosses inline emphasis and ignores case');
  assert(!document.querySelector('.book-search-panel').getBoundingClientRect().right||document.querySelector('.book-search-panel').getBoundingClientRect().right<=root.getBoundingClientRect().right+1,format+': search fits reader width');
  if(params.get('scene')==='results'){out.textContent=JSON.stringify({status:'SCENE',results},null,2);throw {scene:true};}
- document.querySelectorAll('.book-search-result')[1].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent==='2 / 2');
- assert(source().position().chapter===1,format+': selected result navigates to chapter two');assert(source().position().page>0,format+': selected result navigates to an interior physical page');
+ const hitNumber=params.get('stay')==='same'?1:2;document.querySelectorAll('.book-search-result')[hitNumber-1].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent===`${hitNumber} / 2`);
+ assert(source().position().chapter===hitNumber-1,format+': selected result navigates to its chapter');assert(source().position().page>0,format+': selected result navigates to an interior physical page');
  assert(document.querySelectorAll('[data-search-highlight] i').length>0,format+': visible text is highlighted without text DOM mutation');
  const nav=document.querySelector('.book-search-nav').getBoundingClientRect(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount').getBoundingClientRect();assert(view.bottom<=nav.top+2,format+': navigation does not cover prose');
+ if(params.has('stay')){
+  const selected=source().position();findButton('Завершить поиск').click();await until(()=>!document.querySelector('.book-search-nav'));await pause(1200);
+  await until(()=>source().position().chapter===selected.chapter&&(format==='epub'?source().position().cfi!==initial.cfi:source().settled()));
+  assert(source().position().chapter===selected.chapter&&source().position().page>0,format+': Close stays at the found place, not the initial page');
+  const saved=source().position(),bookId=document.querySelector('.reading-root').dataset.bookId;
+  findButton('В библиотеку').click();await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===saved.chapter);await pause(500);
+  assert(source().position().chapter===saved.chapter&&source().position().page>0,format+': reopening preserves found position after closing search');
+  assert(errors.length===0,format+': no runtime errors '+errors.join('; '));out.textContent=JSON.stringify({status:'PASS',results},null,2);document.title='PASS: Libra search stays';throw {scene:true};
+ }
  if(params.get('scene')==='hit'){out.textContent=JSON.stringify({status:'SCENE',results},null,2);throw {scene:true};}
  findButton('Показать результаты поиска').click();await until(()=>document.querySelectorAll('.book-search-result').length===2);input('другой запрос');await until(()=>document.querySelector('.book-search-count')?.textContent==='Ничего не найдено');findButton('Закрыть поиск').click();assert(document.querySelector('.book-search-nav output')?.textContent==='2 / 2',format+': closing an edited query preserves active navigation');
  findButton('Предыдущее совпадение').click();await until(()=>document.querySelector('.book-search-nav output')?.textContent==='1 / 2');assert(source().position().chapter===0,format+': previous match returns to chapter one');
- findButton('Вернуться к чтению').click();await until(()=>{const returned=source().position();return !document.querySelector('.book-search-nav')&&returned.chapter===initial.chapter&&(format==='epub'?returned.cfi===initial.cfi:returned.page===initial.page);});assert(true,format+': return restores original position');
+ findButton('Вернуться к исходному месту').click();await until(()=>{const returned=source().position();return !document.querySelector('.book-search-nav')&&returned.chapter===initial.chapter&&(format==='epub'?returned.cfi===initial.cfi:returned.page===initial.page);});assert(true,format+': return restores original position');
  if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();findButton('Поиск по книге').click();input('неттакогослова');await until(()=>document.querySelector('.book-search-count')?.textContent==='Ничего не найдено');assert(document.querySelectorAll('.book-search-result').length===0,format+': empty results');
  input('Это предложение для поиска.');await until(()=>document.querySelectorAll('.book-search-result').length===2);assert(true,format+': full-sentence search');
  input('неттакогослова');input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);assert(true,format+': rapid query replacement cancels stale work');
