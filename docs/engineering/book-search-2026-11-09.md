@@ -74,7 +74,7 @@ the query generation. Readable non-linear EPUB spine sections are included.
 FB2 table targets account for the preceding cells' text. Existing literal
 normalization and UTF-16 source mappings are retained.
 
-Validation: release Node tests (48), root Node tests (187), preserved-release
+Validation: release Node tests (50), root Node tests (187), preserved-release
 security/footnote/reading-time tests (38), and release core-preservation check.
 Regression tests were observed failing before the corresponding repairs.
 The offline manifest was regenerated with exact asset hashes.
@@ -96,3 +96,10 @@ in addition to the two search adapters; the remaining original core is intact.
 A further RED→GREEN regression covers search before FB2 parsing completes: the
 index builder now waits for chapters (or the EPUB Book) rather than caching an
 empty index during startup. Closing search cancels this wait.
+
+Repeated EPUB reopen/resize revealed that saving a rendered page-start CFI
+is insufficient: the match can move onto the next physical page under new
+geometry. The EPUB adapter now persists the exact selected source CFI through
+the existing guarded storage function and updates its retained resize target.
+Cancelled edge gestures compare physical page/chapter movement, so an unchanged
+page-start CFI notification does not discard that exact selected source.

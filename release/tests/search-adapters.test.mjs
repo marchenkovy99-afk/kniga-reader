@@ -28,3 +28,10 @@ test('returning to the library waits for fresh persisted book positions',async()
  vm.runInContext((libraryNavigationAdapters?.[0]?.[1]||'function b(){a(null),m()}')+';globalThis.back=b',ctx);
  const operation=ctx.back();assert.equal(opened,false,'stale library must not be exposed before progress reload');finish();await operation;assert.equal(opened,true);
 });
+
+test('EPUB persists the exact selected CFI rather than the physical page start',async()=>{
+ let saved;const context=vm.createContext({element:{},f:{current:{chapter:1,page:3,cfi:'page-start'}},u:{current:'page-start'},e:{id:'book'},ue:async(id,position)=>saved={id,position},Date});
+ vm.runInContext(adapters[1][1]+'()=>({})}',context);
+ await context.element.libraEpubPreview.save({chapter:1,page:3,cfi:'exact-match-range'});
+ assert.equal(saved.id,'book');assert.equal(saved.position.cfi,'exact-match-range');assert.equal(context.u.current,'exact-match-range');assert.equal(context.f.current.cfi,'exact-match-range');
+});

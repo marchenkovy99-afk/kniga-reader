@@ -221,7 +221,7 @@ export function installBookSearch(root){
  const viewport=root.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(viewport)observer?.observe(viewport);
  root.ownerDocument.fonts?.addEventListener('loadingdone',onResize);
  window.visualViewport?.addEventListener('resize',onResize);
- const samePosition=(a,b)=>a&&b&&(a.cfi||b.cfi?a.cfi===b.cfi:a.chapter===b.chapter&&a.page===b.page);
+ const samePosition=(a,b)=>a&&b&&(Number.isInteger(a.chapter)&&Number.isInteger(b.chapter)&&!root.matches('.reading-scroll-safe')?a.chapter===b.chapter&&a.page===b.page:a.cfi===b.cfi);
  function resolveManual(current){if(manualOrigin){manualReading=manualReading||!samePosition(manualOrigin,current);manualOrigin=null;}}
  const recordManual=()=>{if(!panel&&!navigating&&!manualOrigin)manualOrigin=readPosition();};
  const edge=(target,x)=>{const box=target.getBoundingClientRect(),bounds=box.width?box:root.getBoundingClientRect(),ratio=(x-bounds.left)/bounds.width;return ratio<.28||ratio>.72;};

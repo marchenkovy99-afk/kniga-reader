@@ -54,3 +54,7 @@ test('a missing live text range is an error rather than successful navigation',a
 test('search cannot reopen while Close is still restoring the reading layout',async()=>{
  const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.ready(false);f.root.querySelector('[aria-label="Завершить поиск"]').click();const launch=f.root.querySelector('.book-search-launch');assert.equal(launch.disabled,true);launch.click();assert.equal(f.root.querySelector('.book-search-panel'),null);f.ready(true);await f.wait(()=>!launch.disabled);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
 });
+
+test('an edge gesture without a physical page change preserves the exact match',async()=>{
+ const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true,clientX:380}));f.position({chapter:1,page:6,cfi:'same-page-start'});f.root.querySelector('[aria-label="Завершить поиск"]').click();await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
+});
