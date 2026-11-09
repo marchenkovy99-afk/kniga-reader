@@ -74,7 +74,7 @@ the query generation. Readable non-linear EPUB spine sections are included.
 FB2 table targets account for the preceding cells' text. Existing literal
 normalization and UTF-16 source mappings are retained.
 
-Validation: release Node tests (50), root Node tests (187), preserved-release
+Validation: release Node tests (51), root Node tests (187), preserved-release
 security/footnote/reading-time tests (38), and release core-preservation check.
 Regression tests were observed failing before the corresponding repairs.
 The offline manifest was regenerated with exact asset hashes.
@@ -103,3 +103,10 @@ geometry. The EPUB adapter now persists the exact selected source CFI through
 the existing guarded storage function and updates its retained resize target.
 Cancelled edge gestures compare physical page/chapter movement, so an unchanged
 page-start CFI notification does not discard that exact selected source.
+
+Startup EPUB relocation must retain the saved source CFI while the first
+geometry resize is queued. Two narrowly matched startup substitutions preserve
+that CFI until loaded; later ordinary relocations still update it. A regression
+test executes the actual compiled commit handler in both startup and loaded
+states. Browser reopen assertions now wait for fresh stable geometry and the
+expected visible text; a momentary ready report is not an acceptance signal.

@@ -9,3 +9,9 @@ export const searchTags='    <link rel="stylesheet" href="/book-search.css">\n  
 export const libraryNavigationAdapters=[
  ['function b(){a(null),m()}', 'async function b(){await m();a(null)}']
 ];
+// The first location report is a physical page start under provisional geometry.
+// Keep the saved source target for the queued first resize; later relocations win.
+export const epubOpeningAdapters=[
+ ['if(!n.cfi||!c.current)return;if(u.current=n.cfi,re({...n', 'if(!n.cfi||!c.current)return;if(u.current=!g&&e.position?.cfi?e.position.cfi:n.cfi,re({...n'],
+ ['cfi:n.cfi,layout:le.current?void 0:P.current,updatedAt:Date.now()', 'cfi:!g&&e.position?.cfi?e.position.cfi:n.cfi,layout:le.current?void 0:P.current,updatedAt:Date.now()']
+];

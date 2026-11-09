@@ -41,7 +41,7 @@ async function stress(format){
   }else{
    await click('Завершить поиск');await until(()=>!document.querySelector('.book-search-nav'));await engineStable();await pause(2000);
    assert(source().position().chapter===hit&&visiblePhrase(),format+': Close preserves exact text after two seconds '+cycle);
-   const bookId=document.querySelector('.reading-root').dataset.bookId;await click('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===hit&&source().settled?.()!==false);await pause(500);
+   const bookId=document.querySelector('.reading-root').dataset.bookId;await click('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===hit);await engineStable();await until(visiblePhrase);await pause(500);
    assert(visiblePhrase(),format+': reopened book shows found text '+cycle);
   }
  }

@@ -35,3 +35,9 @@ test('EPUB persists the exact selected CFI rather than the physical page start',
  await context.element.libraEpubPreview.save({chapter:1,page:3,cfi:'exact-match-range'});
  assert.equal(saved.id,'book');assert.equal(saved.position.cfi,'exact-match-range');assert.equal(context.u.current,'exact-match-range');assert.equal(context.f.current.cfi,'exact-match-range');
 });
+
+test('EPUB startup relocation preserves the saved source CFI through first layout',async()=>{
+ const {readFileSync}=await import('node:fs');const source=readFileSync(new URL('../src/assets/index-DMkgLOVA.js',import.meta.url),'utf8');const start=source.indexOf('F.current=t=>{let n=As(t)',500000),end=source.indexOf(',_e.current=',start);assert.ok(start>0&&end>start);
+ const fn=source.slice(start+'F.current='.length,end);let saved;const ctx=vm.createContext({As:()=>({index:1,page:3,total:10,cfi:'page-start'}),c:{current:true},u:{current:'saved-range'},e:{id:'book',position:{cfi:'saved-range',fraction:.2}},g:false,re:()=>{},ae:()=>{},_s:()=>0,D:[],le:{current:true},P:{current:'layout'},he:{current:{key:'layout',values:{1:10}}},ne:{current:[{index:1}]},f:{current:{}},ue:async(id,position)=>saved=position,Date});
+ vm.runInContext('globalThis.commit='+fn,ctx);ctx.commit({});assert.equal(ctx.u.current,'saved-range');assert.equal(saved.cfi,'saved-range');ctx.g=true;ctx.commit({});assert.equal(saved.cfi,'page-start','real later relocations must remain navigable');
+});
