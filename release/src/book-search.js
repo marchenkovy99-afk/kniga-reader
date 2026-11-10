@@ -166,35 +166,33 @@ export function installBookSearch(root){
   bar.append(label,count,button('Предыдущее совпадение','up',()=>go(active-1)),button('Следующее совпадение','down',()=>go(active+1)),button('Завершить поиск','close',finishSearch));
   const back=button('Вернуться к исходному месту',null,async()=>{if(navigating)return;const target=origin;setNavigating(true);closeAll(false);try{await ready();await restore(target);focusTool();}catch(error){if(!disposed&&error.name!=='AbortError'){setNavigating(false);open();status('Не удалось вернуться. Попробуй ещё раз.');console.error(error);}}finally{setNavigating(false);updateNav();}});back.textContent='Вернуться';back.className='book-search-return';nav.append(bar,back);root.append(nav);
  }
- function updateNav(){if(!nav)return;nav.querySelector('.book-search-query>span:last-child').textContent=query;nav.querySelector('output').textContent=`${active+1} / ${matches.length}`;nav.querySelector('[aria-label="Предыдущее совпадение"]').disabled=navigating||active<=0;nav.querySelector('[aria-label="Следующее совпадение"]').disabled=navigating||active>=matches.length-1;nav.querySelector('.book-search-return').disabled=navigating;nav.querySelector('[aria-label="Завершить поиск"]').disabled=navigating;nav.querySelector('[aria-label="Показать результаты поиска"]').disabled=navigating;}
- async function finishSearch(){
-  if(navigating)return;setNavigating(true);
-  try{
-   await ready();const current=readPosition();resolveManual(current);
-   const selected=!manualReading&&matches[active]?targetFor(matches[active]):current;
-   closeAll(false);await restore(selected);focusTool();
-  }catch(error){if(!disposed&&error.name!=='AbortError'){setNavigating(false);open();status('Не удалось сохранить место. Повтори переход.');console.error('Libra search close:',error);}}
-  finally{setNavigating(false);updateNav();}
+ function updateNav(){if(!nav)return;nav.querySelector('.book-search-query>span:last-child').textContent=query;nav.querySelector('output').textContent=`${active+1} / ${matches.length}`;nav.querySelector('[aria-label="Предыдущее совпадение"]').disabled=navigating||active<=0;nav.querySelector('[aria-label="Следующее совпадение"]').disabled=navigating||active>=matches.length-1;nav.querySelector('.book-search-return').disabled=navigating;nav.querySelector('[aria-label="Завершить поиск"]').disabled=false;nav.querySelector('[aria-label="Показать результаты поиска"]').disabled=navigating;}
+ function finishSearch(){
+  // The capsule is an overlay: dismissal must not wait for, resize or seek the reader.
+  closeAll(false);setNavigating(false);focusTool();
  }
 
  async function restore(position){
-  if(!position)return;await ready();const api=adapter(root),version=navVersion;
+  if(!position)return;const version=navVersion;await ready(version);const api=adapter(root);
   if(api.seek){
    const result=await api.seek(position);await ready(version);
-   await until(()=>{const state=adapter(root)?.state();return state?.chapter===position.chapter&&(position.anchor||state.page===(result??position.page))&&adapter(root)?.settled();},lifetime.signal);
+   await until(()=>{if(disposed||version!==navVersion)throw new DOMException('Search navigation cancelled','AbortError');const state=adapter(root)?.state();return state?.chapter===position.chapter&&(position.anchor||state.page===(result??position.page))&&adapter(root)?.settled();},lifetime.signal);
    if(adapter(root)?.safe?.()&&position.anchor){const view=root.querySelector('.reading-content .page-viewport'),range=sourceRange(position);if(range)view.scrollTop+=range.getBoundingClientRect().top-view.getBoundingClientRect().top;await frame();}
   }else{await api.navigate(typeof position==='string'?position:position.cfi);await ready(version);}
+  if(disposed||version!==navVersion)throw new DOMException('Search navigation cancelled','AbortError');
   const exact=typeof position==='string'?{cfi:position}:position;
   if((exact.anchor||exact.cfi)&&!rangeVisible(sourceRange(exact)))throw Error('Не удалось показать выбранный текст');
   await adapter(root)?.save?.({...readPosition(),...exact});
  }
 
  async function locate(match){
-  await restore(targetFor(match));
+  const version=navVersion;await restore(targetFor(match));
+  if(disposed||version!==navVersion)throw new DOMException('Search navigation cancelled','AbortError');
   if(match.first.unit.cell!==undefined){
    const launch=root.querySelector(`.reading-content .book-flow [data-block-index="${match.first.unit.block}"].book-table-launch`);
    if(launch){launch.click();await frame();const cell=root.querySelectorAll('.book-table-panel td')[match.first.unit.cell],scroll=root.querySelector('.book-table-scroll');if(cell&&scroll)scroll.scrollTop=Math.max(0,cell.offsetTop-scroll.clientHeight/3);}
   }
+  if(disposed||version!==navVersion)throw new DOMException('Search navigation cancelled','AbortError');
   if(!paint(match))throw Error('Найденный текст ещё не появился на странице');
  }
  async function go(number){
@@ -207,22 +205,22 @@ export function installBookSearch(root){
    active=number;manualReading=false;manualOrigin=null;
    nav.querySelector('[aria-label="Показать результаты поиска"]')?.focus({preventScroll:true});
   }catch(error){if(!disposed&&version===navVersion&&error.name!=='AbortError'){setNavigating(false);open();status('Не удалось перейти. Попробуй ещё раз.');console.error('Libra search navigation:',error);}}
-  finally{setNavigating(false);updateNav();}
+  finally{if(version===navVersion){setNavigating(false);updateNav();}}
  }
- let resizePending=false,repairing=false;
+ let resizePending=false,repairing=0;
  function onResize(){
   if(disposed||active<0||!nav||panel)return;
-  clearHighlight();resizePending=true;if(repairing||disposed)return;repairing=true;
+  clearHighlight();resizePending=true;const version=navVersion;if(repairing===version||disposed)return;repairing=version;
   (async()=>{
-   while(resizePending&&!disposed){
-    resizePending=false;await ready();
+   while(resizePending&&!disposed&&version===navVersion){
+    resizePending=false;await ready(version);
     if(navigating){await frame();resizePending=true;continue;}
     if(active<0||panel||!nav)continue;
     resolveManual(readPosition());if(manualReading){paint(matches[active]);continue;}
     setNavigating(true);updateNav();
-    try{await locate(matches[active]);}finally{setNavigating(false);updateNav();}
+    try{await locate(matches[active]);}finally{if(version===navVersion){setNavigating(false);updateNav();}}
    }
-  })().catch(error=>{if(!disposed&&error.name!=='AbortError'){setNavigating(false);open();status('Страница изменилась. Выбери совпадение ещё раз.');console.error('Libra search resize:',error);}}).finally(()=>{repairing=false;});
+  })().catch(error=>{if(!disposed&&version===navVersion&&error.name!=='AbortError'){setNavigating(false);open();status('Страница изменилась. Выбери совпадение ещё раз.');console.error('Libra search resize:',error);}}).finally(()=>{if(repairing===version)repairing=0;});
  }
  window.addEventListener('resize',onResize);
  const Resize=root.ownerDocument.defaultView.ResizeObserver;

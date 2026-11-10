@@ -18,19 +18,19 @@ async function fixture({collapsedOrigin=false}={}){
  const {installBookSearch}=await import('../src/book-search.js');const dispose=installBookSearch(root);
  const wait=async fn=>{for(let i=0;i<160;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('timeout');};
  async function select(){root.querySelector('.book-search-launch').click();const input=root.querySelector('input');input.value='слово';input.dispatchEvent(new w.Event('input'));await wait(()=>root.querySelector('.book-search-result'));root.querySelector('.book-search-result').click();}
- return {dom,root,visited,wait,select,ready:value=>ready=value,position:value=>position=value,range:value=>activeRange=value,dispose(){dispose();dom.window.close();}};
+ return {dom,root,visited,wait,select,ready:value=>ready=value,current:()=>({...position}),position:value=>position=value,range:value=>activeRange=value,dispose(){dispose();dom.window.close();}};
 }
 
 test('navigation waits for pending renderer resize before displaying a match',async()=>{
  const f=await fixture();try{f.ready(false);await f.select();await new Promise(r=>setTimeout(r,40));assert.deepEqual(f.visited,[],'display must wait for renderer readiness');f.ready(true);await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');assert.deepEqual(f.visited,['found']);}finally{f.dispose();}
 });
 
-test('closing search after automatic repagination preserves selected CFI',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.position({chapter:1,page:5,cfi:'page-start-after-resize'});f.root.querySelector('[aria-label="Завершить поиск"]').click();await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
+test('Close removes the overlay synchronously without navigating or changing the current place',async()=>{
+ const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');const before=f.current();f.root.querySelector('[aria-label="Завершить поиск"]').click();assert.equal(f.root.querySelector('.book-search-nav'),null);assert.deepEqual(f.current(),before);await new Promise(r=>setTimeout(r,40));assert.deepEqual(f.visited,['found'],'Close must not redisplay the book');}finally{f.dispose();}
 });
 
-test('closing search after manual reading keeps the manually selected place',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true}));f.position({chapter:1,page:7,cfi:'manual-page'});f.root.querySelector('[aria-label="Завершить поиск"]').click();await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'manual-page');}finally{f.dispose();}
+test('Close while a manual page is loading dismisses immediately and lets that turn finish',async()=>{
+ const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.ready(false);f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true,clientX:380}));f.root.querySelector('[aria-label="Завершить поиск"]').click();assert.equal(f.root.querySelector('.book-search-nav'),null);f.position({chapter:1,page:7,cfi:'manual-page'});f.ready(true);await new Promise(r=>setTimeout(r,40));assert.equal(f.current().cfi,'manual-page');assert.deepEqual(f.visited,['found']);}finally{f.dispose();}
 });
 
 test('a viewport resize keeps the selected result until the reader navigates manually',async()=>{
@@ -41,24 +41,12 @@ test('idle resize never opens search when the renderer cannot settle',async t=>{
  const f=await fixture();try{f.ready(false);let time=0;t.mock.method(performance,'now',()=>time+=13000);f.dom.window.dispatchEvent(new f.dom.window.Event('resize'));await new Promise(r=>setTimeout(r,30));assert.equal(f.root.querySelector('.book-search-panel'),null);}finally{t.mock.restoreAll();f.dispose();}
 });
 
-test('Close waits for a pending manual EPUB turn before capturing its position',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true,clientX:380}));f.ready(false);f.root.querySelector('[aria-label="Завершить поиск"]').click();setTimeout(()=>{f.position({chapter:1,page:7,cfi:'manual-after-queue'});f.ready(true);},40);await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'manual-after-queue');}finally{f.dispose();}
-});
-
-test('a center tap does not discard the chosen match anchor during resize',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true,clientX:195}));f.position({chapter:1,page:5,cfi:'automatic-reflow'});f.root.querySelector('[aria-label="Завершить поиск"]').click();await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
-});
-
 test('a missing live text range is an error rather than successful navigation',async t=>{t.mock.method(console,'error',()=>{});
  const f=await fixture();try{f.range(null);await f.select();await new Promise(r=>setTimeout(r,60));assert.ok(f.root.querySelector('.book-search-panel'),'failed navigation must offer retry');assert.notEqual(f.root.querySelector('.book-search-nav output')?.textContent,'1 / 1');}finally{f.dispose();}
 });
 
-test('search cannot reopen while Close is still restoring the reading layout',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.ready(false);f.root.querySelector('[aria-label="Завершить поиск"]').click();const launch=f.root.querySelector('.book-search-launch');assert.equal(launch.disabled,true);launch.click();assert.equal(f.root.querySelector('.book-search-panel'),null);f.ready(true);await f.wait(()=>!launch.disabled);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
-});
-
-test('an edge gesture without a physical page change preserves the exact match',async()=>{
- const f=await fixture();try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('.reading-zones').dispatchEvent(new f.dom.window.MouseEvent('click',{bubbles:true,clientX:380}));f.position({chapter:1,page:6,cfi:'same-page-start'});f.root.querySelector('[aria-label="Завершить поиск"]').click();await f.wait(()=>f.visited.length>=2);assert.equal(f.visited.at(-1),'found');}finally{f.dispose();}
+test('Close can cancel a pending search navigation without painting stale highlights into a new session',async()=>{
+ const f=await fixture();try{f.ready(false);await f.select();const close=f.root.querySelector('[aria-label="Завершить поиск"]');assert.equal(close.disabled,false,'Close must stay available while locating');close.click();assert.equal(f.root.querySelector('.book-search-nav'),null);const launch=f.root.querySelector('.book-search-launch');assert.equal(launch.disabled,false);launch.click();assert.ok(f.root.querySelector('.book-search-panel'));f.ready(true);await new Promise(r=>setTimeout(r,60));assert.equal(f.root.querySelector('[data-search-highlight]'),null);assert.deepEqual(f.visited,[]);}finally{f.dispose();}
 });
 
  test('Return accepts a collapsed EPUB source CFI by checking its adjacent character',async t=>{t.mock.method(console,'error',()=>{});

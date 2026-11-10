@@ -2,7 +2,6 @@
 .book-search-icon{display:inline-flex;flex:none;align-items:center;justify-content:center}
 .book-search-open .reading-zones{pointer-events:none!important}
 .book-search-open :is(.reading-top,.reading-bottom,.reading-status),.book-search-browsing :is(.reading-bottom,.reading-status){visibility:hidden!important;pointer-events:none!important}
-.book-search-browsing{--reading-bottom-inset:calc(var(--reader-safe-bottom) + 106px)!important}
 .book-search-panel{position:absolute;inset:0;z-index:80;background:var(--bg);color:var(--fg);padding:calc(var(--reader-safe-top) + 24px) 24px calc(var(--reader-safe-bottom) + 16px);display:flex;flex-direction:column;max-width:820px;margin-inline:auto;font:16px/1.45 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
 html.libra-ios-standalone .book-search-panel{padding-top:calc(var(--reader-safe-top) + 42px)}
 .book-search-header{display:flex;align-items:center;justify-content:space-between;gap:12px}

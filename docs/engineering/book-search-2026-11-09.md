@@ -132,3 +132,34 @@ positions on failure, and a manual turn/close/reopen scenario.
 
 Physical iPhone/Safari/PWA validation remains outstanding. Test EPUBs are
 controlled fixtures; no personal EPUB or authenticated cloud account was used.
+
+## Overlay and immediate dismissal correction, 10 November 2026
+
+The user's follow-up supersedes the earlier reserved-space capsule design.
+Production reproduction measured a 106px reader inset and a capsule that was
+still mounted immediately after Close. The inset changed live geometry, caused
+pagination and made Close wait for layout plus an unnecessary seek.
+
+Removed the search-specific bottom inset. The existing absolutely positioned
+capsule now overlays the unchanged reader viewport. Close synchronously removes
+search UI and clears its navigation state; it does not seek, repaginate or wait
+for the renderer. The normal reader continues persisting manual page turns.
+Close stays enabled during navigation. Navigation versions prevent cancelled
+lookups, table highlighting and resize work from reopening UI, painting stale
+highlights, writing a stale target or clearing a newer session's busy state.
+Explicit Return retains source-aware restoration.
+
+Four regression assertions failed against the prior implementation and pass
+with this correction. The release suite has 49 passing tests; obsolete Close
+re-seek expectations were replaced with immediate-dismissal and no-navigation
+contracts. Root suite: 187 passing tests. Core-preservation and offline hash
+verification pass. No original compiled core changes were required.
+
+The browser overlay scenario measures viewport dimensions, source layout key
+and computed font before search, while browsing a hit and after dismissal;
+it also checks word/phrase/sentence search, same-handler Close, reopening the
+book, explicit Return and cancellation during lookup. Both EPUB and 320px FB2
+passed 27 checks on the overlay implementation. Final cancellation guards are
+additionally checked by the complete regression suite and final browser QA.
+Physical iPhone/Safari/PWA checks remain unavailable.
+Final full browser scenario: 17/17 PASS each for EPUB and 320px FB2 on dpl_HCRotvshcskeXb1gZLqbvdAFDUDj, including literal word/sentence search, stale-query cancellation, previous match, explicit Return and unchanged layout. No runtime errors in either scenario.

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 
-for(const action of ['close','return'])test(action==='close'?'closing search preserves selected CFI after footer resize':'only Return restores the pre-search origin',async()=>{
+for(const action of ['close','return'])test(action==='close'?'closing an overlay preserves the selected CFI without another navigation':'only Return restores the pre-search origin',async()=>{
  const dom=new JSDOM('<div class="reading-root"><div class="reading-content"><div class="epub-mount"></div></div><nav class="reading-tools"></nav><div class="reading-title">Книга</div></div>',{url:'https://fixture.test',pretendToBeVisual:true});
  const w=dom.window,root=w.document.querySelector('.reading-root');Object.assign(globalThis,{window:w,document:w.document,MutationObserver:w.MutationObserver,requestAnimationFrame:cb=>setTimeout(cb,0)});
  const doc=new w.DOMParser().parseFromString('<html><body><p>Найденное слово</p></body></html>','text/html');
@@ -16,6 +16,6 @@ for(const action of ['close','return'])test(action==='close'?'closing search pre
   root.querySelector('.book-search-launch').click();const input=root.querySelector('input');input.value='слово';input.dispatchEvent(new w.Event('input'));
   await wait(()=>root.querySelector('.book-search-result'));root.querySelector('.book-search-result').click();await wait(()=>root.querySelector('.book-search-nav output')?.textContent==='1 / 1');
   root.querySelector(action==='close'?'[aria-label="Завершить поиск"]':'[aria-label="Вернуться к исходному месту"]').click();await wait(()=>!root.querySelector('.book-search-nav'));await new Promise(r=>setTimeout(r,40));
-  const target=action==='close'?'found':'origin';assert.deepEqual(navigated,['found',target]);assert.equal(position.cfi,target);
+  const target=action==='close'?'found':'origin';assert.deepEqual(navigated,action==='close'?['found']:['found',target]);assert.equal(position.cfi,target);
  }finally{dispose();dom.window.close();}
 });

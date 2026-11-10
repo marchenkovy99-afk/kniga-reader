@@ -8,8 +8,11 @@ the complete book for literal words, phrases and sentences, case-insensitively,
 treating ё/е and whitespace consistently. Show chapter titles, contextual excerpts
 and highlighted matches. Selecting a result navigates to the actual physical
 FB2 page or EPUB CFI. A compact bottom capsule provides a match counter,
-previous/next, results and close controls. Reserve space rather than cover prose.
-Return to reading restores the position captured before search.
+previous/next, results and close controls. As clarified by the user on 10 November,
+the capsule overlays the existing page without changing its viewport, font or
+pagination. Close dismisses it synchronously and preserves the current reading
+place, including manual page turns. Only the explicit Return button restores
+the position captured before search.
 
 The user explicitly asked to preserve the existing app's design. Existing themes,
 typography, user books, cloud/auth, selection, footnotes and gesture fixes remain.

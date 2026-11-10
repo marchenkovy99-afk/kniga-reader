@@ -8,5 +8,5 @@ const hashes=Object.fromEntries(urls.map(path=>[path,hash(readFileSync(root+path
 const build=hash(JSON.stringify(hashes)).slice(0,16);
 sw=sw.replace(/const CACHE_NAME = CACHE_PREFIX \+ '[^']+';/,`const CACHE_NAME = CACHE_PREFIX + '${build}';`).replace(/const PRECACHE_HASHES = .*;/,`const PRECACHE_HASHES = ${JSON.stringify(hashes)};`);
 writeFileSync(root+'/sw.js',sw);
-const release=JSON.parse(readFileSync(root+'/release.json'));Object.assign(release,{release:'2026-11-10-epub-search-verification',repairRevision:21,offlineBuild:build,pageTurnsSha256:hash(readFileSync(root+'/page-turns.js'))});if(!release.features.includes('local full-book word and phrase search'))release.features.push('local full-book word and phrase search');writeFileSync(root+'/release.json',JSON.stringify(release));
+const release=JSON.parse(readFileSync(root+'/release.json'));Object.assign(release,{release:'2026-11-10-search-overlay',repairRevision:22,offlineBuild:build,pageTurnsSha256:hash(readFileSync(root+'/page-turns.js'))});if(!release.features.includes('local full-book word and phrase search'))release.features.push('local full-book word and phrase search');writeFileSync(root+'/release.json',JSON.stringify(release));
 console.log('Pinned offline build',build,urls.length,'assets');

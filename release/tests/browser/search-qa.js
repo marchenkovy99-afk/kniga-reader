@@ -30,6 +30,33 @@ function positionVisible(position){
 async function engineStable(){
  let since=0,last='';await until(()=>{const api=source(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!api||!view||api.settled?.()===false||document.querySelector('.reading-root')?.dataset.searchNavigating)return since=0;const state=api.state(),geometry=state.geometry||state,key=state.key+':'+view.clientHeight+':'+view.clientWidth;if(geometry.height!==undefined&&Math.abs(geometry.height-view.clientHeight)>1||geometry.width!==undefined&&Math.abs(geometry.width-view.clientWidth)>1||document.querySelector('.book-search-nav')&&findButton('Завершить поиск')?.disabled){since=0;return false;}if(last!==key){last=key;since=0;}if(!since)since=performance.now();return performance.now()-since>700;});
 }
+function layoutSnapshot(){
+ const view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount'),rect=view.getBoundingClientRect();
+ const content=view.classList.contains('epub-mount')?view.querySelector('iframe')?.contentDocument?.body:view.querySelector('.book-flow');
+ const css=content&&content.ownerDocument.defaultView.getComputedStyle(content);
+ return {width:rect.width,height:rect.height,top:rect.top,left:rect.left,key:source().state().key,font:css&&[css.fontSize,css.lineHeight,css.fontFamily,css.letterSpacing].join('|')};
+}
+async function overlayScenario(format){
+ const baseline=layoutSnapshot(),sameLayout=()=>JSON.stringify(layoutSnapshot())===JSON.stringify(baseline),closeTimes=[];
+ for(const [cycle,query] of ['рукописи','РУКОПИСИ не горят','Это предложение для поиска.'].entries()){
+  if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();
+  await clickButton('Поиск по книге');input(query);await until(()=>document.querySelectorAll('.book-search-result').length===2);
+  assert(sameLayout(),format+': opening search preserves viewport and font '+cycle);
+  document.querySelectorAll('.book-search-result')[cycle%2].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent===`${cycle%2+1} / 2`&&!document.querySelector('.reading-root').dataset.searchNavigating);await engineStable();
+  assert(visiblePhrase(),format+': found text is visible '+cycle);
+  assert(sameLayout(),format+': capsule preserves viewport, pagination key and font '+cycle);
+  const nav=document.querySelector('.book-search-nav'),v=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount').getBoundingClientRect();
+  assert(getComputedStyle(nav).position==='absolute'&&nav.getBoundingClientRect().top<v.bottom,format+': capsule overlays the existing page '+cycle);
+  const before=source().position(),started=performance.now();findButton('Завершить поиск').click();closeTimes.push(performance.now()-started);
+  assert(!document.querySelector('.book-search-nav'),format+': Close removes capsule in the click handler '+cycle);
+  assert(JSON.stringify(source().position())===JSON.stringify(before)&&sameLayout(),format+': Close does not seek or repaginate '+cycle);
+  await engineStable();assert(visiblePhrase()&&!document.querySelector('.book-search-panel'),format+': no delayed return or error after Close '+cycle);
+  if(cycle===1){const bookId=document.querySelector('.reading-root').dataset.bookId;await clickButton('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===1);await engineStable();await until(visiblePhrase);assert(visiblePhrase(),format+': library reopen retains found text');}
+ }
+ const origin=source().position();if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();await clickButton('Поиск по книге');input('рукописи не горят');await until(()=>document.querySelectorAll('.book-search-result').length===2);document.querySelectorAll('.book-search-result')[1].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent==='2 / 2'&&!document.querySelector('.reading-root').dataset.searchNavigating);await clickButton('Вернуться к исходному месту');await until(()=>!document.querySelector('.book-search-nav'));await engineStable();assert(source().position().chapter===origin.chapter&&(format==='epub'?positionVisible(origin):source().position().page===origin.page),format+': only Return restores origin');
+ if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();await clickButton('Поиск по книге');input('рукописи');await until(()=>document.querySelectorAll('.book-search-result').length===2);document.querySelector('.book-search-result').click();const cancel=findButton('Завершить поиск');assert(cancel&&!cancel.disabled,format+': Close remains available during navigation');cancel.click();assert(!document.querySelector('.book-search-nav'),format+': pending navigation is dismissed synchronously');await engineStable();assert(!document.querySelector('.book-search-panel')&&!document.querySelector('[data-search-highlight]'),format+': cancelled navigation cannot resurrect UI');
+ assert(errors.length===0,format+': no runtime errors '+errors.join('; '));out.textContent=JSON.stringify({status:'PASS',format,closeTimesMs:closeTimes,baseline,results},null,2);document.title='PASS: Libra search overlay '+format;
+}
 async function stress(format){
  const click=async name=>{const button=await until(()=>{const b=findButton(name);return b&&!b.disabled?b:null;});button.click();};
  for(let cycle=0;cycle<20;cycle++){
@@ -58,7 +85,7 @@ async function stress(format){
 try{
  const format=params.get('format')||'fb2';await importBook(format);if(params.has('stress')){await stress(format);throw {scene:true};}
  if(params.get('theme')){document.querySelector('.reading-status').click();await clickButton('Текст');await until(()=>document.querySelector(`.theme-swatch[data-option="${params.get('theme')}"]`));document.querySelector(`.theme-swatch[data-option="${params.get('theme')}"]`).click();document.querySelector('.sheet-scrim:not(.sheet-exiting) [aria-label="Закрыть"]').click();await pause(400);}
- await engineStable();const initial=source().position();
+ await engineStable();if(params.has('overlay')){await overlayScenario(format);throw {scene:true};}const baselineLayout=layoutSnapshot(),initial=source().position();
  if(!document.querySelector('.reading-bottom.visible'))document.querySelector('.reading-status').click();await until(()=>findButton('Поиск по книге'));await clickButton('Поиск по книге');await until(()=>document.querySelector('.book-search-panel'));
  const panel=document.querySelector('.book-search-panel'),root=document.querySelector('.reading-root');
  assert(getComputedStyle(panel).backgroundColor===getComputedStyle(root).backgroundColor,format+': panel uses current reader background');
@@ -69,7 +96,7 @@ try{
  const hitNumber=params.get('stay')==='same'?1:2;document.querySelectorAll('.book-search-result')[hitNumber-1].click();await until(()=>document.querySelector('.book-search-nav output')?.textContent===`${hitNumber} / 2`);
  assert(source().position().chapter===hitNumber-1,format+': selected result navigates to its chapter');assert(source().position().page>0,format+': selected result navigates to an interior physical page');
  assert(document.querySelectorAll('[data-search-highlight] i').length>0,format+': visible text is highlighted without text DOM mutation');
- const nav=document.querySelector('.book-search-nav').getBoundingClientRect(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount').getBoundingClientRect();assert(view.bottom<=nav.top+2,format+': navigation does not cover prose');
+ const nav=document.querySelector('.book-search-nav').getBoundingClientRect(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount').getBoundingClientRect();assert(nav.top<view.bottom&&JSON.stringify(layoutSnapshot())===JSON.stringify(baselineLayout),format+': navigation overlays text without changing layout');
  if(params.has('stay')){
   const selected=source().position();await clickButton('Завершить поиск');await until(()=>!document.querySelector('.book-search-nav'));await pause(1200);
   await until(()=>source().position().chapter===selected.chapter&&(format==='epub'?source().position().cfi!==initial.cfi:source().settled()));
@@ -85,8 +112,8 @@ try{
   await until(()=>source().position().page!==before.page||source().position().chapter!==before.chapter);await engineStable();const after=source().position();manualCheckpoint={before,after};
   assert(after.page!==before.page||after.chapter!==before.chapter,format+': manual page turn moves away from the match');
   await clickButton('Завершить поиск');await until(()=>!document.querySelector('.book-search-nav'));await engineStable();
-  assert(source().position().chapter===after.chapter&&positionVisible(after),format+': Close preserves the manually selected source location');
-  const bookId=root.dataset.bookId;await clickButton('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===after.chapter);await engineStable();await until(()=>positionVisible(after));assert(positionVisible(after),format+': reopening preserves manually selected text');
+  assert(source().position().chapter===after.chapter&&(format==='epub'?positionVisible(after):source().position().page===after.page),format+': Close preserves the manually selected source location');
+  const bookId=root.dataset.bookId;await clickButton('В библиотеку');await until(()=>!source());document.querySelector(`[data-library-book="${bookId}"] .book-tile-open`).click();await until(()=>source()?.position?.()?.chapter===after.chapter);await engineStable();await until(()=>format==='epub'?positionVisible(after):source().position().page===after.page);assert(format==='epub'?positionVisible(after):source().position().page===after.page,format+': reopening preserves manually selected text');
   out.textContent=JSON.stringify({status:'PASS',results,before,after,final:source().position()},null,2);throw {scene:true};
  }
  if(params.get('scene')==='hit'){out.textContent=JSON.stringify({status:'SCENE',results},null,2);throw {scene:true};}
