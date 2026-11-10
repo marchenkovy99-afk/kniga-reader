@@ -110,3 +110,25 @@ that CFI until loaded; later ordinary relocations still update it. A regression
 test executes the actual compiled commit handler in both startup and loaded
 states. Browser reopen assertions now wait for fresh stable geometry and the
 expected visible text; a momentary ready report is not an acceptance signal.
+
+## EPUB follow-up, 10 November 2026
+
+The follow-up browser suite reproduced a false Return error after a viewport
+change. A page-start EPUB CFI may resolve to a collapsed DOM Range with zero
+width. Source verification now measures one adjacent character on a cloned
+range; it leaves the navigation target and the book DOM unchanged. The added
+regression failed before the change and passes with it. Release checks: 52/52
+Node tests and core-preservation/offline hash verification.
+
+Browser acceptance checks compare source text visibility across repagination.
+Neither physical page numbers nor the renderer's page-start CFI are stable
+identities when the search capsule changes the usable viewport height. The
+manual-reading scenario checks the original manual source CFI remains visible
+after Close and library exit/reopen. The test fixture waits for stable live
+geometry before capturing origins and checks enabled controls before clicks.
+Earlier timing and page-identity assertion failures are not passing results.
+The suite now includes single-word search through inline emphasis, diagnostic
+positions on failure, and a manual turn/close/reopen scenario.
+
+Physical iPhone/Safari/PWA validation remains outstanding. Test EPUBs are
+controlled fixtures; no personal EPUB or authenticated cloud account was used.

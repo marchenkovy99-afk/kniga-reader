@@ -67,7 +67,16 @@ export function installBookSearch(root){
   return position;
  }
  function sourceRange(position){
-  if(position.cfi)return adapter(root)?.state().rendition?.getRange(position.cfi);
+  if(position.cfi){
+   let range=adapter(root)?.state().rendition?.getRange(position.cfi);
+   // EPUB page locations are collapsed CFIs. Verify the adjacent character,
+   // whose area is measurable, without changing the saved source position.
+   if(range?.collapsed&&range.startContainer.nodeType===3&&range.startContainer.length){
+    range=range.cloneRange();const node=range.startContainer,offset=Math.min(range.startOffset,node.length-1);
+    range.setStart(node,offset);range.setEnd(node,offset+1);
+   }
+   return range;
+  }
   const a=position.anchor,block=a&&root.querySelector(`.reading-content .book-flow [data-block-index="${a.block}"]`);if(!block)return null;
   const range=root.ownerDocument.createRange();if(a.textNode===-1){range.selectNode(block);return range;}
   let point;if(a.textNode===0)point=textPoint(block,a.offset);else{const walker=root.ownerDocument.createTreeWalker(block,4);let node,index=0;while(node=walker.nextNode())if(index++===a.textNode){point={node,offset:Math.min(a.offset,node.length)};break;}}
