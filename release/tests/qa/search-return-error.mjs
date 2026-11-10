@@ -22,8 +22,7 @@ async function fixture({collapsedOrigin=false}={}){
 const messages=[];const oldError=console.error;console.error=(...a)=>messages.push(a.map(String).join(' '));
 const f=await fixture();try{
  await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');
- f.root.querySelector('[aria-label="Вернуться к исходному месту"]').click();await f.wait(()=>f.root.querySelector('.book-search-panel')&&!f.root.querySelector('.book-search-launch').disabled);
- const retryButtonPresent=!!f.root.querySelector('[aria-label="Вернуться к исходному месту"]');
- await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('[aria-label="Вернуться к исходному месту"]').click();await f.wait(()=>!f.root.querySelector('.book-search-launch').disabled);
- oldError(JSON.stringify({id:'SEARCH-03',status:f.visited.at(-1)==='origin'?'PASS':'OPEN',retryButtonPresent,expectedLastTarget:'origin',actualLastTarget:f.visited.at(-1),visited:f.visited,messages},null,2));
+ f.root.querySelector('[aria-label="Вернуться к исходному месту"]').click();await f.wait(()=>!f.root.querySelector('.book-search-launch').disabled);
+ const retry=f.root.querySelector('[aria-label="Вернуться к исходному месту"]');if(!retry)throw Error('Return retry action lost');retry.click();await f.wait(()=>!f.root.querySelector('.book-search-nav')&&!f.root.querySelector('.book-search-launch').disabled);
+ oldError(JSON.stringify({id:'SEARCH-03',status:f.visited.at(-1)==='origin'?'PASS':'OPEN',retryButtonPresent:!!retry,expectedLastTarget:'origin',actualLastTarget:f.visited.at(-1),visited:f.visited,messages},null,2));
 }finally{console.error=oldError;f.dispose();}

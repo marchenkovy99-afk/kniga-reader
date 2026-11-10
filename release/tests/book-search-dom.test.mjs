@@ -36,3 +36,11 @@ test('search waits for FB2 chapter parsing instead of caching an empty index',as
  let loaded=false;const f=await fixture({state:()=>({}),position:()=>({chapter:0,page:0}),chapters:()=>loaded?[{blocks:[{text:'Искомое слово'}]}]:[]});
  try{f.query('слово');await pause(240);assert.notEqual(f.root.querySelector('.book-search-count')?.textContent,'Ничего не найдено');loaded=true;await until(()=>f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,1);}finally{f.dispose();f.dom.window.close();}
 });
+
+test('EPUB search excludes CSS-hidden text but retains visible descendants and original CFI nodes',async()=>{
+ let doc;const section={index:0,url:'chapter',cfiFromRange:()=> 'hit'};
+ const f=await fixture({position:()=>({cfi:'origin'}),state:()=>({book:{ready:Promise.resolve(),spine:{spineItems:[section],hooks:{content:{trigger:async()=>{}}}},load:async()=>doc}})},true);
+ doc=new f.dom.window.DOMParser().parseFromString('<html><head><style>.concealed{display:none}</style></head><body><p style="display:none">ТайнаяМетка</p><p class="concealed">ТайнаяМетка</p><p style="visibility:hidden">ТайнаяМетка <span style="visibility:visible">ВидимаяМетка</span></p></body></html>','text/html');
+ const original=doc.documentElement.outerHTML;
+ try{f.query('ТайнаяМетка');await until(()=>f.root.querySelector('.book-search-count')?.textContent==='Ничего не найдено'||f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,0);f.query('ВидимаяМетка');await until(()=>f.root.querySelector('.book-search-result'));assert.equal(f.root.querySelectorAll('.book-search-result').length,1);assert.equal(doc.documentElement.outerHTML,original,'indexing must not change source nodes used by CFI');}finally{f.dispose();f.dom.window.close();}
+});

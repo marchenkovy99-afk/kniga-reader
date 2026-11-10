@@ -1,0 +1,424 @@
+{
+  "hiddenFixed": {
+    "status": "COMPLETE",
+    "format": "epub",
+    "results": [
+      {
+        "pass": true,
+        "text": "CSS-hidden text is excluded from results"
+      }
+    ],
+    "issues": [],
+    "errors": []
+  },
+  "coveredFb2Fixed": {
+    "status": "COMPLETE",
+    "format": "fb2",
+    "results": [
+      {
+        "pass": true,
+        "text": "unique word near page bottom selected"
+      },
+      {
+        "pass": true,
+        "text": "revealing a match does not resize the page"
+      },
+      {
+        "pass": true,
+        "text": "actual matched range is highlighted"
+      },
+      {
+        "pass": true,
+        "text": "search capsule must not cover the active word"
+      },
+      {
+        "pass": true,
+        "text": "word is not completely covered"
+      }
+    ],
+    "issues": [],
+    "errors": []
+  },
+  "coveredEpubFixed": {
+    "status": "COMPLETE",
+    "format": "epub",
+    "results": [
+      {
+        "pass": true,
+        "text": "unique word near page bottom selected"
+      },
+      {
+        "pass": true,
+        "text": "revealing a match does not resize the page"
+      },
+      {
+        "pass": true,
+        "text": "actual matched range is highlighted"
+      },
+      {
+        "pass": true,
+        "text": "search capsule must not cover the active word"
+      },
+      {
+        "pass": true,
+        "text": "word is not completely covered"
+      }
+    ],
+    "issues": [],
+    "errors": []
+  },
+  "nightThemeFixed": {
+    "status": "PASS",
+    "format": "fb2",
+    "closeTimesMs": [
+      0.40000000002328306,
+      0.19999999995343387,
+      0.09999999997671694
+    ],
+    "baseline": {
+      "width": 286,
+      "height": 828,
+      "top": 14,
+      "left": 538.5,
+      "key": "286:828:18:1.4:16:serif:justify:1.2:0:0:0:6:16:2:400:auto",
+      "font": "18px|25.2px|Georgia, \"Times New Roman\", serif|normal"
+    },
+    "results": [
+      {
+        "pass": true,
+        "text": "fb2: opening search preserves viewport and font 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: found text is visible 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule preserves viewport, pagination key and font 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule overlays the existing page 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close removes capsule in the click handler 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close does not seek or repaginate 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: no delayed return or error after Close 0"
+      },
+      {
+        "pass": true,
+        "text": "fb2: opening search preserves viewport and font 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: found text is visible 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule preserves viewport, pagination key and font 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule overlays the existing page 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close removes capsule in the click handler 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close does not seek or repaginate 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: no delayed return or error after Close 1"
+      },
+      {
+        "pass": true,
+        "text": "fb2: library reopen retains found text"
+      },
+      {
+        "pass": true,
+        "text": "fb2: opening search preserves viewport and font 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: found text is visible 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule preserves viewport, pagination key and font 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: capsule overlays the existing page 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close removes capsule in the click handler 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close does not seek or repaginate 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: no delayed return or error after Close 2"
+      },
+      {
+        "pass": true,
+        "text": "fb2: only Return restores origin"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close remains available during navigation"
+      },
+      {
+        "pass": true,
+        "text": "fb2: pending navigation is dismissed synchronously"
+      },
+      {
+        "pass": true,
+        "text": "fb2: cancelled navigation cannot resurrect UI"
+      },
+      {
+        "pass": true,
+        "text": "fb2: no runtime errors "
+      }
+    ]
+  },
+  "epubNormalFixed": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "epub: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "epub: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "epub: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "epub: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "epub: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "epub: closing an edited query preserves active navigation"
+      },
+      {
+        "pass": true,
+        "text": "epub: previous match returns to chapter one"
+      },
+      {
+        "pass": true,
+        "text": "epub: return restores original position"
+      },
+      {
+        "pass": true,
+        "text": "epub: empty results"
+      },
+      {
+        "pass": true,
+        "text": "epub: single-word search across inline formatting"
+      },
+      {
+        "pass": true,
+        "text": "epub: full-sentence search"
+      },
+      {
+        "pass": true,
+        "text": "epub: rapid query replacement cancels stale work"
+      },
+      {
+        "pass": true,
+        "text": "epub: empty query"
+      },
+      {
+        "pass": true,
+        "text": "epub: closing restores access to reader controls"
+      },
+      {
+        "pass": true,
+        "text": "epub: no runtime errors "
+      }
+    ]
+  },
+  "paperThemeFixed": {
+    "busy": false,
+    "count": "1 / 2",
+    "errorPanel": false,
+    "highlights": 2,
+    "viewportReady": "true"
+  },
+  "manualFb2Fixed": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "fb2: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "fb2: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "fb2: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "fb2: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "fb2: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "fb2: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "fb2: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "fb2: manual page turn moves away from the match"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close preserves the manually selected source location"
+      },
+      {
+        "pass": true,
+        "text": "fb2: reopening preserves manually selected text"
+      }
+    ],
+    "before": {
+      "chapter": 1,
+      "page": 2,
+      "fraction": 0.87,
+      "anchor": {
+        "block": 4,
+        "textNode": 0,
+        "offset": 0
+      },
+      "updatedAt": 1794310869668
+    },
+    "after": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.93,
+      "anchor": {
+        "block": 5,
+        "textNode": 0,
+        "offset": 652
+      },
+      "updatedAt": 1794310875767
+    },
+    "final": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.93,
+      "anchor": {
+        "block": 5,
+        "textNode": 0,
+        "offset": 652
+      },
+      "updatedAt": 1794310879832
+    }
+  },
+  "manualEpubFixed": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "epub: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "epub: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "epub: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "epub: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "epub: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "epub: manual page turn moves away from the match"
+      },
+      {
+        "pass": true,
+        "text": "epub: Close preserves the manually selected source location"
+      },
+      {
+        "pass": true,
+        "text": "epub: reopening preserves manually selected text"
+      }
+    ],
+    "before": {
+      "chapter": 1,
+      "page": 2,
+      "fraction": 0.8,
+      "cfi": "epubcfi(/6/4!/4/12,/1:0,/3:9)",
+      "layout": "396:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794310881865
+    },
+    "after": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.9,
+      "cfi": "epubcfi(/6/4!/4/16/1:0)",
+      "layout": "396:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794310887964
+    },
+    "final": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.9,
+      "cfi": "epubcfi(/6/4!/4/16/1:0)",
+      "layout": "396:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794310904227
+    }
+  }
+}

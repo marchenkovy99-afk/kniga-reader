@@ -4,12 +4,13 @@ import {JSDOM} from 'jsdom';
 
 // Boundary fixture for the renderer's asynchronous resize/relocation queue.
 // Actual FB2/EPUB rendering is exercised by the browser suite.
-async function fixture({collapsedOrigin=false}={}){
+async function fixture({collapsedOrigin=false,bottomHit=false}={}){
  const dom=new JSDOM('<div class="reading-root"><div class="reading-content"><div class="epub-mount"></div></div><nav class="reading-tools"></nav><div class="reading-title">Книга</div><div class="reading-zones"></div></div>',{url:'https://fixture.test',pretendToBeVisual:true});
  const w=dom.window,root=w.document.querySelector('.reading-root');Object.assign(globalThis,{window:w,document:w.document,MutationObserver:w.MutationObserver,requestAnimationFrame:cb=>setTimeout(cb,0)});
  const doc=new w.DOMParser().parseFromString('<html><body><p>Искомое слово</p></body></html>','text/html');
  let activeRange=null;let ready=true,position={chapter:0,page:0,cfi:'origin'};const visited=[];
- const range=doc.createRange();range.selectNodeContents(doc.querySelector('p'));range.getClientRects=()=>[{left:20,top:30,right:70,bottom:50,width:50,height:20}];
+ const nativeBox=w.HTMLElement.prototype.getBoundingClientRect;w.HTMLElement.prototype.getBoundingClientRect=function(){if(this.classList.contains('book-search-nav')){const top=this.dataset.placement==='top'?8:740;return {left:12,right:378,top,bottom:top+96,width:366,height:96};}return nativeBox.call(this);};
+ const range=doc.createRange();range.selectNodeContents(doc.querySelector('p'));range.getClientRects=()=>[{left:20,top:bottomHit?770:30,right:70,bottom:bottomHit?790:50,width:50,height:20}];
  const originRange=doc.createRange();originRange.setStart(doc.querySelector('p').firstChild,2);originRange.collapse(true);
  const proto=Object.getPrototypeOf(originRange);proto.getClientRects=function(){return [{left:20,top:30,right:this.collapsed?20:70,bottom:50,width:this.collapsed?0:50,height:20}]};
  activeRange=range;root.getBoundingClientRect=()=>({left:0,top:0,right:390,bottom:844,width:390,height:844});root.querySelector('.epub-mount').getBoundingClientRect=()=>({left:0,top:0,right:390,bottom:844,width:390,height:844});
@@ -52,3 +53,7 @@ test('Close can cancel a pending search navigation without painting stale highli
  test('Return accepts a collapsed EPUB source CFI by checking its adjacent character',async t=>{t.mock.method(console,'error',()=>{});
  const f=await fixture({collapsedOrigin:true});try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');f.root.querySelector('[aria-label="Вернуться к исходному месту"]').click();await f.wait(()=>!f.root.querySelector('.book-search-launch').disabled);assert.equal(f.root.querySelector('.book-search-panel'),null,'a valid zero-width CFI must not produce a false navigation error');assert.equal(f.visited.at(-1),'origin');}finally{f.dispose();}
  });
+
+test('a bottom-edge match moves the overlay to the top without navigating again',async()=>{
+ const f=await fixture({bottomHit:true});try{await f.select();await f.wait(()=>f.root.querySelector('.book-search-nav output')?.textContent==='1 / 1');assert.equal(f.root.querySelector('.book-search-nav').dataset.placement,'top');assert.deepEqual(f.visited,['found']);assert.ok(f.root.querySelector('[data-search-highlight]'));}finally{f.dispose();}
+});

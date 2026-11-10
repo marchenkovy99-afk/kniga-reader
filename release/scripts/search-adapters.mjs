@@ -15,3 +15,9 @@ export const epubOpeningAdapters=[
  ['if(!n.cfi||!c.current)return;if(u.current=n.cfi,re({...n', 'if(!n.cfi||!c.current)return;if(u.current=!g&&e.position?.cfi?e.position.cfi:n.cfi,re({...n'],
  ['cfi:n.cfi,layout:le.current?void 0:P.current,updatedAt:Date.now()', 'cfi:!g&&e.position?.cfi?e.position.cfi:n.cfi,layout:le.current?void 0:P.current,updatedAt:Date.now()']
 ];
+
+// Theme-only remeasurement can finish with the same layout key. Release its
+// busy state explicitly because the normal ready effect has unchanged deps.
+export const fb2MeasurementAdapters=[
+ ['ge.current=!1,T(o),ee(Oo(l,o)),ne(I);let u=', 'ge.current=!1,T(o),ee(Oo(l,o)),ne(I),te===I&&ae(!1);let u=']
+];

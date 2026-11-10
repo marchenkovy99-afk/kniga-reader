@@ -1,0 +1,15 @@
+{
+  "id": "SEARCH-03",
+  "status": "PASS",
+  "retryButtonPresent": true,
+  "expectedLastTarget": "origin",
+  "actualLastTarget": "origin",
+  "visited": [
+    "found",
+    "origin",
+    "origin"
+  ],
+  "messages": [
+    "Libra search return: Error: Controlled one-time navigation failure"
+  ]
+}

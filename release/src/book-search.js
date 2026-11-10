@@ -10,17 +10,37 @@ const adapter=root=>root.querySelector('.reading-content .page-viewport')?.libra
 function textPoint(block,offset){const walker=block.ownerDocument.createTreeWalker(block,4);let node,last;while(node=walker.nextNode()){last=node;if(offset<=node.length)return {node,offset};offset-=node.length;}return last?{node:last,offset:last.length}:null;}
 function matchBlock(flow,unit){const block=flow.querySelector(`[data-block-index="${unit.block}"]`);return unit.cell===undefined?block:block?.querySelectorAll('td')[unit.cell]||block;}
 function fb2Range(root,match){const flow=root.querySelector('.reading-content .book-flow'),doc=root.ownerDocument;if(!flow)return null;let a=matchBlock(flow,match.first.unit),b=matchBlock(flow,match.last.unit);const table=root.querySelector('.book-table-panel table');if(table&&match.first.unit.cell!==undefined){a=table.querySelectorAll('td')[match.first.unit.cell];b=table.querySelectorAll('td')[match.last.unit.cell];}if(!a||!b)return null;const first=textPoint(a,match.first.offset),last=textPoint(b,match.last.offset);if(!first||!last)return null;const range=doc.createRange();range.setStart(first.node,first.offset);range.setEnd(last.node,last.offset);return range;}
-function domUnits(doc){
+function domUnits(doc,styleFor=()=>null){
  const units=[];let boundary=false;
  const blocks=/^(p|div|section|article|h[1-6]|li|tr|td|blockquote|br)$/;
  function walk(node){
-  if(node.nodeType===3){if(node.textContent){units.push({text:node.textContent,node,separatorBefore:boundary?' ':''});boundary=false;}return;}
+  if(node.nodeType===3){const css=styleFor(node.parentElement);if(css&&['hidden','collapse'].includes(css.visibility))return;if(node.textContent){units.push({text:node.textContent,node,separatorBefore:boundary?' ':''});boundary=false;}return;}
   if(node.nodeType!==1||/^(script|style|noscript|svg|math)$/i.test(node.localName)||node.hasAttribute('hidden'))return;
+  const css=styleFor(node);if(css&&(css.display==='none'||css.contentVisibility==='hidden'||css.opacity==='0')){boundary=true;return;}
   const block=blocks.test(node.localName);if(block)boundary=true;for(const child of node.childNodes)walk(child);if(block)boundary=true;
  }
  walk(doc.body||doc.querySelector('body')||doc.documentElement);return units;
 }
 function matchRange(match){const doc=match.first.unit.node.ownerDocument,range=doc.createRange();range.setStart(match.first.unit.node,match.first.offset);range.setEnd(match.last.unit.node,match.last.offset);return range;}
+
+// Measure a sanitized clone: keep original nodes untouched for stable EPUB CFIs.
+async function readableUnits(doc,book,section,root,signal){
+ if(!doc.querySelector('style,link[rel~="stylesheet"],[style]'))return domUnits(doc);
+ const owner=root.ownerDocument,copy=owner.implementation.createHTMLDocument(''),html=copy.importNode(doc.documentElement,true);copy.replaceChild(html,copy.documentElement);
+ const originals=[doc.documentElement,...doc.documentElement.querySelectorAll('*')],clones=[html,...html.querySelectorAll('*')],ids=new WeakMap();
+ originals.forEach((node,i)=>{ids.set(node,String(i));clones[i].setAttribute('data-libra-search-node',String(i));});
+ html.querySelectorAll('script,iframe,object,embed,audio,video').forEach(n=>n.remove());html.querySelectorAll('style').forEach(n=>n.textContent=n.textContent);
+ html.querySelectorAll('meta[http-equiv]').forEach(n=>n.remove());let head=html.querySelector('head');if(!head){head=copy.createElement('head');html.prepend(head);}
+ const policy=copy.createElement('meta');policy.httpEquiv='Content-Security-Policy';policy.content="default-src 'none'; style-src 'unsafe-inline' blob: data:; font-src blob: data:; img-src blob: data:; base-uri 'none'";head.prepend(policy);
+ let markup='<!doctype html>'+html.outerHTML;if(book.resources?.substitute)markup=book.resources.substitute(markup,section.url);
+ const frame=owner.createElement('iframe'),view=root.querySelector('.page-viewport,.epub-mount');frame.setAttribute('sandbox','allow-same-origin');frame.setAttribute('aria-hidden','true');frame.inert=true;frame.tabIndex=-1;
+ Object.assign(frame.style,{position:'fixed',left:'-100000px',top:'0',width:(view?.clientWidth||390)+'px',height:(view?.clientHeight||700)+'px',opacity:'0',pointerEvents:'none',border:'0'});
+ owner.body.append(frame);
+ try{signal.throwIfAborted();const measured=frame.contentDocument;measured.open();measured.write(markup);measured.close();await until(()=>measured.readyState==='complete',signal);
+  const nodes=new Map([...measured.querySelectorAll('[data-libra-search-node]')].map(n=>[n.getAttribute('data-libra-search-node'),n])),styles=new WeakMap();
+  return domUnits(doc,node=>{if(!node)return null;if(!styles.has(node)){const clone=nodes.get(ids.get(node));styles.set(node,clone?frame.contentWindow.getComputedStyle(clone):null);}return styles.get(node);});
+ }finally{frame.remove();}
+}
 
 export function installBookSearch(root){
  if(root.dataset.bookSearchInstalled)return ()=>{};root.dataset.bookSearchInstalled='true';
@@ -107,7 +127,7 @@ export function installBookSearch(root){
      // hooks, without loading/unloading a live rendition's section.
      const doc=await book.load(section.url);signal.throwIfAborted();await book.spine.hooks.content.trigger(doc,section);signal.throwIfAborted();
      const title=doc.querySelector('h1,h2,title')?.textContent?.trim()||`Глава ${section.index+1}`;
-     output.push({chapter:section.index,title,index:createTextIndex(domUnits(doc)),section});await frame();
+     output.push({chapter:section.index,title,index:createTextIndex(await readableUnits(doc,book,section,root,signal)),section});await frame();
     }
    }
    signal.throwIfAborted();if(disposed)return [];indexes=output;return output;
@@ -159,12 +179,23 @@ export function installBookSearch(root){
   if(match.cfi){const state=adapter(root)?.state();range=state?.rendition.getRange(match.cfi);if(!range)return;const frame=range.startContainer.ownerDocument.defaultView?.frameElement,box=frame?.getBoundingClientRect();offsetX=box?.left||0;offsetY=box?.top||0;}else range=fb2Range(root,match);
   if(!range)return;const rootBox=root.getBoundingClientRect(),view=(root.querySelector('.book-table-scroll')||root.querySelector('.reading-content .page-viewport,.reading-content .epub-mount'))?.getBoundingClientRect();
   highlight=el('div','book-search-highlights');highlight.dataset.searchHighlight='';highlight.setAttribute('aria-hidden','true');
-  for(const rect of range.getClientRects()){const x=rect.left+offsetX,y=rect.top+offsetY;if(!view||rect.width<=0||rect.height<=0||x+rect.width<=view.left||x>=view.right||y+rect.height<=view.top||y>=view.bottom)continue;const item=el('i');Object.assign(item.style,{left:Math.max(x,view.left)-rootBox.left+'px',top:Math.max(y,view.top)-rootBox.top+'px',width:Math.max(0,Math.min(x+rect.width,view.right)-Math.max(x,view.left))+'px',height:Math.max(0,Math.min(y+rect.height,view.bottom)-Math.max(y,view.top))+'px'});highlight.append(item);}root.append(highlight);return highlight.childElementCount;
+  const visibleRects=[];for(const rect of range.getClientRects()){const x=rect.left+offsetX,y=rect.top+offsetY;if(!view||rect.width<=0||rect.height<=0||x+rect.width<=view.left||x>=view.right||y+rect.height<=view.top||y>=view.bottom)continue;visibleRects.push({left:Math.max(x,view.left),right:Math.min(x+rect.width,view.right),top:Math.max(y,view.top),bottom:Math.min(y+rect.height,view.bottom)});const item=el('i');Object.assign(item.style,{left:Math.max(x,view.left)-rootBox.left+'px',top:Math.max(y,view.top)-rootBox.top+'px',width:Math.max(0,Math.min(x+rect.width,view.right)-Math.max(x,view.left))+'px',height:Math.max(0,Math.min(y+rect.height,view.bottom)-Math.max(y,view.top))+'px'});highlight.append(item);}root.append(highlight);placeNav(visibleRects);return highlight.childElementCount;
  }
  function showNav(){
   if(nav)return;nav=el('div','book-search-nav');nav.setAttribute('role','region');nav.setAttribute('aria-label','Совпадения в книге');const bar=el('div','book-search-nav-bar'),label=button('Показать результаты поиска','search',open);label.className='book-search-query';label.append(el('span','',query));const count=el('output');count.setAttribute('aria-live','polite');
   bar.append(label,count,button('Предыдущее совпадение','up',()=>go(active-1)),button('Следующее совпадение','down',()=>go(active+1)),button('Завершить поиск','close',finishSearch));
-  const back=button('Вернуться к исходному месту',null,async()=>{if(navigating)return;const target=origin;setNavigating(true);closeAll(false);try{await ready();await restore(target);focusTool();}catch(error){if(!disposed&&error.name!=='AbortError'){setNavigating(false);open();status('Не удалось вернуться. Попробуй ещё раз.');console.error(error);}}finally{setNavigating(false);updateNav();}});back.textContent='Вернуться';back.className='book-search-return';nav.append(bar,back);root.append(nav);
+  const back=button('Вернуться к исходному месту',null,returnToOrigin);back.textContent='Вернуться';back.className='book-search-return';nav.append(bar,back);root.append(nav);
+ }
+ function placeNav(rects){
+  if(!nav)return;const overlap=box=>rects.reduce((sum,r)=>sum+Math.max(0,Math.min(r.right,box.right)-Math.max(r.left,box.left))*Math.max(0,Math.min(r.bottom,box.bottom)-Math.max(r.top,box.top)),0);
+  nav.dataset.placement='bottom';const bottom=overlap(nav.getBoundingClientRect());if(!bottom)return;
+  nav.dataset.placement='top';if(overlap(nav.getBoundingClientRect())>=bottom)nav.dataset.placement='bottom';
+ }
+ async function returnToOrigin(){
+  if(navigating||!origin)return;const target=origin,version=navVersion;setNavigating(true);closePanel();clearHighlight();nav?.querySelector('.book-search-message')?.remove();updateNav();
+  try{await restore(target);if(disposed||version!==navVersion)return;closeAll(false);setNavigating(false);focusTool();}
+  catch(error){if(!disposed&&version===navVersion&&error.name!=='AbortError'){const message=el('p','book-search-message','Не удалось вернуться. Нажми «Вернуться», чтобы повторить.');message.setAttribute('role','status');nav?.append(message);console.error('Libra search return:',error);}}
+  finally{if(version===navVersion){setNavigating(false);updateNav();nav?.querySelector('.book-search-return')?.focus({preventScroll:true});}}
  }
  function updateNav(){if(!nav)return;nav.querySelector('.book-search-query>span:last-child').textContent=query;nav.querySelector('output').textContent=`${active+1} / ${matches.length}`;nav.querySelector('[aria-label="Предыдущее совпадение"]').disabled=navigating||active<=0;nav.querySelector('[aria-label="Следующее совпадение"]').disabled=navigating||active>=matches.length-1;nav.querySelector('.book-search-return').disabled=navigating;nav.querySelector('[aria-label="Завершить поиск"]').disabled=false;nav.querySelector('[aria-label="Показать результаты поиска"]').disabled=navigating;}
  function finishSearch(){
@@ -197,7 +228,7 @@ export function installBookSearch(root){
  }
  async function go(number){
   if(navigating||number<0||number>=matches.length)return;
-  root.querySelector('.book-table-panel header button')?.click();setNavigating(true);const version=++navVersion,match=matches[number];
+  root.querySelector('.book-table-panel header button')?.click();nav?.querySelector('.book-search-message')?.remove();setNavigating(true);const version=++navVersion,match=matches[number];
   closePanel();root.classList.add('book-search-browsing');showNav();updateNav();clearHighlight();
   try{
    await ready(version);await locate(match);

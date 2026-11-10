@@ -39,3 +39,8 @@ html.libra-ios-standalone .book-search-panel{padding-top:calc(var(--reader-safe-
 @media(max-width:360px){.book-search-panel{padding-inline:18px}.book-search-header h2{font-size:27px}.book-search-nav{left:6px;right:6px}.book-search-query span:not(.book-search-icon){max-width:74px}.book-search-nav output{padding-inline:3px}.reading-root .reading-tools button{font-size:10px}}
 
 .reading-root[data-search-navigating]>.reading-zones{pointer-events:none!important}
+
+.book-search-nav[data-placement="top"]{top:calc(var(--reader-safe-top) + 8px);bottom:auto}
+html.libra-ios-standalone .book-search-nav[data-placement="top"]{top:calc(var(--reader-safe-top) + 42px)}
+.book-search-browsing:has(.book-search-nav[data-placement="top"]) .reading-top{visibility:hidden!important;pointer-events:none!important}
+.book-search-message{margin:5px 0 0;padding:8px 12px;border:1px solid var(--border);border-radius:14px;background:var(--bg);color:var(--fg);font-size:12px}
