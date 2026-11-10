@@ -163,3 +163,4 @@ passed 27 checks on the overlay implementation. Final cancellation guards are
 additionally checked by the complete regression suite and final browser QA.
 Physical iPhone/Safari/PWA checks remain unavailable.
 Final full browser scenario: 17/17 PASS each for EPUB and 320px FB2 on dpl_HCRotvshcskeXb1gZLqbvdAFDUDj, including literal word/sentence search, stale-query cancellation, previous match, explicit Return and unchanged layout. No runtime errors in either scenario.
+Final manual-turn/Close/library-reopen scenario: 10/10 PASS each for EPUB and 320px FB2, including the same source CFI/anchor before Close and after reopen. Published source `f28876f075b70e6f6e093c9ae926aeb9b9d5ca6d` to production deployment `dpl_GKaa4fof6JbYzUWBrTGnM6kGkVop` (READY); all 22 source asset UIDs match final QA exactly. Release revision 22, offline build `13e29d6153da4f47`.
