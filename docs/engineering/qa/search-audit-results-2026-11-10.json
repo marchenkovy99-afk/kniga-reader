@@ -1,0 +1,384 @@
+{
+  "release": 22,
+  "coveredFb2": {
+    "status": "COMPLETE",
+    "format": "fb2",
+    "results": [
+      {
+        "pass": true,
+        "text": "unique word near page bottom selected"
+      },
+      {
+        "pass": true,
+        "text": "actual matched range is highlighted"
+      }
+    ],
+    "issues": [
+      {
+        "id": "SEARCH-01",
+        "title": "Search capsule completely covers the matched word",
+        "evidence": {
+          "format": "fb2",
+          "target": {
+            "query": "Метка0031",
+            "top": 771.625,
+            "bottom": 791.625
+          },
+          "wordRects": [
+            {
+              "x": 526.09375,
+              "y": 771.625,
+              "width": 84.09375,
+              "height": 20,
+              "top": 771.625,
+              "right": 610.1875,
+              "bottom": 791.625,
+              "left": 526.09375
+            }
+          ],
+          "panel": {
+            "x": 499.5,
+            "y": 741,
+            "width": 364,
+            "height": 52,
+            "top": 741,
+            "right": 863.5,
+            "bottom": 793,
+            "left": 499.5
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "coveredEpub": {
+    "status": "COMPLETE",
+    "format": "epub",
+    "results": [
+      {
+        "pass": true,
+        "text": "unique word near page bottom selected"
+      },
+      {
+        "pass": true,
+        "text": "actual matched range is highlighted"
+      }
+    ],
+    "issues": [
+      {
+        "id": "SEARCH-01",
+        "title": "Search capsule completely covers the matched word",
+        "evidence": {
+          "format": "epub",
+          "target": {
+            "query": "Метка0030",
+            "top": 766.4375,
+            "bottom": 786.4375
+          },
+          "wordRects": [
+            {
+              "x": 526.09375,
+              "y": 766.4375,
+              "width": 84.09375,
+              "height": 20,
+              "top": 766.4375,
+              "right": 610.1875,
+              "bottom": 786.4375,
+              "left": 526.09375
+            }
+          ],
+          "panel": {
+            "x": 499.5,
+            "y": 741,
+            "width": 364,
+            "height": 52,
+            "top": 741,
+            "right": 863.5,
+            "bottom": 793,
+            "left": 499.5
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "hiddenEpub": {
+    "status": "COMPLETE",
+    "format": "epub",
+    "results": [
+      {
+        "pass": true,
+        "text": "hidden-text result count: 1"
+      }
+    ],
+    "issues": [
+      {
+        "id": "SEARCH-02",
+        "title": "EPUB result cannot be displayed for CSS-hidden source text",
+        "evidence": {
+          "count": 1,
+          "failedNavigation": true,
+          "navigationCount": "0 / 1",
+          "message": "Не удалось перейти. Попробуй ещё раз."
+        }
+      }
+    ],
+    "errors": []
+  },
+  "normalNightEpub": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "epub: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "epub: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "epub: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "epub: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "epub: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "epub: closing an edited query preserves active navigation"
+      },
+      {
+        "pass": true,
+        "text": "epub: previous match returns to chapter one"
+      },
+      {
+        "pass": true,
+        "text": "epub: return restores original position"
+      },
+      {
+        "pass": true,
+        "text": "epub: empty results"
+      },
+      {
+        "pass": true,
+        "text": "epub: single-word search across inline formatting"
+      },
+      {
+        "pass": true,
+        "text": "epub: full-sentence search"
+      },
+      {
+        "pass": true,
+        "text": "epub: rapid query replacement cancels stale work"
+      },
+      {
+        "pass": true,
+        "text": "epub: empty query"
+      },
+      {
+        "pass": true,
+        "text": "epub: closing restores access to reader controls"
+      },
+      {
+        "pass": true,
+        "text": "epub: no runtime errors "
+      }
+    ]
+  },
+  "fb2ThemeTimeout": {
+    "status": "FAIL",
+    "error": "Error: Timeout: ()=>{const api=source(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!api||!view||api.settled?.()===false||document.querySelector('.reading-root')?.dataset.searchNavigating)return since=0;const state=api.state(),geometry=state.geometry||state,key=state.key+':'+view.clientHeight+':'+view.clientWidth;if(geometry.height!==undefined&&Math.abs(geometry.height-view.clientHeight)>1||geometry.width!==undefined&&Math.abs(geometry.width-view.clientWidth)>1||document.querySelector('.book-search-nav')&&findButton('Завершить поиск')?.disabled){since=0;return false;}if(last!==key){last=key;since=0;}if(!since)since=performance.now();return performance.now()-since>700;}",
+    "stack": "Error: Timeout: ()=>{const api=source(),view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');if(!api||!view||api.settled?.()===false||document.querySelector('.reading-root')?.dataset.searchNavigating)return since=0;const state=api.state(),geometry=state.geometry||state,key=state.key+':'+view.clientHeight+':'+view.clientWidth;if(geometry.height!==undefined&&Math.abs(geometry.height-view.clientHeight)>1||geometry.width!==undefined&&Math.abs(geometry.width-view.clientWidth)>1||document.querySelector('.book-search-nav')&&findButton('Завершить поиск')?.disabled){since=0;return false;}if(last!==key){last=key;since=0;}if(!since)since=performance.now();return performance.now()-since>700;}\n    at until (https://libra-standalone-preview-3srpsuakf-marchenkovy99-3693.vercel.app/search-qa.js:3:124)\n    at async engineStable (https://libra-standalone-preview-3srpsuakf-marchenkovy99-3693.vercel.app/search-qa.js:31:22)\n    at async https://libra-standalone-preview-3srpsuakf-marchenkovy99-3693.vercel.app/search-qa.js:88:2",
+    "results": [],
+    "errors": [],
+    "diagnostics": {
+      "checkpoints": [],
+      "position": {
+        "chapter": 0,
+        "page": 0,
+        "fraction": 0.07,
+        "anchor": {
+          "block": 0,
+          "textNode": 0,
+          "offset": 0
+        },
+        "updatedAt": 1794305283287
+      },
+      "state": {
+        "settled": false,
+        "key": "286:828:18:1.4:16:serif:justify:1.2:0:0:0:6:16:2:400:auto",
+        "actual": {
+          "width": 286,
+          "height": 828
+        },
+        "visiblePhrase": false
+      }
+    }
+  },
+  "themeRecovery": {
+    "busy": false,
+    "count": "1 / 2",
+    "errorPanel": false,
+    "highlights": 2
+  },
+  "manualEpub": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "epub: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "epub: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "epub: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "epub: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "epub: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "epub: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "epub: manual page turn moves away from the match"
+      },
+      {
+        "pass": true,
+        "text": "epub: Close preserves the manually selected source location"
+      },
+      {
+        "pass": true,
+        "text": "epub: reopening preserves manually selected text"
+      }
+    ],
+    "before": {
+      "chapter": 1,
+      "page": 2,
+      "fraction": 0.8,
+      "cfi": "epubcfi(/6/4!/4/12,/1:0,/3:9)",
+      "layout": "356:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794305581922
+    },
+    "after": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.9,
+      "cfi": "epubcfi(/6/4!/4/14/1:672)",
+      "layout": "356:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794305588022
+    },
+    "final": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.9,
+      "cfi": "epubcfi(/6/4!/4/14/1:672)",
+      "layout": "356:828:[18,1.4,\"serif\",\"justify\",0,0,0,1.2,400,\"auto\"]",
+      "updatedAt": 1794305599711
+    }
+  },
+  "manualFb2": {
+    "status": "PASS",
+    "results": [
+      {
+        "pass": true,
+        "text": "fb2: panel uses current reader background"
+      },
+      {
+        "pass": true,
+        "text": "fb2: phrase crosses inline emphasis and ignores case"
+      },
+      {
+        "pass": true,
+        "text": "fb2: search fits reader width"
+      },
+      {
+        "pass": true,
+        "text": "fb2: selected result navigates to its chapter"
+      },
+      {
+        "pass": true,
+        "text": "fb2: selected result navigates to an interior physical page"
+      },
+      {
+        "pass": true,
+        "text": "fb2: visible text is highlighted without text DOM mutation"
+      },
+      {
+        "pass": true,
+        "text": "fb2: navigation overlays text without changing layout"
+      },
+      {
+        "pass": true,
+        "text": "fb2: manual page turn moves away from the match"
+      },
+      {
+        "pass": true,
+        "text": "fb2: Close preserves the manually selected source location"
+      },
+      {
+        "pass": true,
+        "text": "fb2: reopening preserves manually selected text"
+      }
+    ],
+    "before": {
+      "chapter": 1,
+      "page": 2,
+      "fraction": 0.87,
+      "anchor": {
+        "block": 4,
+        "textNode": 0,
+        "offset": 0
+      },
+      "updatedAt": 1794305570812
+    },
+    "after": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.93,
+      "anchor": {
+        "block": 5,
+        "textNode": 0,
+        "offset": 669
+      },
+      "updatedAt": 1794305576909
+    },
+    "final": {
+      "chapter": 1,
+      "page": 3,
+      "fraction": 0.93,
+      "anchor": {
+        "block": 5,
+        "textNode": 0,
+        "offset": 669
+      },
+      "updatedAt": 1794305580975
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "SEARCH-03",
+  "status": "OPEN",
+  "retryButtonPresent": false,
+  "expectedLastTarget": "origin",
+  "actualLastTarget": "found",
+  "visited": [
+    "found",
+    "origin",
+    "found",
+    "found"
+  ],
+  "messages": [
+    "Error: Controlled one-time navigation failure"
+  ]
+}
