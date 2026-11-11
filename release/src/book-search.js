@@ -1,4 +1,4 @@
-import {createTextIndex,findMatches,normalizeText,matchTarget} from './book-search-core.js';
+import {createTextIndexAsync,findMatches,normalizeText,matchTarget,yieldSearchTask} from './book-search-core.js';
 
 const icons={search:'<circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/>',close:'<path d="m6 6 12 12M18 6 6 18"/>',up:'<path d="m6 15 6-6 6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',right:'<path d="m9 5 7 7-7 7"/>'};
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
@@ -117,7 +117,7 @@ export function installBookSearch(root){
    const api=adapter(root),state=api?.state();if(!state)throw Error('Книга ещё открывается');const output=[];
    if(api.chapters){
     for(const [chapter,item]of api.chapters().entries()){
-     signal.throwIfAborted();const units=item.blocks.flatMap((b,block)=>b.kind==='table'?b.rows.flat().map((text,cell)=>({text,block,cell})):[{text:b.inline?.map(r=>r.text).join('')??b.text??'',block}]);output.push({chapter,title:item.title||`Глава ${chapter+1}`,index:createTextIndex(units)});await frame();
+     signal.throwIfAborted();const units=item.blocks.flatMap((b,block)=>b.kind==='table'?b.rows.flat().map((text,cell)=>({text,block,cell})):[{text:b.inline?.map(r=>r.text).join('')??b.text??'',block}]);output.push({chapter,title:item.title||`Глава ${chapter+1}`,index:await createTextIndexAsync(units,{signal})});await frame();
     }
    }else{
     const book=state.book;await book.ready;
@@ -127,7 +127,7 @@ export function installBookSearch(root){
      // hooks, without loading/unloading a live rendition's section.
      const doc=await book.load(section.url);signal.throwIfAborted();await book.spine.hooks.content.trigger(doc,section);signal.throwIfAborted();
      const title=doc.querySelector('h1,h2,title')?.textContent?.trim()||`Глава ${section.index+1}`;
-     output.push({chapter:section.index,title,index:createTextIndex(await readableUnits(doc,book,section,root,signal)),section});await frame();
+     output.push({chapter:section.index,title,index:await createTextIndexAsync(await readableUnits(doc,book,section,root,signal),{signal}),section});await frame();
     }
    }
    signal.throwIfAborted();if(disposed)return [];indexes=output;return output;
@@ -147,7 +147,7 @@ export function installBookSearch(root){
    for(const entry of entries){
     if(current!==generation||disposed)return;
     const hits=findMatches(entry.index,query,{limit:10001-found.length,signal:lifetime.signal});
-    for(const match of hits){if(found.length>=10000){capped=true;break;}const cfi=entry.section?entry.section.cfiFromRange(matchRange(match)):null;found.push({...match,chapter:entry.chapter,title:entry.title,entry,cfi});}
+    for(const match of hits){if(found.length>=10000){capped=true;break;}if(found.length%64===0){await yieldSearchTask();if(current!==generation||disposed||!panel)return;}const cfi=entry.section?entry.section.cfiFromRange(matchRange(match)):null;found.push({...match,chapter:entry.chapter,title:entry.title,entry,cfi});}
     if(capped)break;await frame();
    }
    if(current!==generation||!panel)return;matches=found;active=-1;
