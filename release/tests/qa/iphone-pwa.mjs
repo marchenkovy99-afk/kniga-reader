@@ -20,6 +20,7 @@ for(const [name,type] of [['webkit',webkit],['chromium',chromium]]){
  const context=await browser.newContext({...devices['iPhone 13'],serviceWorkers:'allow',reducedMotion:'no-preference'});
  await context.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true}));
  const page=await context.newPage();page.on('pageerror',error=>report.errors.push(error.message));
+ await page.addInitScript(()=>{window.__qaInput=[];for(const type of ['touchstart','touchend','click'])document.addEventListener(type,e=>{const a=e.target?.closest?.('button,input');window.__qaInput.push({type,target:a?.getAttribute('aria-label')||a?.textContent?.slice(0,60)||e.target?.className,prevented:e.defaultPrevented});if(window.__qaInput.length>30)window.__qaInput.shift();},true);});
  const check=(condition,label)=>{assert.ok(condition,label);report.checks.push(label);};
  const waitBook=async()=>{await page.locator('.reading-root').waitFor();await page.waitForFunction(()=>{const view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');return view?.libraFb2Preview?.settled?.()||!!view?.libraEpubPreview?.position?.()?.cfi;});};
  const status=()=>page.locator('.reading-status').textContent();
@@ -69,15 +70,17 @@ for(const [name,type] of [['webkit',webkit],['chromium',chromium]]){
   await goLibrary();await page.locator('input[type=file]').setInputFiles({name:'pwa-qa.epub',mimeType:'application/epub+zip',buffer:readFileSync('release/tests/browser/search-fixture.epub')});
   await page.locator('[data-library-book] .book-tile-open').filter({hasText:'Проверка поиска EPUB'}).tap();await waitBook();check(true,'EPUB import and open');
   const epubOrigin=await status();await search();check(await page.locator('.book-search-result').count()===2,'EPUB phrase matches');
-  await page.getByRole('button',{name:'Перейти к совпадению 2',exact:true}).tap();await page.getByText('2 / 2',{exact:true}).waitFor();
+  const row=page.getByRole('button',{name:'Перейти к совпадению 2',exact:true});await row.scrollIntoViewIfNeeded();
+  const point=await row.evaluate(el=>{const b=el.getBoundingClientRect(),v=el.closest('.book-search-results').getBoundingClientRect(),x=b.left+24,y=Math.max(b.top,v.top)+Math.min(24,(Math.min(b.bottom,v.bottom)-Math.max(b.top,v.top))/2);return {x,y,hit:document.elementFromPoint(x,y)?.closest('.book-search-result')===el,bounds:{top:b.top,bottom:b.bottom,viewTop:v.top,viewBottom:v.bottom}};});
+  report.epubTap=point;check(point.hit,'EPUB tap targets visible result surface');await page.touchscreen.tap(point.x,point.y);await page.getByText('2 / 2',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Вернуться к исходному месту',exact:true}).tap();await page.locator('.book-search-nav').waitFor({state:'detached'});check((await status())===epubOrigin,'EPUB explicit Return restores origin');
 
-  await goLibrary();await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();await page.locator('input[type=file]').waitFor({state:'attached'});
+  await goLibrary();await page.evaluate(()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('service worker readiness timeout')),30000))]));await page.reload();await page.locator('input[type=file]').waitFor({state:'attached'});
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
   await context.setOffline(true);await page.reload();await page.locator('[data-library-book] .book-tile-open').filter({hasText:'PWA QA FB2'}).tap();await waitBook();
   check(true,'service-worker offline restart and local FB2 reading');await search();check(await page.locator('.book-search-result').count()===2,'offline in-book search');await context.setOffline(false);
   report.status='PASS';
- }catch(error){report.status='FAIL';report.failure=error.stack;try{await page.screenshot({path:`${output}/${name}-failure.png`});}catch{}}
+ }catch(error){report.status='FAIL';report.failure=error.stack;try{report.ui=await page.evaluate(()=>({inputs:window.__qaInput,nav:document.querySelector('.book-search-nav')?.textContent,count:document.querySelector('.book-search-count')?.textContent,panel:!!document.querySelector('.book-search-panel'),viewport:{width:innerWidth,height:innerHeight}}));await page.screenshot({path:`${output}/${name}-failure.png`});}catch{}}
  finally{await context.close();await browser.close();writeFileSync(`${output}/results.json`,JSON.stringify(reports,null,2));console.log(JSON.stringify(report));}
 }
 if(reports.some(r=>r.status!=='PASS'))process.exitCode=1;
