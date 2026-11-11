@@ -19,7 +19,7 @@ for(const [name,type] of [['webkit',webkit],['chromium',chromium]]){
  const browser=await type.launch({headless:true});
  const context=await browser.newContext({...devices['iPhone 13'],serviceWorkers:'allow',reducedMotion:'no-preference'});
  await context.addInitScript(()=>Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true}));
- const page=await context.newPage();page.on('pageerror',error=>report.errors.push(error.message));
+ const page=await context.newPage();page.on('pageerror',error=>report.errors.push(error.message));page.on('console',message=>{if(message.type()==='error')report.errors.push(message.text());});
  await page.addInitScript(()=>{window.__qaInput=[];for(const type of ['touchstart','touchend','click'])document.addEventListener(type,e=>{const a=e.target?.closest?.('button,input');window.__qaInput.push({type,target:a?.getAttribute('aria-label')||a?.textContent?.slice(0,60)||e.target?.className,prevented:e.defaultPrevented});if(window.__qaInput.length>30)window.__qaInput.shift();},true);});
  const check=(condition,label)=>{assert.ok(condition,label);report.checks.push(label);};
  const waitBook=async()=>{await page.locator('.reading-root').waitFor();await page.waitForFunction(()=>{const view=document.querySelector('.reading-content .page-viewport,.reading-content .epub-mount');return view?.libraFb2Preview?.settled?.()||!!view?.libraEpubPreview?.position?.()?.cfi;});};
@@ -80,7 +80,7 @@ for(const [name,type] of [['webkit',webkit],['chromium',chromium]]){
   await context.setOffline(true);await page.reload();await page.locator('[data-library-book] .book-tile-open').filter({hasText:'PWA QA FB2'}).tap();await waitBook();
   check(true,'service-worker offline restart and local FB2 reading');await search();check(await page.locator('.book-search-result').count()===2,'offline in-book search');await context.setOffline(false);
   report.status='PASS';
- }catch(error){report.status='FAIL';report.failure=error.stack;try{report.ui=await page.evaluate(()=>({inputs:window.__qaInput,nav:document.querySelector('.book-search-nav')?.textContent,count:document.querySelector('.book-search-count')?.textContent,panel:!!document.querySelector('.book-search-panel'),viewport:{width:innerWidth,height:innerHeight}}));await page.screenshot({path:`${output}/${name}-failure.png`});}catch{}}
+ }catch(error){report.status='FAIL';report.failure=error.stack;try{report.ui=await page.evaluate(()=>{const view=document.querySelector('.reading-content .epub-mount'),api=view?.libraEpubPreview,s=api?.state();return {inputs:window.__qaInput,nav:document.querySelector('.book-search-nav')?.textContent,count:document.querySelector('.book-search-count')?.textContent,panel:!!document.querySelector('.book-search-panel'),viewport:{width:innerWidth,height:innerHeight},engine:api&&{settled:api.settled(),geometry:s.geometry,view:{width:view.clientWidth,height:view.clientHeight},position:api.position(),location:s.rendition?.currentLocation(),key:s.key}};});await page.screenshot({path:`${output}/${name}-failure.png`});}catch{}}
  finally{await context.close();await browser.close();writeFileSync(`${output}/results.json`,JSON.stringify(reports,null,2));console.log(JSON.stringify(report));}
 }
 if(reports.some(r=>r.status!=='PASS'))process.exitCode=1;
