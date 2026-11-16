@@ -36,3 +36,5 @@
 
 - Quote review fixes: actionable notice is hosted inside an open modal; undo rerenders only the originating quote view.
 - Ruling: global appearance retains the existing timestamp conflict model and is explicitly labelled “Использовать для всех книг”, rather than claiming it affects new books only.
+
+- CI environment fix: ubuntu-latest moved to 26.04, unsupported by the repository Playwright 1.56.1. Pin both browser workflows to ubuntu-24.04; do not skip browser tests.
