@@ -200,6 +200,30 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    for(const key of ['root','body','reader','page'])assert.equal(colors[key],expected,name+' must paint '+key+' with the same background');
    assert.deepEqual(await snapshot(),before,'switching to '+name+' must not alter pagination or text');
   }
+  if(width===393&&!visualShrink&&!innerShrink&&!documentShrink){
+   const hit=await page.evaluate(()=>{
+    const paragraph=document.querySelector('.book-page[aria-hidden="false"] .paragraph[data-block]');
+    const node=document.createTreeWalker(paragraph,NodeFilter.SHOW_TEXT).nextNode();
+    const offset=Math.max(0,node.textContent.search(/\S/));const range=document.createRange();range.setStart(node,offset);range.setEnd(node,offset+1);const rect=range.getBoundingClientRect();
+    return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+   });
+   await page.mouse.move(hit.x,hit.y);await page.mouse.down();await page.waitForTimeout(520);await page.mouse.up();
+   await page.locator('#quote-save').waitFor();
+   const selectionMenu=await page.locator('#quote-actions').boundingBox();assert.ok(selectionMenu.y>=top,'quote menu clears the iPhone status area');
+   await page.locator('#quote-save').click();
+   await page.getByText('Цитата сохранена.',{exact:true}).waitFor();
+   await page.locator('mark[data-annotation]').first().click();
+   await page.locator('#quote-delete').click();
+   await page.locator('#notification button').waitFor();
+   assert.equal(await page.locator('mark[data-annotation]').count(),0,'deletion immediately removes the highlight');
+   await page.locator('#notification button').click();
+   await page.locator('mark[data-annotation]').first().waitFor();
+   await page.locator('mark[data-annotation]').first().press('Enter');
+   await page.locator('#quote-delete').click();
+   await page.locator('#notification button').waitFor();
+   assert.equal(await page.locator('mark[data-annotation]').count(),0,'keyboard quote actions delete the restored highlight');
+   assert.deepEqual(await snapshot(),before,'quote save/delete/undo never changes book source, page or pagination');
+  }
   await page.locator('#appearance').click();
   await page.locator('dialog[open]').waitFor();
   assert.deepEqual(await snapshot(),before,'appearance sheet must not silently change page');

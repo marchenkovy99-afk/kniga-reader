@@ -571,7 +571,7 @@ function selectionAnchor(selectedRange){
 }
 function clearQuoteActions(){selectionUI?.clear();document.querySelector('#quote-actions')?.remove();document.querySelector('#quote-selection')?.remove();}
 function positionQuoteTools(tools,bounds){
- const view=window.visualViewport,left=view?.offsetLeft||0,top=view?.offsetTop||0,width=view?.width||innerWidth,height=view?.height||innerHeight;
+ const view=window.visualViewport,style=getComputedStyle(document.documentElement),safeTop=parseFloat(style.getPropertyValue('--quote-safe-top'))||0,safeBottom=parseFloat(style.getPropertyValue('--quote-safe-bottom'))||0,left=view?.offsetLeft||0,top=(view?.offsetTop||0)+safeTop,width=view?.width||innerWidth,height=(view?.height||innerHeight)-safeTop-safeBottom;
  const size=tools.getBoundingClientRect(),x=bounds?bounds.left+bounds.width/2:left+width/2;
  const y=bounds&&bounds.top-size.height-12>=top+8?bounds.top-size.height-12:Math.min(top+height-size.height-8,(bounds?.bottom||top)+12);
  tools.style.left=`${Math.max(left+8,Math.min(x-size.width/2,left+width-size.width-8))}px`;tools.style.top=`${Math.max(top+8,y)}px`;

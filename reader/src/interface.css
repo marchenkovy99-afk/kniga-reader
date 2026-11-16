@@ -149,3 +149,5 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var
 .saved-actions .danger{color:#ad3b31}
 :root[data-theme=night] .saved-actions .danger,:root[data-theme=oled] .saved-actions .danger{color:#ffaaa1}
 @media(max-width:359px){#quote-actions>button,#quote-actions .quote-toolbar-actions>button{font-size:12px;padding-inline:10px}}
+
+:root{--quote-safe-top:env(safe-area-inset-top,0px);--quote-safe-bottom:env(safe-area-inset-bottom,0px)}
