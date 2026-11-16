@@ -120,10 +120,10 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading,'rendered page must exist');
    assert.equal(reading.ready,'ready','book must be visible, not in an error state');
    assert.ok(reading.glyphs>0&&reading.fits,'all text rectangles must fit within installed PWA stage');
-   assert.ok(reading.first>=top&&reading.first<=top+8,'first line must stay close to, and below, the iOS safe area');
+   assert.ok(reading.first>=top+(height<=550?48:56)&&reading.first<=top+(height<=550?48:56)+8,'first line must clear the fixed header strip');
    assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(60,bottom+26)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
-   assert.ok(reading.last<=reading.stage.bottom-2.5,'last glyph must not be cropped');
+   assert.ok(reading.last<=reading.stage.bottom-2.5,'last glyph must not be cropped: '+JSON.stringify({screen:[width,height],stage:reading.stage,last:reading.last,page:reading.page}));
    assert.ok(height-reading.last>=59.5,'last glyph descenders must clear the physical viewport edge by at least 44px');
    if(samples.length){
     const previous=samples.at(-1).markers.at(-1),next=reading.markers[0];
@@ -164,7 +164,8 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   assert.equal(await page.locator('#toggle-bookmark').isVisible(),true,'bookmark is available when controls are opened');
   assert.equal(await page.locator('#prev-page,#next-page').count(),0,'permanent page-turn arrows must not be reintroduced');
   assert.equal(await immersiveNumber.isVisible(),false,'no page numbering when toolbar is visible');
-  assert.equal(await page.locator('#reader-page-position').isVisible(),false,'toolbar must not show page numbering');
+  assert.equal(await page.locator('#reader-page-position').isVisible(),true,'opened toolbar must show the current page');
+  const headerBounds=await bar.boundingBox();assert.ok(headerBounds.y+headerBounds.height<=before.height+top&&headerBounds.y+headerBounds.height<=samples[0].stage.top,'header never covers the page');
   assert.deepEqual(await snapshot(),before,'opening controls must not repaginate');
   const footer=await page.locator('.reader-footer').boundingBox();
   assert.ok(footer.x>=0&&footer.x+footer.width<=width+.5&&footer.y>=0&&footer.y+footer.height<=height,'toolbar stays within installed window');
@@ -188,7 +189,9 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
   // with one paper color, preventing seams around iOS system safe areas.
   const palette={paper:'rgb(246, 243, 236)',white:'rgb(255, 255, 255)',night:'rgb(29, 31, 30)',oled:'rgb(0, 0, 0)'};
   for(const [name,expected] of Object.entries(palette)){
-   for(let tries=0;tries<5&&await page.locator('html').getAttribute('data-theme')!==name;tries++)await page.locator('#cycle-theme').click();
+   await page.locator('#cycle-theme').click();
+   await page.locator('[data-theme-choice="'+name+'"]').click();
+   await page.locator('#close-sheet').click();
    assert.equal(await page.locator('html').getAttribute('data-theme'),name,'theme switching must reach '+name);
    const colors=await page.evaluate(()=>{
     const css=node=>getComputedStyle(node).backgroundColor;
@@ -196,6 +199,30 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    });
    for(const key of ['root','body','reader','page'])assert.equal(colors[key],expected,name+' must paint '+key+' with the same background');
    assert.deepEqual(await snapshot(),before,'switching to '+name+' must not alter pagination or text');
+  }
+  if(width===393&&!visualShrink&&!innerShrink&&!documentShrink){
+   const hit=await page.evaluate(()=>{
+    const paragraph=document.querySelector('.book-page[aria-hidden="false"] .paragraph[data-block]');
+    const node=document.createTreeWalker(paragraph,NodeFilter.SHOW_TEXT).nextNode();
+    const offset=Math.max(0,node.textContent.search(/\S/));const range=document.createRange();range.setStart(node,offset);range.setEnd(node,offset+1);const rect=range.getBoundingClientRect();
+    return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+   });
+   await page.mouse.move(hit.x,hit.y);await page.mouse.down();await page.waitForTimeout(520);await page.mouse.up();
+   await page.locator('#quote-save').waitFor();
+   const selectionMenu=await page.locator('#quote-actions').boundingBox();assert.ok(selectionMenu.y>=top,'quote menu clears the iPhone status area');
+   await page.locator('#quote-save').click();
+   await page.getByText('Цитата сохранена.',{exact:true}).waitFor();
+   await page.locator('mark[data-annotation]').first().click();
+   await page.locator('#quote-delete').click();
+   await page.locator('#notification button').waitFor();
+   assert.equal(await page.locator('mark[data-annotation]').count(),0,'deletion immediately removes the highlight');
+   await page.locator('#notification button').click();
+   await page.locator('mark[data-annotation]').first().waitFor();
+   await page.locator('mark[data-annotation]').first().press('Enter');
+   await page.locator('#quote-delete').click();
+   await page.locator('#notification button').waitFor();
+   assert.equal(await page.locator('mark[data-annotation]').count(),0,'keyboard quote actions delete the restored highlight');
+   assert.deepEqual(await snapshot(),before,'quote save/delete/undo never changes book source, page or pagination');
   }
   await page.locator('#appearance').click();
   await page.locator('dialog[open]').waitFor();
