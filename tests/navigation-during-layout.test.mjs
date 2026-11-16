@@ -7,7 +7,7 @@ const jump=reader.slice(reader.indexOf('function jump('),reader.indexOf('functio
 test('chapter/search jumps queue the requested source anchor during repagination without saving an unseen page',()=>{
  let layouts=0,saves=0,turns=0;
  const context={current:{id:'book'},pages:[{}],pendingJump:null,anchor:{block:0,offset:4},
-  document:{querySelector:()=>({dataset:{layoutState:'pending'}})},closeSheet(){},
+  document:{querySelector:()=>({dataset:{layoutState:'pending'}})},closeSheet(){},rememberReturnPoint(){},
   scheduleLayout(){layouts++;},scheduleSave(){saves++;},updateProgress(){},goPage(){turns++;},pageForAnchor(){return 0;}};
  vm.createContext(context);vm.runInContext(jump,context);
  context.jump({block:5,offset:12});

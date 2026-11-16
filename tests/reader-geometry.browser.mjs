@@ -77,6 +77,7 @@ try{
  const topbar=await page.locator('.reader-header').boundingBox();
  assert.ok(topbar&&topbar.y>=59&&topbar.y+topbar.height<=pages[0].stageBottom,'top navigation remains on screen only while opened');
  assert.ok(await page.locator('#toggle-bookmark').isVisible(),'bookmark belongs in the top navigation');
+ assert.ok(topbar.y+topbar.height<=beforeChrome.top+0.5 || topbar.y+topbar.height<=pages[0].stageTop,'top controls must not cover chapter headings');
  assert.equal(await page.locator('#prev-page,#next-page').count(),0,'permanent page-turn arrows must not return');
  const footer=await page.locator('.reader-footer').boundingBox();
  assert.ok(footer.width>=368&&footer.height>=78,'floating controls must remain touch-accessible and inside the iPhone width');
@@ -101,10 +102,10 @@ try{
  await assertAnchorPresent();
  const resizedFooter=await page.locator('.reader-footer').boundingBox();
  assert.ok(resizedFooter.y+resizedFooter.height<=900&&resizedFooter.y+resizedFooter.height>=900-60,'controls follow window size changes and respect the home indicator');
- assert.ok(pages.every(p=>p.stageTop>=59&&p.stageTop<=60),'installed page starts just below the iOS safe area');
+ assert.ok(pages.every(p=>p.stageTop>=115&&p.stageTop<=116),'installed page reserves a stable header strip below the iOS safe area');
  assert.ok(pages.every(p=>p.stageBottom>=791&&p.stageBottom<=793),'reading area may use only the remaining safe pixels below without clipping');
- assert.ok(pages.every(p=>p.stageHeight>=730),'pagination must receive the reclaimed bottom pixels');
- assert.ok(pages.every(p=>p.first>=59&&p.first<=67),'first text line must be fully below the translucent iOS top edge');
+ assert.ok(pages.every(p=>p.stageHeight>=674),'pagination must receive the reclaimed bottom pixels');
+ assert.ok(pages.every(p=>p.first>=115&&p.first<=123),'first text line must be fully below the translucent iOS top edge');
  assert.ok(pages.every(p=>p.allVisible),'all rendered text rectangles must fit within the current stage and screen');
  assert.ok(pages.every(p=>852-p.stageBottom>=59.5),'screen edge must have at least 44px clearance below every book page');
  assert.ok(pages.every(p=>p.last<=p.stageBottom-2.5),'last glyph descenders must not be cropped by the page viewport');

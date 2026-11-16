@@ -29,3 +29,16 @@ export function mergeAnnotations(...groups){
  }
  return [...map.values()].slice(-500);
 }
+
+/** Reconstruct quotations from source coordinates, never from visual line wrapping. */
+export function sourceQuoteText(book,start,end){
+ if(!start||!end||start.block>end.block||start.block===end.block&&start.offset>=end.offset)return '';
+ return book.blocks.slice(start.block,end.block+1).map((block,index)=>block.text.slice(index===0?start.offset:0,start.block+index===end.block?end.offset:undefined)).join('\n\n');
+}
+export function annotationForRange(annotations,range){
+ return annotations.find(n=>!n.deleted&&n.start.block===range.start.block&&n.start.offset===range.start.offset&&n.end.block===range.end.block&&n.end.offset===range.end.offset)||null;
+}
+export function changeAnnotation(annotations,id,patch,now=Date.now()){
+ const note=annotations.find(n=>n.id===id);if(!note)return annotations;
+ return mergeAnnotations(annotations,[{...note,...patch,id:note.id,start:note.start,end:note.end,changedAt:Math.max(now,(note.changedAt||0)+1)}]);
+}

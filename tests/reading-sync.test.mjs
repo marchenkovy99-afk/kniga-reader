@@ -13,7 +13,7 @@ function harness({progress={anchor:{block:0,offset:0},updatedAt:100},touched=fal
  const context={localOwner:'account-a',localState:owner=>accounts.forOwner(owner||'account-a'),current:book,anchor:{...progress.anchor},readingTouched:touched,
   storage:store,cloud:{queue:(...args)=>queued.push(args)},
   setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout:()=>{},
-  updateProgress:()=>{},layout:async()=>{context.layouts++;},layouts:0,message:()=>{},saveTimer:null};
+  clearQuoteActions:()=>{context.clears++;},refreshNotesOnPage:()=>{context.repaints++;},clears:0,repaints:0,updateProgress:()=>{},layout:async()=>{context.layouts++;},layouts:0,message:()=>{},saveTimer:null};
  vm.createContext(context);
  vm.runInContext(reader.slice(reader.indexOf('async function persistPosition()'),reader.indexOf('function progressFor(')),context);
  const callback=reader.slice(reader.indexOf('remotePosition:async(')+'remotePosition:'.length,reader.indexOf(');\n  await cloud.init();'));
@@ -50,4 +50,12 @@ test('a genuine user change gets a new timestamp and is sent to the cloud',async
  assert.equal(h.context.readingTouched,true);
  assert.deepEqual({...h.book.progress.anchor},{block:1,offset:2});
  assert.equal(h.queued.length,1);
+});
+
+test('remote quote deletion repaints open highlights without moving the reading anchor',async()=>{
+ const h=harness({touched:true});const deleted=[{id:'q',deleted:true}];
+ await h.context.receive(h.book,{payload:{anchor:{block:2,offset:4}},clientUpdatedAt:200},[],deleted);
+ assert.equal(h.context.repaints,1);assert.equal(h.context.clears,1);
+ assert.equal(h.book.progress.annotations[0].deleted,true);
+ assert.deepEqual({...h.context.anchor},{block:0,offset:0});
 });
