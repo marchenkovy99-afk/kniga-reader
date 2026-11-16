@@ -9,7 +9,7 @@ export function createTextLayoutEngine({width,height,settings,renderer,doc=docum
  Object.assign(measure.style,{width:`${width}px`,height:`${height}px`,overflow:'visible'});
  applyTypography(measure,settings,width);doc.body.append(measure);
  function place(fragments){measure.replaceChildren(...fragments.map(renderer.fragment));return measure;}
- function fits(fragments){place(fragments);return visibleContentFits(measure,measure,{bottomGap:3});}
+ function fits(fragments){place(fragments);return visibleContentFits(measure);}
  function geometry(){
   const range=doc.createRange();range.selectNodeContents(measure);
   const rects=[...range.getClientRects()].filter(r=>r.height>0&&r.width>0),bounds=measure.getBoundingClientRect();

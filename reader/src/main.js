@@ -16,12 +16,10 @@ import {CloudSync} from './cloud.js';
 import {createAccountState,bookBelongsToAccount} from './account-state.js';
 import {supabase} from './supabase-client.js';
 import {mergeMarks,preferRemoteAppearance,bookAppearanceKey,resolveReadingAppearance,legacyAppearanceTimestamp} from './sync-model.js';
-import {mergeAnnotations,chapterReadingStatus,sourceQuoteText,annotationForRange,changeAnnotation} from './reading-features.js';
+import {mergeAnnotations,chapterReadingStatus} from './reading-features.js';
 import {createReadingFullscreen} from './reading-fullscreen.js';
 import {trackReaderWindow,viewportPaintQuery} from './reader-window.js';
 import './style.css';
-import './interface.css';
-import {filterBooks,searchBook,chapterLabel,resetAppearanceSection,presetFor,appearancePresets,savedItems,filterSaved} from './ui-model.js';
 import {renderCover,prepareCoverImage} from './covers.js';
 import {assertPageIntegrity} from './page-integrity.js';
 import {visibleContentFits} from './pagination-geometry.js';
@@ -30,16 +28,13 @@ import {sha256} from 'js-sha256';
 import {createAppearanceWriter} from './appearance-writer.js';
 import {createPaginationCache} from './pagination-cache.js';
 const app=document.querySelector('#app');
-const paths={settings:'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',user:'M20 21v-2a7 7 0 0 0-14 0v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',moon:'M20.985 12.486a9 9 0 1 1-9.47-9.47c.405-.031.641.446.393.768a7 7 0 0 0 8.309 8.309c.322-.248.799-.012.768.393Z',cloud:'M7 18a5 5 0 0 1-.7-9.95A6 6 0 0 1 18 7a5.5 5.5 0 0 1 0 11H7Z',book:'M4 4h6a4 4 0 0 1 4 4v13a5 5 0 0 0-5-3H4V4Zm16 0h-6a4 4 0 0 0-4 4v13a5 5 0 0 1 5-3h5V4Z',plus:'M12 5v14M5 12h14',back:'m14 5-7 7 7 7',next:'m10 5 7 7-7 7',bookmark:'M6 3h12v18l-6-4-6 4V3Z',search:'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',list:'M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1',close:'m6 6 12 12M6 18 18 6',sun:'M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',sort:'M4 7h16M7 12h10M10 17h4',more:'M5 12h.01M12 12h.01M19 12h.01',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',check:'m5 12 4 4 10-10',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5'};
+const paths={grid:'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',user:'M20 21v-2a7 7 0 0 0-14 0v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',moon:'M20.985 12.486a9 9 0 1 1-9.47-9.47c.405-.031.641.446.393.768a7 7 0 0 0 8.309 8.309c.322-.248.799-.012.768.393Z',cloud:'M7 18a5 5 0 0 1-.7-9.95A6 6 0 0 1 18 7a5.5 5.5 0 0 1 0 11H7Z',book:'M4 4h6a4 4 0 0 1 4 4v13a5 5 0 0 0-5-3H4V4Zm16 0h-6a4 4 0 0 0-4 4v13a5 5 0 0 1 5-3h5V4Z',plus:'M12 5v14M5 12h14',back:'m14 5-7 7 7 7',next:'m10 5 7 7-7 7',bookmark:'M6 3h12v18l-6-4-6 4V3Z',search:'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',list:'M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1',close:'m6 6 12 12M6 18 18 6',sun:'M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.42 1.42M16.94 16.94l1.42 1.42M5.64 18.36l1.42-1.42M16.94 7.06l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',sort:'M4 7h16M7 12h10M10 17h4',more:'M5 12h.01M12 12h.01M19 12h.01',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',check:'m5 12 4 4 10-10',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5'};
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.book}"/></svg>`;
 const button=(name,label,id,extra='')=>`<button class="icon-button" id="${id}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
-let libraryRenderId=0,libraryDestination='library';
 let books=[],settings={...defaults},current=null,pages=[],pageIndex=0,flip=null,abort=null,layoutTimer,saveTimer,anchor={block:0,offset:0},busy=false,settingsTab='text',resizeObserver,lastSize='',sheetReturn=null;
 const readerEngine=new URLSearchParams(location.search).get('engine')==='legacy'?'legacy':'dom';
 let readerPageRenderer=null,paginationComplete=true,geometryRecovery=0,readerLayoutWidth=0;
-let libraryView='grid',librarySort='recent',libraryQuery='',libraryCollection='',readingTouched=false,selectionUI=null,pendingJump=null,returnPoint=null;
-try{const ui=JSON.parse(localStorage.getItem('libra-shelf-ui')||'{}');if(['grid','compact','list'].includes(ui.view))libraryView=ui.view;if(['recent','title','author','progress'].includes(ui.sort))librarySort=ui.sort;}catch{}
-function persistShelfUI(){try{localStorage.setItem('libra-shelf-ui',JSON.stringify({view:libraryView,sort:librarySort}));}catch{}}
+let libraryView='grid',readingTouched=false,selectionUI=null,pendingJump=null;
 let cloud=null,cloudPoll=null,authListenerRegistered=false,settingsUpdatedAt=0,globalSettings={...defaults},pageNodes=[],libraryStatusFilter='';
 const accountState=createAccountState(storage),appearanceWriters=new Map();
 let localOwner=null,allBooks=[],appearanceTail=Promise.resolve();
@@ -53,7 +48,7 @@ const updateReaderWindow=trackReaderWindow(window,document,()=>scheduleLayout())
 const paginationCache=createPaginationCache({storage,paginate,validatePages:assertPageIntegrity,onStorageError:()=>message('Не удалось сохранить готовые страницы на устройстве. Книга доступна, но при следующем запуске может понадобиться пересчёт.',true)});
 const activeMarks=book=>(book.marks||[]).filter(m=>!m.deleted);
 
-const statuses={reading:'Читаю',planned:'В планах',finished:'Прочитано'};
+const statuses={reading:'Читаю',planned:'Хочу прочитать',finished:'Прочитано'};
 const activeNotes=()=> (current?.progress?.annotations||[]).filter(x=>!x.deleted);let noteSelectTimer;
 async function saveBookMeta(book){const owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);book.progress={...(book.progress||{}),updatedAt:Date.now()};const data=book.progress;await localState(owner).setPreference('position:'+book.id,data);cloud?.queue('position:'+book.id,data,data.updatedAt,owner);}
 function downloadText(name,body,mime='text/plain'){const url=URL.createObjectURL(new Blob([body],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
@@ -93,7 +88,7 @@ async function restoreBackup(file){
 }
 
 const reduced=()=>!pageTurnMotion(settings,matchMedia('(prefers-reduced-motion: reduce)').matches).animate;
-function message(text,error=false,action=null){let box=document.querySelector('#notification');if(!box){box=document.createElement('div');box.id='notification';box.setAttribute('role','status');document.body.append(box);}(document.querySelector('dialog[open]')||document.body).append(box);box.className=error?'notice error':'notice';box.replaceChildren(document.createTextNode(text));if(action){const button=document.createElement('button');button.textContent=action.label;button.onclick=()=>{box.hidden=true;action.run();};box.append(button);}box.classList.toggle('has-action',!!action);box.hidden=false;clearTimeout(box.timer);box.timer=setTimeout(()=>box.hidden=true,error||action?10000:5000);}
+function message(text,error=false){let box=document.querySelector('#notification');if(!box){box=document.createElement('div');box.id='notification';box.setAttribute('role','status');document.body.append(box);}box.className=error?'notice error':'notice';box.textContent=text;box.hidden=false;clearTimeout(box.timer);box.timer=setTimeout(()=>box.hidden=true,error?10000:5000);}
 function theme(){
  const actual=settings.theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'night':'white'):settings.theme;
  const isDark=actual==='night'||actual==='oled';
@@ -117,92 +112,49 @@ function theme(){
  }
 }
 function fileInput(){return '<input id="file-input" type="file" accept=".fb2,.fb2.zip,.fbz,.zip,.epub,.txt" hidden multiple />';}
-function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();if(!current&&document.querySelector('#book-grid')){renderGrid(libraryQuery);const select=document.querySelector('#library-collection');if(select){const values=[...new Set(books.map(b=>b.progress?.collection).filter(Boolean))];select.innerHTML='<option value="">Все коллекции</option>'+values.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');select.value=libraryCollection;select.closest('label').hidden=!values.length;}}});}}
-function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';delete d.dataset.view;delete d.dataset.bookId;d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
+function ensureSheet(){if(!document.querySelector('#sheet')){const d=document.createElement('dialog');d.id='sheet';document.body.append(d);d.addEventListener('click',e=>{if(e.target===d)closeSheet();});d.addEventListener('close',()=>{sheetReturn?.focus();});}}
+function openSheet(title,html,wide=false){ensureSheet();const d=document.querySelector('#sheet');sheetReturn=document.activeElement;d.className=wide?'sheet wide':'sheet';d.innerHTML=`<div class="handle"></div><header class="sheet-header"><h2>${title}</h2>${button('close','Закрыть','close-sheet')}</header><div class="sheet-content">${html}</div>`;d.querySelector('#close-sheet').onclick=closeSheet;if(!d.open)d.showModal();}
 function closeSheet(){document.querySelector('#sheet')?.close();}
-function dispose(){returnPoint=null;clearQuoteActions();selectionUI?.destroy();selectionUI=null;pendingJump=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];readerPageRenderer?.clear();readerPageRenderer=null;paginationComplete=true;if(flip){flip.destroy();flip=null;}pages=[];}
+function dispose(){clearQuoteActions();selectionUI?.destroy();selectionUI=null;pendingJump=null;abort?.abort();clearTimeout(layoutTimer);resizeObserver?.disconnect();resizeObserver=null;pageNodes=[];readerPageRenderer?.clear();readerPageRenderer=null;paginationComplete=true;if(flip){flip.destroy();flip=null;}pages=[];}
 // Passive saves preserve the revision; only user edits may outrank another device.
 async function persistPosition(){if(!current)return;const book=current,id=book.id,owner=(book.localStateOwner===undefined?localOwner:book.localStateOwner);const data={...(current.progress||{}),anchor:{...anchor},marks:current.marks||[],updatedAt:current.progress?.updatedAt||0};current.progress=data;try{await localState(owner).setPreference(`position:${id}`,data);if(data.updatedAt)cloud?.queue(`position:${id}`,data,data.updatedAt,owner);}catch(e){message(e.message,true);}}
 function scheduleSave(){if(current){readingTouched=true;current.progress={...(current.progress||{}),updatedAt:Math.max(Date.now(),(current.progress?.updatedAt||0)+1)};}clearTimeout(saveTimer);saveTimer=setTimeout(persistPosition,220);}
 function progressFor(b){const a=b.progress?.anchor;if(!a)return 0;const before=b.blocks.slice(0,a.block).reduce((sum,x)=>sum+x.text.length,0)+a.offset;return Math.max(0,Math.min(100,Math.round(before/Math.max(1,b.chars)*100)));}
 const cover=renderCover;
-async function library(destination='library'){
- destination=['library','saved','settings'].includes(destination)?destination:'library';
- const renderId=++libraryRenderId,owner=localOwner;
+async function library(){
  await readingFullscreen.leave();
- if(renderId!==libraryRenderId||owner!==localOwner)return;
  const previousPagination=current&&pages.length?{id:current.id,pages:[...pages]}:null;
- await persistPosition();if(renderId!==libraryRenderId||owner!==localOwner)return;dispose();current=null;libraryDestination='library';scheduleCloudPoll();settings={...globalSettings};document.body.classList.remove('reading');theme();
- app.innerHTML=`<div class="library"><header class="library-top"><a class="brand" href="#" aria-label="Libra: библиотека">${icon('book')}<span>libra</span></a><div class="library-actions">${button('search','Поиск книг','toggle-library-search')}<button id="cloud-status" class="cloud-status" aria-label="Профиль и синхронизация">${icon('cloud')}<span>На устройстве</span></button></div></header><main id="library-main"><div class="library-heading"><div><span class="eyebrow">ВАШИ КНИГИ</span><h1>Библиотека</h1></div><button class="icon-button import-button" aria-label="Добавить книгу">${icon('plus')}</button></div><label class="library-search" ${libraryQuery?'':'hidden'}>${icon('search')}<input id="library-search" type="search" value="${esc(libraryQuery)}" placeholder="Название книги или автор" aria-label="Найти книгу в библиотеке"></label><section id="continue-slot" aria-label="Продолжить чтение"></section><div class="shelf-top"><h2>Все книги <span class="shelf-count" id="shelf-count">${books.length}</span></h2><div class="shelf-view">${button('grid','Показать крупными обложками','view-grid')}${button('grid','Показать компактной сеткой','view-compact')}${button('list','Показать списком','view-list')}</div></div><div class="shelf-filter-row"><div class="status-tabs" role="group" aria-label="Фильтр книг">${[['','Все'],['reading','Читаю'],['planned','В планах'],['finished','Прочитано']].map(([value,label])=>`<button data-library-status="${value}" aria-pressed="${libraryStatusFilter===value}">${label}</button>`).join('')}</div><label class="shelf-sort"><span class="sr-only">Сортировка книг</span>${icon('sort')}<select id="library-sort" aria-label="Сортировка книг"><option value="recent">Недавние</option><option value="title">По названию</option><option value="author">По автору</option><option value="progress">По прогрессу</option></select></label></div><label class="collection-filter" ${books.some(b=>b.progress?.collection)?'':'hidden'}><span>Коллекция</span><select id="library-collection"><option value="">Все коллекции</option>${[...new Set(books.map(b=>b.progress?.collection).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru')).map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></label><div id="book-grid" class="book-grid"></div></main><nav class="library-nav" aria-label="Основная навигация"><button id="nav-library" aria-current="page">${icon('book')}<span>Библиотека</span></button><button id="nav-bookmarks">${icon('bookmark')}<span>Сохранённое</span></button><button id="nav-settings">${icon('settings')}<span>Настройки</span></button></nav></div>${fileInput()}<input id="backup-file" type="file" accept=".json,application/json" hidden>`;
- document.querySelector('.brand').onclick=e=>{e.preventDefault();libraryQuery='';libraryStatusFilter='';libraryCollection='';library();};
- document.querySelector('#toggle-library-search').onclick=async()=>{if(!document.querySelector('.library-search'))await library();const el=document.querySelector('.library-search');if(!el)return;el.hidden=!el.hidden;if(!el.hidden)document.querySelector('#library-search').focus();};
- for(const view of ['grid','compact','list'])document.querySelector('#view-'+view).onclick=()=>{libraryView=view;persistShelfUI();renderGrid(libraryQuery);};
- document.querySelector('#nav-library').onclick=()=>library();
+ await persistPosition();dispose();current=null;scheduleCloudPoll();settings={...globalSettings};document.body.classList.remove('reading');libraryStatusFilter='';theme();
+ app.innerHTML=`<div class="library"><header class="library-top"><a class="brand" href="#" aria-label="Книга: библиотека">книга</a><div class="library-actions">${button('search','Поиск книг','toggle-library-search')}<button id="cloud-status" class="cloud-status" aria-label="Профиль и синхронизация">${icon('user')}<span>Облако</span></button></div></header><main><div class="library-heading"><h1>Библиотека</h1><button class="icon-button import-button" aria-label="Добавить книгу">${icon('plus')}</button></div><div class="status-tabs" role="group" aria-label="Фильтр книг"><button data-library-status="" aria-pressed="true">Все</button><button data-library-status="reading" aria-pressed="false">Читаю</button><button data-library-status="finished" aria-pressed="false">Прочитано</button></div><label class="library-search" hidden>${icon('search')}<input id="library-search" type="search" placeholder="Название книги или автор" aria-label="Найти книгу в библиотеке"></label><section id="continue-slot" aria-label="Продолжить чтение"></section><div class="shelf-top"><h2>Мои книги</h2><div class="shelf-view">${button('grid','Показать сеткой','view-grid','aria-pressed="true"')}${button('list','Показать списком','view-list','aria-pressed="false"')}</div></div><div id="book-grid" class="book-grid"></div><div class="library-utilities"><button id="library-theme" class="icon-button" aria-label="Переключить тему">${icon('moon')}</button><button id="library-tools" class="text-button">Управление библиотекой</button></div></main><nav class="library-nav" aria-label="Основная навигация"><button id="nav-library" aria-current="page">${icon('book')}<span>Библиотека</span></button><button id="nav-bookmarks">${icon('bookmark')}<span>Закладки</span></button></nav></div>${fileInput()}<input id="backup-file" type="file" accept=".json,application/json" hidden>`;
+ document.querySelector('#toggle-library-search').onclick=()=>{const el=document.querySelector('.library-search');el.hidden=!el.hidden;if(!el.hidden)document.querySelector('#library-search').focus();};
+ for(const view of ['grid','list'])document.querySelector('#view-'+view).onclick=()=>{libraryView=view;renderGrid(document.querySelector('#library-search').value);};
+ document.querySelector('#nav-library').onclick=()=>{libraryStatusFilter='';document.querySelectorAll('[data-library-status]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.libraryStatus==='')));renderGrid('');window.scrollTo({top:0,behavior:'smooth'});};
  document.querySelector('#nav-bookmarks').onclick=showLibraryBookmarks;
- document.querySelector('#nav-settings').onclick=showAppSettings;
- const last=[...books].filter(b=>b.progress?.updatedAt&&b.progress?.status!=='finished').sort((a,b)=>b.progress.updatedAt-a.progress.updatedAt)[0];
+ document.querySelector('#library-tools').onclick=()=>{openSheet('Библиотека',`<div class="library-backups"><button id="export-backup" class="chapter-row">Скачать резервную копию</button><button id="restore-backup" class="chapter-row">Восстановить из копии</button><button id="about" class="chapter-row">О приложении</button></div>`);document.querySelector('#export-backup').onclick=exportBackup;document.querySelector('#restore-backup').onclick=()=>document.querySelector('#backup-file').click();document.querySelector('#about').onclick=showAbout;};
+ document.querySelector('#library-theme').onclick=()=>{settings.theme=['night','oled'].includes(document.documentElement.dataset.theme)?'paper':'night';theme();saveSettings();};theme();
+ const last=[...books].filter(b=>b.progress?.updatedAt).sort((a,b)=>b.progress.updatedAt-a.progress.updatedAt)[0];
  let continuePosition=last?`${progressFor(last)}% прочитано`:'';
- if(last&&previousPagination?.id===last.id&&previousPagination.pages.length)continuePosition=`${pageForAnchor(previousPagination.pages,last.progress?.anchor)+1} из ${previousPagination.pages.length} страниц`;
- if(last)document.querySelector('#continue-slot').innerHTML=`<article class="continue"><div class="continue-cover">${cover(last,true)}</div><div class="continue-copy"><span class="section-label">Продолжить чтение</span><h2>${esc(last.title)}</h2><p>${esc(last.author)}</p><span class="continue-position">${continuePosition}</span><div class="continue-progress"><progress max="100" value="${progressFor(last)}" aria-label="Прочитано ${progressFor(last)}%"></progress></div><button class="button primary" id="continue-book">Продолжить ${icon('next')}</button></div></article>`;
+ if(last){try{const cached=previousPagination?.id===last.id?previousPagination.pages:(await storage.getPreference('pagination-cache:'+last.id))?.entries?.at(-1)?.pages;if(cached?.length)continuePosition=`${pageForAnchor(cached,last.progress?.anchor)+1} из ${cached.length} страниц`;}catch{}}
+ if(last)document.querySelector('#continue-slot').innerHTML=`<article class="continue"><div class="continue-cover">${cover(last,true)}</div><div class="continue-copy"><span class="section-label">Продолжить</span><p>${esc(last.author)}</p><h2>${esc(last.title)}</h2><span class="continue-position">${continuePosition}</span><div class="continue-progress"><progress max="100" value="${progressFor(last)}" aria-label="Прочитано ${progressFor(last)}%"></progress></div><button class="button primary" id="continue-book">Читать</button></div></article>`;
  document.querySelector('#cloud-status').onclick=showCloud;updateCloudStatus();
  document.querySelector('#continue-book')?.addEventListener('click',()=>openBook(last.id));
- document.querySelector('#library-sort').value=librarySort;
- document.querySelector('#library-sort').onchange=e=>{librarySort=e.target.value;persistShelfUI();renderGrid(libraryQuery);};
- const collection=document.querySelector('#library-collection');collection.value=libraryCollection;if(!collection.value)libraryCollection='';collection.onchange=e=>{libraryCollection=e.target.value;renderGrid(libraryQuery);};
- renderGrid(libraryQuery);document.querySelector('#library-search').oninput=e=>{libraryQuery=e.target.value;renderGrid(libraryQuery);};
- document.querySelectorAll('[data-library-status]').forEach(tab=>tab.onclick=()=>{libraryStatusFilter=tab.dataset.libraryStatus;document.querySelectorAll('[data-library-status]').forEach(x=>x.setAttribute('aria-pressed',String(x===tab)));renderGrid(libraryQuery);});
+ renderGrid('');document.querySelector('#library-search').oninput=e=>renderGrid(e.target.value);document.querySelectorAll('[data-library-status]').forEach(tab=>tab.onclick=()=>{libraryStatusFilter=tab.dataset.libraryStatus;document.querySelectorAll('[data-library-status]').forEach(x=>x.setAttribute('aria-pressed',String(x===tab)));renderGrid(document.querySelector('#library-search').value);});
  document.querySelectorAll('.import-button').forEach(b=>b.onclick=()=>document.querySelector('#file-input').click());
  document.querySelector('#file-input').onchange=e=>handleFiles(e.target.files);document.querySelector('#backup-file').onchange=e=>restoreBackup(e.target.files[0]);
- if(last&&previousPagination?.id!==last.id){const slot=document.querySelector('#continue-slot');storage.getPreference('pagination-cache:'+last.id).then(cache=>{if(owner!==localOwner||document.querySelector('#continue-slot')!==slot)return;const cached=cache?.entries?.at(-1)?.pages;if(cached?.length)slot.querySelector('.continue-position').textContent=`${pageForAnchor(cached,last.progress?.anchor)+1} из ${cached.length} страниц`;}).catch(()=>{});}
- if(destination==='saved')showLibraryBookmarks();else if(destination==='settings')showAppSettings();
 }
-function selectLibraryDestination(id){
- document.querySelectorAll('.library-nav button').forEach(b=>{if(b.id===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
- window.scrollTo({top:0});
-}
-function showAppSettings(){
- libraryDestination='settings';selectLibraryDestination('nav-settings');
- document.querySelector('#library-main').innerHTML=`<div class="library-heading"><div><span class="eyebrow">LIBRA</span><h1>Настройки</h1></div></div><section class="app-settings-section"><h2>Оформление</h2><p class="muted">Тема библиотеки и общие параметры чтения.</p><div class="app-theme-options">${themeChoices()}</div><button class="chapter-row" id="default-appearance">${icon('settings')}<span>Общее оформление книг</span>${icon('next')}</button></section><section class="app-settings-section"><h2>Книги и устройства</h2><button class="chapter-row" id="settings-cloud">${icon('cloud')}<span>Облачная синхронизация<small class="bookmark-detail">${esc(cloud?.user?cloud.status:'Сейчас книги сохраняются на устройстве')}</small></span>${icon('next')}</button><button class="chapter-row" id="export-backup">${icon('download')}<span>Скачать резервную копию</span></button><button class="chapter-row" id="restore-backup">${icon('upload')}<span>Восстановить из копии</span></button><p class="small-copy muted">Копия содержит книги и место чтения. Сохраните её перед сменой телефона.</p></section><button class="chapter-row" id="about"><span>О Libra</span>${icon('next')}</button>`;
- document.querySelector('#settings-cloud').onclick=showCloud;
- document.querySelector('#default-appearance').onclick=()=>{settings={...globalSettings};showSettings();};
- document.querySelector('#export-backup').onclick=exportBackup;
- document.querySelector('#restore-backup').onclick=()=>document.querySelector('#backup-file').click();
- document.querySelector('#about').onclick=showAbout;
- bindThemeChoices(()=>{saveSettings();showAppSettings();});
-}
-
-function showAbout(){openSheet('О Libra',`<div class="prose"><p>Читалка для ваших FB2, FB2.zip, EPUB без DRM и TXT. Файл книги, настройки и место чтения сохраняются на этом устройстве. При включённом облаке они доступны и на других устройствах.</p><p>При очистке данных браузера библиотека удалится. Исходный файл можно скачать в меню книги. ${import.meta.env.MODE==='pages'?'Для синхронизации войдите в облако по почте и паролю.':'Облачная синхронизация доступна после входа через ChatGPT.'} Книги и прогресс привязаны к вашей учётной записи.</p><p>Формат PDF и EPUB с фиксированной вёрсткой пока не поддерживаются. Шрифт, размер, интервалы и поля определяются вашими настройками. Оформление цитат, эпиграфов, стихов и подписей сохраняется, когда оно распознано в файле.</p><p>Лимиты черновика: файл 20 МБ, распаковка 60 МБ, 2 млн символов. Неподдерживаемые файлы отклоняются целиком.</p></div>`);
+function showAbout(){openSheet('О читалке',`<div class="prose"><p>Читалка для ваших FB2, FB2.zip, EPUB без DRM и TXT. Файл книги, настройки и место чтения сохраняются на этом устройстве. При включённом облаке они доступны и на других устройствах.</p><p>При очистке данных браузера библиотека удалится. Исходный файл можно скачать в меню книги. ${import.meta.env.MODE==='pages'?'Для синхронизации войдите в облако по почте и паролю.':'Облачная синхронизация доступна после входа через ChatGPT.'} Книги и прогресс привязаны к вашей учётной записи.</p><p>Формат PDF и EPUB с фиксированной вёрсткой пока не поддерживаются. Шрифт, размер, интервалы и поля определяются вашими настройками. Оформление цитат, эпиграфов, стихов и подписей сохраняется, когда оно распознано в файле.</p><p>Лимиты черновика: файл 20 МБ, распаковка 60 МБ, 2 млн символов. Неподдерживаемые файлы отклоняются целиком.</p></div>`);
 }
 function renderGrid(query){
- const grid=document.querySelector('#book-grid');if(!grid)return;
- const found=filterBooks(books,{query,status:libraryStatusFilter,sort:librarySort,collection:libraryCollection});
- grid.classList.toggle('list-view',libraryView==='list');grid.classList.toggle('compact-view',libraryView==='compact');
- for(const view of ['grid','compact','list'])document.querySelector('#view-'+view)?.setAttribute('aria-pressed',String(libraryView===view));
- document.querySelector('#shelf-count').textContent=String(found.length);
- let emptyTitle='Добавьте первую книгу',emptyText='Выберите FB2, EPUB или TXT на устройстве.';
- if(query.trim()){emptyTitle='Ничего не найдено';emptyText='Попробуйте другое название или автора.';}
- else if(libraryStatusFilter||libraryCollection){emptyTitle='Здесь пока нет книг';emptyText='Книги появятся здесь, когда вы измените их статус или коллекцию.';}
- grid.innerHTML=found.length?found.map(b=>`<article class="book-card"><button class="book-open" data-book="${b.id}" aria-label="Открыть книгу ${esc(b.title)}">${cover(b)}</button><div class="book-meta"><div><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><span class="book-reading-status">${b.id==='sample'?'Фрагмент':esc(statuses[b.progress?.status]||'Читаю')}${progressFor(b)?' · '+progressFor(b)+'%':''}</span></div><button class="icon-button book-more" data-info="${b.id}" aria-label="О книге ${esc(b.title)}">${icon('more')}</button></div></article>`).join(''):`<div class="empty">${icon('book')}<h3>${emptyTitle}</h3><p>${emptyText}</p>${query.trim()||libraryStatusFilter||libraryCollection?'<button class="button secondary" id="clear-library-filters">Сбросить фильтры</button>':'<button class="button primary" id="empty-import">Добавить книгу</button>'}</div>`;
+ const filter=libraryStatusFilter,sort='recent',collection='';const found=books.filter(b=>(b.title+' '+b.author+' '+(b.progress?.collection||'')).toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))&&(!filter||(b.progress?.status||'reading')===filter)&&(!collection||b.progress?.collection===collection));found.sort((a,b)=>sort==='title'?a.title.localeCompare(b.title,'ru'):sort==='author'?a.author.localeCompare(b.author,'ru'):sort==='progress'?progressFor(b)-progressFor(a):(b.progress?.updatedAt||b.addedAt||0)-(a.progress?.updatedAt||a.addedAt||0));
+ const grid=document.querySelector('#book-grid');grid.classList.toggle('list-view',libraryView==='list');for(const view of ['grid','list'])document.querySelector('#view-'+view)?.setAttribute('aria-pressed',String(libraryView===view));
+ grid.innerHTML=found.length?found.map(b=>`<article class="book-card"><button class="book-open" data-book="${b.id}" aria-label="Открыть книгу ${esc(b.title)}">${cover(b)}</button><div class="book-meta"><div><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><span>${b.id==='sample'?'Фрагмент':esc(statuses[b.progress?.status]||'Читаю')} · ${progressFor(b)}%${b.progress?.collection?' · '+esc(b.progress.collection):''}</span></div><button class="icon-button book-more" data-info="${b.id}" aria-label="О книге ${esc(b.title)}">${icon('more')}</button></div></article>`).join(''):'<div class="empty"><h3>Книга не найдена</h3><p>Попробуйте другое название или автора.</p></div>';
  document.querySelectorAll('[data-book]').forEach(x=>x.onclick=()=>openBook(x.dataset.book));document.querySelectorAll('[data-info]').forEach(x=>x.onclick=()=>bookInfo(books.find(b=>b.id===x.dataset.info)));
- document.querySelector('#empty-import')?.addEventListener('click',()=>document.querySelector('#file-input').click());
- document.querySelector('#clear-library-filters')?.addEventListener('click',()=>{libraryQuery='';libraryStatusFilter='';libraryCollection='';library();});
 }
 function showLibraryBookmarks(){
- libraryDestination='saved';selectLibraryDestination('nav-bookmarks');
- const entries=savedItems(books);let type='',bookId='',query='';
- document.querySelector('#library-main').innerHTML=`<div class="library-heading"><div><span class="eyebrow">ВАШИ МЕСТА И МЫСЛИ</span><h1>Сохранённое</h1></div></div><div class="saved-filters"><label class="search-field">${icon('search')}<input id="saved-search" type="search" aria-label="Найти в сохранённом" placeholder="Текст цитаты или заметки"></label><div class="status-tabs" role="group" aria-label="Тип сохранённого">${[['','Всё'],['bookmark','Закладки'],['quote','Цитаты']].map(([value,label])=>`<button data-saved-type="${value}" aria-pressed="${value===''}">${label}</button>`).join('')}</div><label class="collection-filter"><span>Книга</span><select id="saved-book"><option value="">Все книги</option>${books.filter(b=>entries.some(e=>e.book.id===b.id)).map(b=>`<option value="${b.id}">${esc(b.title)}</option>`).join('')}</select></label></div><div id="saved-list" class="notes-list"></div>`;
- const render=()=>{
-  const fresh=savedItems(books),shown=filterSaved(fresh,{type,bookId,query});
-  document.querySelector('#saved-list').innerHTML=shown.length?shown.map((item,i)=>`<article class="saved-item"><span class="eyebrow">${item.type==='quote'?'Цитата':'Закладка'}</span><h2>${esc(item.book.title)}</h2>${item.type==='quote'?`<blockquote>${esc(item.text)}</blockquote>`:`<p>${esc(item.text)}</p>`}${item.note?`<p class="saved-comment">${esc(item.note)}</p>`:''}<div class="saved-actions"><button class="text-button" data-saved-jump="${i}">Открыть в книге ${icon('next')}</button>${item.type==='quote'?`<button class="text-button" data-saved-edit="${i}">Заметка</button><button class="text-button danger" data-saved-delete="${i}">Удалить</button>`:''}</div></article>`).join(''):`<div class="empty">${icon('bookmark')}<h3>${entries.length?'Ничего не найдено':'Сохраните важное'}</h3><p>${entries.length?'Измените запрос или фильтры.':'Во время чтения ставьте закладки и выделяйте текст, чтобы сохранить цитаты.'}</p></div>`;
-  document.querySelectorAll('[data-saved-edit]').forEach(el=>el.onclick=()=>{const item=shown[Number(el.dataset.savedEdit)];editQuote(item.book,item,render);});
-  document.querySelectorAll('[data-saved-delete]').forEach(el=>el.onclick=()=>{const item=shown[Number(el.dataset.savedDelete)];deleteQuote(item.book,item.id,()=>{if(document.querySelector('#saved-list'))render();});});
-  document.querySelectorAll('[data-saved-jump]').forEach(el=>el.onclick=async()=>{const item=shown[Number(el.dataset.savedJump)],owner=localOwner;await openBook(item.book.id);if(owner===localOwner&&current?.id===item.book.id)jump(item.anchor);});
- };
- document.querySelector('#saved-search').oninput=e=>{query=e.target.value;render();};
- document.querySelector('#saved-book').onchange=e=>{bookId=e.target.value;render();};
- document.querySelectorAll('[data-saved-type]').forEach(el=>el.onclick=()=>{type=el.dataset.savedType;document.querySelectorAll('[data-saved-type]').forEach(b=>b.setAttribute('aria-pressed',String(b===el)));render();});render();
+ const entries=books.flatMap(book=>activeMarks(book).map(mark=>({book,mark})));
+ openSheet('Закладки',entries.length?entries.map(({book,mark},i)=>`<button class="chapter-row" data-library-mark="${i}">${icon('bookmark')}<span>${esc(book.title)}<small class="bookmark-detail">${esc(mark.label||'Закладка')}</small></span>${icon('next')}</button>`).join(''):'<p class="prose muted">Пока нет закладок. Во время чтения нажми значок закладки, чтобы сохранить место в книге.</p>');
+ document.querySelectorAll('[data-library-mark]').forEach(el=>el.onclick=async()=>{const {book,mark}=entries[Number(el.dataset.libraryMark)];closeSheet();await openBook(book.id);jump(mark.anchor);});
 }
-
 async function handleFiles(files){
  if(busy)return;busy=true;const owner=localOwner;
  const input=document.querySelector('#file-input');
@@ -222,7 +174,7 @@ async function handleFiles(files){
 }
 function downloadBook(b){const url=URL.createObjectURL(new Blob([b.original]));const a=document.createElement('a');a.href=url;a.download=b.fileName||'book.fb2';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function bookInfo(b){
- openSheet('О книге',`<div class="prose"><div class="book-info-heading"><div class="book-cover-preview">${cover(b)}</div><div><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p></div></div><details class="book-file-details"><summary>Сведения о файле</summary><dl><dt>Формат</dt><dd>${b.format}</dd><dt>Объём текста</dt><dd>${b.chars.toLocaleString('ru-RU')} знаков</dd><dt>Разделов в оглавлении</dt><dd>${b.chapters.length}</dd></dl>${b.warnings.length?'<h3>Замечания при импорте</h3>'+b.warnings.map(w=>`<p>${esc(w)}</p>`).join(''):''}</details><label class="select-setting"><span>Статус</span><select id="book-status"><option value="reading">Читаю</option><option value="planned">В планах</option><option value="finished">Прочитано</option></select></label><label class="select-setting"><span>Коллекция</span><input id="book-collection" maxlength="48" placeholder="Например, История" value="${esc(b.progress?.collection||'')}"></label><label class="button secondary cover-upload">Выбрать обложку<input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>${b.progress?.coverImage?'<button id="reset-cover" class="text-button">Вернуть исходную обложку</button>':''}<p class="muted">Настройки оформления не изменяют исходный файл.</p><button id="download-original" class="button secondary">${icon('download')} Скачать исходный файл</button><button id="remove-book" class="text-button danger">Убрать с полки</button></div>`);
+ openSheet('О книге',`<div class="prose"><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><dl><dt>Формат</dt><dd>${b.format}</dd><dt>Объём текста</dt><dd>${b.chars.toLocaleString('ru-RU')} знаков</dd><dt>Разделов в оглавлении</dt><dd>${b.chapters.length}</dd></dl>${b.warnings.length?'<h3>Замечания при импорте</h3>'+b.warnings.map(w=>`<p>${esc(w)}</p>`).join(''):''}<label class="select-setting"><span>Статус</span><select id="book-status"><option value="reading">Читаю</option><option value="planned">В планах</option><option value="finished">Прочитано</option></select></label><label class="select-setting"><span>Коллекция</span><input id="book-collection" maxlength="48" placeholder="Например, История" value="${esc(b.progress?.collection||'')}"></label><div class="book-cover-preview">${cover(b)}</div><label class="button secondary cover-upload">Выбрать обложку<input id="cover-file" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>${b.progress?.coverImage?'<button id="reset-cover" class="text-button">Вернуть исходную обложку</button>':''}<p class="muted">Настройки оформления не изменяют исходный файл.</p><button id="download-original" class="button secondary">${icon('download')} Скачать исходный файл</button><button id="remove-book" class="text-button danger">Убрать с полки</button></div>`);
  document.querySelector('#download-original').onclick=()=>downloadBook(b);const state=document.querySelector('#book-status');state.value=b.progress?.status||'reading';state.onchange=async()=>{b.progress={...(b.progress||{}),status:state.value};await saveBookMeta(b);};document.querySelector('#book-collection').onchange=async e=>{b.progress={...(b.progress||{}),collection:e.target.value.trim().slice(0,48)};await saveBookMeta(b);};
  document.querySelector('#cover-file').onchange=async event=>{
   const file=event.target.files?.[0];if(!file)return;
@@ -280,10 +232,10 @@ function enableReaderGeometryReport(){
 }
 
 async function openBook(id){
- const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;const request=++libraryRenderId;
+ const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
- if(owner!==localOwner||request!==libraryRenderId)return;
- if(current)await persistPosition();if(owner!==localOwner||request!==libraryRenderId)return;dispose();current=b;readingTouched=false;
+ if(owner!==localOwner)return;
+ if(current)await persistPosition();if(owner!==localOwner)return;dispose();current=b;readingTouched=false;
  await upgradeBookPresentation(b,{saveBook:storage.putBook});
  if(owner!==localOwner||current!==b)return;
  try{const stored=await localState((b.localStateOwner===undefined?localOwner:b.localStateOwner)).getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
@@ -299,19 +251,18 @@ async function openBook(id){
  const effectiveAppearance=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},{settings:b.appearanceSettings||b.progress?.bookSettings,updatedAt:b.appearanceUpdatedAt||b.progress?.appearanceUpdatedAt||0});
  settings=restoreSettings(effectiveAppearance.settings);theme();
  updateReaderWindow();document.body.classList.add('reading');theme();scheduleCloudPoll();
- app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header" aria-label="Навигация по книге">${button('back','В библиотеку','to-library')}<nav class="reader-top-controls" aria-label="Закладки">${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</nav></header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><output id="progress-preview" class="progress-preview" hidden></output><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><button class="reader-return text-button" id="return-to-reading" hidden>Вернуться к месту чтения</button><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}</nav></footer><span id="reader-bottom-page-number" class="reader-bottom-page-number" aria-hidden="true">1 из 1</span></div>`;
+ app.innerHTML=`<div class="reader ${reduced()?'':'reader-enter'}"><header class="reader-header" aria-label="Навигация по книге">${button('back','В библиотеку','to-library')}<nav class="reader-top-controls" aria-label="Закладки">${button('bookmark','Поставить закладку','toggle-bookmark','aria-pressed="false"')}</nav></header><main id="book-stage" class="book-stage" aria-label="Страницы книги"><div id="page-loading" class="page-loading" role="status" hidden>Готовим страницы…</div></main><footer class="reader-footer"><div class="page-status"><span id="reading-percent">0% книги</span><span id="reader-page-position" class="reader-page-position" aria-label="Текущая страница и общее число страниц">1 из 1</span><span id="reader-chapter-remaining" class="reader-chapter-remaining" aria-live="off"></span></div><input id="reading-progress" class="reading-progress" type="range" min="0" max="1" value="0" step="1" aria-label="Перейти на страницу"><nav class="reader-tools" aria-label="Управление чтением">${button('list','Оглавление и закладки','contents')}${button('search','Поиск по книге','search-book')}<button class="icon-button type-button" id="appearance" aria-label="Оформление текста" title="Оформление текста">Aa</button>${button('sun','Сменить тему','cycle-theme')}</nav></footer><span id="reader-bottom-page-number" class="reader-bottom-page-number" aria-hidden="true">1 из 1</span></div>`;
  // One gesture owner: the reader recognizes swipes; the engine renders the curl.
  selectionUI=createBookSelection(document.querySelector('#book-stage'),{onSelect:offerQuoteActions,onDismiss:()=>document.querySelector('#quote-actions')?.remove()});
  attachReaderChrome(document.querySelector('#book-stage'),turn,{canNavigate:()=>!selectionUI?.active});
  attachBookSelectionMenu(document.querySelector('#book-stage'),offerQuoteActions);
  document.querySelector('#to-library').onclick=library;document.querySelector('#toggle-bookmark').onclick=toggleBookmark;
- document.querySelector('#contents').onclick=()=>showContents();document.querySelector('#search-book').onclick=showSearch;
- document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=showThemePicker;
- document.querySelector('#return-to-reading').onclick=()=>{const target=returnPoint;returnPoint=null;if(target){jump(target,false);document.querySelector('#return-to-reading').hidden=true;}};
+ document.querySelector('#contents').onclick=showContents;document.querySelector('#search-book').onclick=showSearch;
+ document.querySelector('#appearance').onclick=showSettings;document.querySelector('#cycle-theme').onclick=()=>{settings.theme=['paper','white','night','oled','auto'][(['paper','white','night','oled','auto'].indexOf(settings.theme)+1)%5];theme();saveSettings();};
 
  enableReaderGeometryReport();
- document.querySelector('#reading-progress').oninput=e=>{const el=e.target;const preview=document.querySelector('#progress-preview'),index=Number(el.value),chapter=[...current.chapters].reverse().find(c=>c.block<=(pages[index]?.start.block??0));preview.hidden=false;preview.textContent=`Страница ${index+1}${chapter?' · '+chapterLabel(chapter,current.blocks):''}`;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
- document.querySelector('#reading-progress').onchange=e=>{const target=Number(e.target.value);document.querySelector('#progress-preview').hidden=true;if(Number.isInteger(target)&&target>=0&&target<pages.length){rememberReturnPoint();goPage(target);}};
+ document.querySelector('#reading-progress').oninput=e=>{const el=e.target;el.style.setProperty('--reader-progress',`${Number(el.max)>0?Number(el.value)/Number(el.max)*100:0}%`);el.setAttribute('aria-valuetext',`Страница ${Number(el.value)+1} из ${pages.length}`);};
+ document.querySelector('#reading-progress').onchange=e=>{const target=Number(e.target.value);if(Number.isInteger(target)&&target>=0&&target<pages.length)goPage(target);};
  const openingStage=document.querySelector('#book-stage');
  await layout();
  if(current!==b||owner!==localOwner||document.querySelector('#book-stage')!==openingStage)return;
@@ -330,7 +281,7 @@ function holdLayout(){
 function scheduleLayout(delay=0){if(!current)return;geometryRecovery=0;holdLayout();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,delay);}
 function checkRenderedPage(stage){
  const text=pageNodes[pageIndex]?.querySelector('.book-text');
- if(!text||!visibleContentFits(text,stage,{bottomGap:3}))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
+ if(!text||!visibleContentFits(text,stage))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
 }
 function verifyVisiblePage(){
  const stage=document.querySelector('#book-stage');if(!stage||stage.dataset.layoutState!=='ready')return;
@@ -366,7 +317,7 @@ async function layout(repair=null,attempt=0){
    initializing=true;
    flip.on('flip',e=>{if(initializing||!stillCurrent())return;pageIndex=e.data.page;anchor={...pages[pageIndex].start};hydrateAround(pageIndex);updateProgress();current.progress={...current.progress,updatedAt:Date.now()};scheduleSave();requestAnimationFrame(verifyVisiblePage);});
    flip.loadFromHTML(pageNodes);flip.turnToPage(pageIndex);initializing=false;
-   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showQuoteActions(mark.dataset.annotation,mark.getBoundingClientRect());}});
+   book.addEventListener('click',e=>{const a=e.target.closest('[data-note]');if(a){e.preventDefault();showNote(a.dataset.note);return;}const mark=e.target.closest('[data-annotation]');if(mark){e.preventDefault();showReadingNotes(mark.dataset.annotation);}});
    anchor=target;installed=true;
   }else{
    const oldCount=pages.length;pages=result;
@@ -422,42 +373,28 @@ function updateProgress(){
 }
 function turn(dir){if(selectionUI?.active||!flip||!pages.length)return;const next=flip.getCurrentPageIndex()+dir;if(next<0||next>=pages.length||!flip.isReady())return;goPage(next);}
 function goPage(index){clearQuoteActions();if(!flip||!pages.length||document.querySelector('#book-stage')?.dataset.layoutState!=='ready')return;pageIndex=Math.max(0,Math.min(pages.length-1,index));hydrateAround(pageIndex);flip.turnToPage(pageIndex);anchor={...pages[pageIndex].start};current.progress={...current.progress,updatedAt:Date.now()};updateProgress();scheduleSave();requestAnimationFrame(verifyVisiblePage);}
-function rememberReturnPoint(){if(!returnPoint)returnPoint={...anchor};const button=document.querySelector('#return-to-reading');if(button)button.hidden=false;}
-function jump(target,remember=true){closeSheet();if(!current||!target)return;if(remember)rememberReturnPoint();if(document.querySelector('#book-stage')?.dataset.layoutState!=='ready'||(!paginationComplete&&compareAnchors(pages.at(-1).end,target)<0)){pendingJump={...target};scheduleLayout();return;}goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
+function jump(target){closeSheet();if(!current)return;if(document.querySelector('#book-stage')?.dataset.layoutState!=='ready'||(!paginationComplete&&compareAnchors(pages.at(-1).end,target)<0)){pendingJump={...target};scheduleLayout();return;}goPage(pageForAnchor(pages,target));anchor={...target};updateProgress();scheduleSave();}
 function toggleBookmark(){
  if(!current||!pages.length)return;
  const marks=current.marks||[],existing=activeMarks(current).find(m=>pageForAnchor(pages,m.anchor)===pageIndex);
  const mark=existing?{...existing,deleted:true,changedAt:Date.now()}:{anchor:{...anchor},label:current.blocks[anchor.block]?.text.slice(anchor.offset,anchor.offset+90)||current.title,changedAt:Date.now(),deleted:false};
  current.marks=mergeMarks(marks,[mark]);current.progress={...current.progress,updatedAt:Date.now()};updateProgress();persistPosition();message(existing?'Закладка снята.':'Закладка сохранена.');
 }
-function showContents(tab='chapters'){
- const marks=activeMarks(current),notes=activeNotes();
- const chapterIndex=current.chapters.reduce((found,c,i)=>c.block<=anchor.block?i:found,0);
- const tabs=`<div class="segmented contents-tabs" role="group" aria-label="Раздел книги">${[['chapters','Главы'],['marks','Закладки'],['notes','Цитаты']].map(([value,label])=>`<button data-contents-tab="${value}" aria-pressed="${value===tab}">${label}</button>`).join('')}</div>`;
- let body='';
- if(tab==='chapters')body=`<label class="search-field">${icon('search')}<input id="chapter-search" type="search" placeholder="Название главы" aria-label="Поиск по оглавлению"></label><div class="contents-list">${current.chapters.map((c,i)=>`<button class="chapter-row ${c.level===2?'subchapter':''}" data-jump="${c.block}" ${i===chapterIndex?'aria-current="location"':''}><span>${esc(chapterLabel(c,current.blocks))}</span>${i===chapterIndex?'<small>Вы здесь</small>':icon('next')}</button>`).join('')}</div>`;
- if(tab==='marks')body=marks.length?marks.map((m,i)=>`<button class="chapter-row bookmark-row" data-mark="${i}">${icon('bookmark')}<span>${esc(m.label)}</span>${icon('next')}</button>`).join(''):'<div class="empty compact-empty"><h3>Пока нет закладок</h3><p>Нажмите значок закладки над страницей, чтобы сохранить место.</p></div>';
- if(tab==='notes')body=`<p class="small-copy muted">${notes.length?'Сохранённые цитаты этой книги.':'Выделите текст на странице, чтобы сохранить цитату.'}</p>${notes.length?`<button class="chapter-row" id="open-reader-notes"><span>Цитаты и заметки</span><span>${notes.length}</span>${icon('next')}</button>`:''}`;
- openSheet('По книге',tabs+body);
- document.querySelectorAll('[data-contents-tab]').forEach(b=>b.onclick=()=>showContents(b.dataset.contentsTab));
- const search=document.querySelector('#chapter-search');if(search)search.oninput=e=>{const q=e.target.value.toLocaleLowerCase('ru');document.querySelectorAll('[data-jump]').forEach(b=>b.hidden=!b.textContent.toLocaleLowerCase('ru').includes(q));};
- document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jump({block:Number(b.dataset.jump),offset:0}));
- document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>jump(marks[Number(b.dataset.mark)].anchor));
- document.querySelector('#open-reader-notes')?.addEventListener('click',()=>showReadingNotes());
- document.querySelector('.contents-list [aria-current]')?.scrollIntoView({block:'nearest'});
+function showContents(){
+ const marks=activeMarks(current);
+ openSheet('Оглавление и закладки',`<label class="search-field">${icon('search')}<input id="chapter-search" type="search" placeholder="Название главы" aria-label="Поиск по оглавлению"></label><div class="contents-list">${current.chapters.map(c=>`<button class="chapter-row ${c.level===2?'subchapter':''}" data-jump="${c.block}"><span>${esc(c.title)}</span>${icon('next')}</button>`).join('')}</div><button class="chapter-row" id="open-reader-notes">Цитаты и заметки <span>${activeNotes().length}</span></button><h3 class="subheading">Закладки <span>${marks.length}</span></h3>${marks.length?marks.map((m,i)=>`<button class="chapter-row bookmark-row" data-mark="${i}">${icon('bookmark')}<span>${esc(m.label)}</span></button>`).join(''):'<p class="muted small-copy">Нажмите значок закладки над страницей, чтобы вернуться к этому месту.</p>'}`);
+ document.querySelector('#chapter-search').oninput=e=>{const query=e.target.value.toLocaleLowerCase('ru');document.querySelectorAll('[data-jump]').forEach(b=>b.hidden=!b.textContent.toLocaleLowerCase('ru').includes(query));};document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jump({block:Number(b.dataset.jump),offset:0}));document.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>jump(marks[Number(b.dataset.mark)].anchor));document.querySelector('#open-reader-notes').onclick=()=>showReadingNotes();
 }
 function showSearch(){
- openSheet('Поиск по книге','<label class="search-field">'+icon('search')+'<input id="book-search" type="search" placeholder="Слово или фраза" aria-label="Найти в тексте книги"></label><div id="search-results" class="search-results" aria-live="polite"><p class="muted">Введите хотя бы два символа.</p></div>');
- const input=document.querySelector('#book-search'),book=current;input.focus();let timer;
+ openSheet('Поиск по книге','<label class="search-field">'+icon('search')+'<input id="book-search" type="search" placeholder="Слово или фраза" aria-label="Найти в тексте книги"></label><div id="search-results" class="search-results"><p class="muted">Введите хотя бы два символа.</p></div>');
+ const input=document.querySelector('#book-search');input.focus();let timer;
  input.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>{
-  const result=document.querySelector('#search-results');if(!result||input!==document.querySelector('#book-search')||current!==book)return;
-  if(input.value.trim().length<2){result.innerHTML='<p class="muted">Введите хотя бы два символа.</p>';return;}
-  const {total,matches}=searchBook(book,input.value);
-  result.innerHTML=`<p class="muted">${total?'Совпадений: '+total+(total>50?' · показаны первые 50':''):'Ничего не найдено. Попробуйте другое слово.'}</p>`+matches.map((m,i)=>`<button class="search-result" data-result="${i}"><small>${esc(m.chapter)}</small><span>${m.leading?'…':''}${esc(m.before)}<mark>${esc(m.match)}</mark>${esc(m.after)}${m.trailing?'…':''}</span></button>`).join('');
+  const q=input.value.toLocaleLowerCase('ru');const result=document.querySelector('#search-results');if(q.length<2){result.innerHTML='<p class="muted">Введите хотя бы два символа.</p>';return;}
+  const matches=[];for(let i=0;i<current.blocks.length;i++){const t=current.blocks[i].text;let at=0;while((at=t.toLocaleLowerCase('ru').indexOf(q,at))!==-1){matches.push({block:i,offset:at,text:t.slice(Math.max(0,at-35),at+q.length+70)});at+=q.length;}}
+  result.innerHTML=`<p class="muted">Совпадений: ${matches.length}${matches.length>50?' · показаны первые 50':''}</p>`+matches.slice(0,50).map((m,i)=>`<button class="search-result" data-result="${i}">${esc(m.text)}</button>`).join('');
   result.querySelectorAll('[data-result]').forEach(b=>b.onclick=()=>jump(matches[Number(b.dataset.result)]));
  },150);};
 }
-
 function showNote(id){
  const i=current.blocks.findIndex(b=>b.sourceId===id);if(i<0){message('Ссылка не найдена. Полный текст доступен в оглавлении.',true);return;}
  let end=i+1;while(end<current.blocks.length&&current.blocks[end].type!=='h2'&&!current.blocks[end].sourceId)end++;
@@ -466,8 +403,8 @@ function showNote(id){
 }
 function saveSettings(){
  const saved=restoreSettings(settings),at=Math.max(Date.now(),settingsUpdatedAt+1,(current?.appearanceUpdatedAt||0)+1);
- const book=current;
  globalSettings={...saved};settingsUpdatedAt=at;
+ const book=current;
  if(book){
   book.appearanceSettings={...saved};book.appearanceUpdatedAt=at;
   book.progress={...(book.progress||{}),bookSettings:{...saved},appearanceUpdatedAt:at};scheduleSave();
@@ -487,37 +424,25 @@ function applyLiveAppearance(next){
 
 const ranges={fontSize:['Размер текста',12,48,1,'px'],lineHeight:['Межстрочный интервал',1,2.5,.05,'×'],margin:['Боковые поля',0,72,1,'px'],topInset:['Отступ сверху',0,40,1,'px'],bottomInset:['Отступ снизу',0,40,1,'px'],paragraphGap:['Между абзацами',0,2,.1,'em'],indent:['Отступ первой строки',0,3,.1,'em'],letterSpacing:['Между буквами',-.5,3,.1,'px']};
 function rangeControl(key){const [label,min,max,step,unit]=ranges[key];const names={fontSize:'Размер',lineHeight:'Межстрочный',letterSpacing:'Межбуквенный'};return `<div class="setting-control"><label for="range-${key}">${names[key]||label}</label><button class="step-button" data-step="${key}:-1" aria-label="Уменьшить: ${label}">−</button><input id="range-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${settings[key]}" data-setting="${key}"><input class="exact-number" type="number" id="number-${key}" aria-label="${label}: точное значение, ${unit}" min="${min}" max="${max}" step="${step}" value="${settings[key]}"><button class="step-button" data-step="${key}:1" aria-label="Увеличить: ${label}">+</button></div>`;}
-function themeChoices(){
- return `<div class="theme-options">${[['paper','Бумага'],['white','Светлая'],['night','Ночная'],['oled','Чёрная']].map(([key,label])=>`<button class="theme-option" data-theme-choice="${key}" aria-pressed="${settings.theme===key}"><span class="theme-sample ${key}">Аа</span><span>${label}</span>${settings.theme===key?icon('check'):''}</button>`).join('')}</div><label class="switch-row"><span>Как в системе<small class="bookmark-detail">Светлая и ночная темы автоматически</small></span><input type="checkbox" id="system-theme" ${settings.theme==='auto'?'checked':''}></label>`;
-}
-function bindThemeChoices(after){
- document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();after();});
- const system=document.querySelector('#system-theme');if(system)system.onchange=()=>{settings.theme=system.checked?'auto':'paper';theme();after();};
-}
-function showThemePicker(){openSheet('Тема чтения',themeChoices());bindThemeChoices(()=>{saveSettings();showThemePicker();});}
 function showSettings(){
- if(!['text','page','themes'].includes(settingsTab))settingsTab='text';
- const tabs=`<div class="segmented" role="group" aria-label="Раздел настроек"><button data-tab="text" aria-pressed="${settingsTab==='text'}">Текст</button><button data-tab="page" aria-pressed="${settingsTab==='page'}">Страница</button><button data-tab="themes" aria-pressed="${settingsTab==='themes'}">Тема</button></div>`;
- const selectedPreset=presetFor(settings);
+ const tabs=`<div class="segmented" role="tablist" aria-label="Раздел настроек"><button role="tab" data-tab="text" aria-selected="${settingsTab==='text'}">Текст</button><button role="tab" data-tab="page" aria-selected="${settingsTab==='page'}">Страница</button><button role="tab" data-tab="themes" aria-selected="${settingsTab==='themes'}">Тема</button></div>`;
  let html='';
- if(settingsTab==='text')html=`<div class="appearance-presets" aria-label="Готовые настройки">${[['novel','Роман'],['nonfiction','Нон-фикшн'],['compact','Компактно']].map(([key,label])=>`<button data-preset="${key}" aria-pressed="${selectedPreset===key}">${label}</button>`).join('')}</div><p class="preset-caption" id="preset-caption">${selectedPreset==='custom'?'Свои настройки':'Готовый набор, который можно изменить'}</p><label class="select-setting"><span>Шрифт</span><select id="font-select" aria-label="Шрифт"><option value="serif">Книжный · Georgia</option><option value="literary">Классический · Palatino</option><option value="sans">Без засечек · Системный</option></select></label><p id="font-sample" class="font-sample" data-font="${settings.font}">Тихо светилась страница книги.</p>${rangeControl('fontSize')}${rangeControl('lineHeight')}<details class="advanced"><summary>Абзацы и дополнительные настройки</summary>${rangeControl('paragraphGap')}${rangeControl('indent')}${rangeControl('letterSpacing')}<label class="select-setting"><span>Выравнивание</span><select id="align-select" aria-label="Выравнивание"><option value="left">По левому краю</option><option value="justify">По ширине</option></select></label><label class="switch-row"><span>Переносы слов</span><input type="checkbox" id="hyphens-check" ${settings.hyphens?'checked':''}></label></details>`;
- if(settingsTab==='page')html=`<p class="appearance-section-note">Поля и отступы страницы</p>${rangeControl('margin')}${rangeControl('topInset')}${rangeControl('bottomInset')}<p class="small-copy muted">Системные отступы сохраняются отдельно, чтобы текст не попадал под часы и край экрана.</p>`;
- if(settingsTab==='themes')html=themeChoices();
- openSheet('Оформление',`<p class="appearance-scope">Общее оформление книг</p>`+tabs+`<div class="settings-body">${html}</div><div class="settings-bottom"><button id="reset-settings" class="text-button">Сбросить ${settingsTab==='text'?'текст':settingsTab==='page'?'поля':'тему'}</button><details class="full-reset"><summary>Сбросить всё оформление</summary><p class="small-copy muted">Вернутся исходные шрифт, интервалы, поля и тема.</p><button id="reset-all-settings" class="button secondary">Сбросить всё</button></details></div>`);
+ if(settingsTab==='text')html=`<div class="appearance-presets" aria-label="Готовые настройки"><button data-preset="novel">Роман</button><button data-preset="nonfiction">Нон-фикшн</button><button data-preset="compact">Компактно</button></div><label class="select-setting"><span>Шрифт</span><select id="font-select" aria-label="Шрифт"><option value="serif">Книжный</option><option value="literary">Классический</option><option value="sans">Без засечек</option></select></label>${rangeControl('fontSize')}${rangeControl('lineHeight')}${rangeControl('letterSpacing')}<details class="advanced"><summary>Абзацы и выравнивание</summary>${rangeControl('paragraphGap')}${rangeControl('indent')}<label class="select-setting"><span>Выравнивание</span><select id="align-select" aria-label="Выравнивание"><option value="left">По левому краю</option><option value="justify">По ширине</option></select></label><label class="switch-row"><span>Переносы слов</span><input type="checkbox" id="hyphens-check" ${settings.hyphens?'checked':''}></label></details>`;
+ if(settingsTab==='page')html=`<p class="appearance-section-note">Поля и отступы страницы</p>${rangeControl('margin')}${rangeControl('topInset')}${rangeControl('bottomInset')}<p class="small-copy muted">Поля можно уменьшить до нуля. Для крайних строк автоматически сохраняется минимальный безопасный запас, чтобы буквы не обрезались.</p>`;
+ if(settingsTab==='themes')html=`<p class="appearance-section-note">Цвет страницы и текста</p><div class="theme-options">${[['paper','Бумага'],['white','Светлая'],['night','Ночная'],['oled','Чёрная'],['auto','Авто']].map(([key,label])=>`<button class="theme-option" data-theme-choice="${key}" aria-pressed="${settings.theme===key}"><span class="theme-sample ${key}">Aa</span><span>${label}</span>${settings.theme===key?icon('check'):''}</button>`).join('')}</div><p class="small-copy muted">Тема меняет фон страницы и интерфейса. Положение в книге сохраняется.</p>`;
+ openSheet('Оформление',tabs+`<div class="settings-body">${html}</div><div class="settings-bottom"><span>Изменения видны сразу</span><button id="reset-settings" class="text-button">Сбросить</button></div>`);
  const sheet=document.querySelector('#sheet');sheet.classList.add('appearance-sheet');
+ if(current&&pages.length){const caption=document.createElement('p');caption.className='appearance-position';caption.textContent=`${pageIndex+1} / ${pages.length} · ${chapterReadingStatus(pages,pageIndex,current.chapters)?.label||'До конца книги '+(pages.length-pageIndex)+' стр.'}`;sheet.querySelector('.handle').after(caption);}
  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{settingsTab=b.dataset.tab;showSettings();});
- const change=(key,value)=>{settings=clampSettings({...settings,[key]:value});saveSettings();syncControls(key);if(current)scheduleLayout(300);document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed',String(presetFor(settings)===b.dataset.preset)));const caption=document.querySelector('#preset-caption');if(caption)caption.textContent=presetFor(settings)==='custom'?'Свои настройки':'Готовый набор, который можно изменить';const sample=document.querySelector('#font-sample');if(sample)sample.dataset.font=settings.font;};
+ const change=(key,value)=>{settings=clampSettings({...settings,[key]:value});saveSettings();syncControls(key);scheduleLayout(300);};document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{const presets={novel:{fontSize:22,lineHeight:1.55,margin:24,paragraphGap:0,indent:1.3},nonfiction:{fontSize:20,lineHeight:1.5,margin:20,paragraphGap:.3,indent:0},compact:{fontSize:19,lineHeight:1.35,margin:4,topInset:0,bottomInset:0,paragraphGap:0,indent:.6}};settings=clampSettings({...settings,...presets[b.dataset.preset]});saveSettings();showSettings();scheduleLayout(180);});
  const syncControls=key=>{for(const prefix of ['range-','number-']){const el=document.getElementById(prefix+key);if(el&&!(el.type==='number'&&document.activeElement===el))el.value=settings[key];}};
- document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{settings=clampSettings({...settings,...appearancePresets[b.dataset.preset]});saveSettings();showSettings();if(current)scheduleLayout(180);});
  document.querySelectorAll('[data-setting]').forEach(e=>e.oninput=()=>change(e.dataset.setting,Number(e.value)));
  for(const key of Object.keys(ranges)){const input=document.getElementById('number-'+key);if(input){input.oninput=()=>{const n=Number(input.value);if(input.value!==''&&Number.isFinite(n)&&n>=ranges[key][1]&&n<=ranges[key][2])change(key,n);};input.onchange=()=>{change(key,input.value===''?defaults[key]:Number(input.value));input.value=settings[key];};}}
  document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const[key,d]=b.dataset.step.split(':');change(key,Math.round((settings[key]+Number(d)*ranges[key][3])*100)/100);});
  for(const [id,key] of [['font-select','font'],['align-select','align']]){const e=document.getElementById(id);if(e){e.value=settings[key];e.onchange=()=>change(key,e.value);}}
- const hyphens=document.querySelector('#hyphens-check');if(hyphens)hyphens.onchange=()=>change('hyphens',hyphens.checked);
- bindThemeChoices(()=>{saveSettings();showSettings();});
- document.querySelector('#reset-settings').onclick=()=>{settings=resetAppearanceSection(settings,settingsTab,defaults);theme();saveSettings();showSettings();if(current)scheduleLayout();};
- document.querySelector('#reset-all-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();if(current)scheduleLayout();};
-
+ for(const [id,key] of [['hyphens-check','hyphens']]){const e=document.getElementById(id);if(e)e.onchange=()=>change(key,e.checked);}
+ document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{settings.theme=b.dataset.themeChoice;theme();saveSettings();showSettings();});
+ document.querySelector('#reset-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();layout();};
 }
 
 /** Inject highlights into original text nodes without changing text length or character anchors. */
@@ -540,7 +465,7 @@ function renderNotesOnPage(page){
    for(let i=0;i<cuts.length-1;i++){
     const from=cuts[i],to=cuts[i+1],str=part.node.nodeValue.slice(from-part.from,to-part.from);
     const active=matches.filter(a=>(a.start.block<block||a.start.offset<=from)&&(a.end.block>block||a.end.offset>=to)).sort((a,b)=>b.changedAt-a.changedAt)[0];
-    if(active){const mark=document.createElement('mark');mark.className='reading-highlight '+active.color;mark.dataset.annotation=active.id;mark.setAttribute('role','button');mark.tabIndex=0;mark.setAttribute('aria-label','Цитата: '+str+'. Открыть действия');mark.textContent=str;mark.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();showQuoteActions(active.id,mark.getBoundingClientRect());}};fragment.append(mark);}
+    if(active){const mark=document.createElement('mark');mark.className='reading-highlight '+active.color;mark.dataset.annotation=active.id;mark.textContent=str;fragment.append(mark);}
     else fragment.append(document.createTextNode(str));
    }
    part.node.replaceWith(fragment);
@@ -564,90 +489,44 @@ function selectionAnchor(selectedRange){
  };
  const start=sourcePoint(range.startContainer,range.startOffset),end=sourcePoint(range.endContainer,range.endOffset);
  if(!start||!end||end.block<start.block||(end.block===start.block&&end.offset<=start.offset))return null;
- return {start,end,text:sourceQuoteText(current,start,end)};
+ return {start,end,text:range.toString()};
 }
 function clearQuoteActions(){selectionUI?.clear();document.querySelector('#quote-actions')?.remove();document.querySelector('#quote-selection')?.remove();}
-function positionQuoteTools(tools,bounds){
- const view=window.visualViewport,style=getComputedStyle(document.documentElement),safeTop=parseFloat(style.getPropertyValue('--quote-safe-top'))||0,safeBottom=parseFloat(style.getPropertyValue('--quote-safe-bottom'))||0,left=view?.offsetLeft||0,top=(view?.offsetTop||0)+safeTop,width=view?.width||innerWidth,height=(view?.height||innerHeight)-safeTop-safeBottom;
- const size=tools.getBoundingClientRect(),x=bounds?bounds.left+bounds.width/2:left+width/2;
- const y=bounds&&bounds.top-size.height-12>=top+8?bounds.top-size.height-12:Math.min(top+height-size.height-8,(bounds?.bottom||top)+12);
- tools.style.left=`${Math.max(left+8,Math.min(x-size.width/2,left+width-size.width-8))}px`;tools.style.top=`${Math.max(top+8,y)}px`;
-}
-function quoteToolbar(html,bounds){
- document.querySelector('#quote-actions')?.remove();
- const tools=document.createElement('div');tools.id='quote-actions';tools.className='quote-actions';tools.innerHTML=html;
- tools.setAttribute('role','toolbar');tools.setAttribute('aria-label','Действия с цитатой');document.body.append(tools);
- tools.addEventListener('pointerdown',e=>e.preventDefault());positionQuoteTools(tools,bounds);return tools;
-}
-async function copyQuote(text){try{await navigator.clipboard.writeText(text);message('Цитата скопирована.');}catch{message('Не удалось скопировать. Попробуйте ещё раз.',true);}clearQuoteActions();}
-async function updateQuote(book,id,patch){
- const owner=localOwner;if(!book||book.localStateOwner!==undefined&&book.localStateOwner!==owner)return false;
- const previous=book.progress?.annotations||[];
- book.progress={...(book.progress||{}),annotations:changeAnnotation(previous,id,patch)};
- if(current===book){clearQuoteActions();refreshNotesOnPage();}
- try{await saveBookMeta(book);return owner===localOwner;}catch(e){
-  // Keep newer edits intact if the save failed after another action.
-  const attempted=book.progress.annotations.find(n=>n.id===id),old=previous.find(n=>n.id===id);
-  if(attempted&&old&&Object.entries(patch).every(([key,value])=>attempted[key]===value))book.progress.annotations=mergeAnnotations(book.progress.annotations,[{...old,changedAt:Math.max(Date.now(),attempted.changedAt+1)}]);
-  if(current===book)refreshNotesOnPage();message('Не удалось сохранить цитату: '+e.message,true);return false;
- }
-}
-async function deleteQuote(book,id,after=()=>{}){
- const note=(book.progress?.annotations||[]).find(n=>n.id===id&&!n.deleted);if(!note)return;
- const owner=localOwner;
- if(!await updateQuote(book,id,{deleted:true}))return;
- after();message('Цитата удалена.',false,{label:'Отменить',run:async()=>{if(owner!==localOwner)return;if(await updateQuote(book,id,{deleted:false})){after();message('Цитата восстановлена.');}}});
-}
-function editQuote(book,n,after=()=>{}){
- clearQuoteActions();openSheet('Заметка к цитате',`<blockquote class="quoted">${esc(n.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000">${esc(n.note||'')}</textarea><button id="note-save" class="button primary">Сохранить</button>`);
- document.querySelector('#note-save').onclick=async()=>{const value=document.querySelector('#note-editor').value;if(await updateQuote(book,n.id,{note:value})){closeSheet();after();message('Заметка сохранена.');}};
-}
-function showQuoteActions(id,bounds){
- if(!current||selectionUI?.active||document.querySelector('dialog[open]'))return;
- const book=current,n=activeNotes().find(n=>n.id===id);if(!n)return;
- const tools=quoteToolbar(`<div class="quote-toolbar-colors" aria-label="Цвет цитаты">${[['gold','Золотой'],['mint','Зелёный'],['rose','Розовый']].map(([color,label])=>`<button class="quote-color ${color}" data-quote-color="${color}" aria-label="${label}" aria-pressed="${n.color===color}"><span></span></button>`).join('')}</div><div class="quote-toolbar-actions"><button id="quote-edit">Заметка</button><button id="quote-copy">Копировать</button><button id="quote-delete" class="danger">Удалить</button><button id="quote-close" aria-label="Закрыть действия с цитатой">${icon('close')}</button></div>`,bounds);
- tools.querySelector('#quote-copy').onclick=()=>copyQuote(n.text);
- tools.querySelector('#quote-edit').onclick=()=>editQuote(book,n);
- tools.querySelector('#quote-delete').onclick=()=>deleteQuote(book,id);
- tools.querySelector('#quote-close').onclick=clearQuoteActions;
- tools.querySelectorAll('[data-quote-color]').forEach(b=>b.onclick=async()=>{await updateQuote(book,id,{color:b.dataset.quoteColor});});
-}
 function offerQuoteActions(selectedRange){
  if(!current||document.querySelector('dialog[open]'))return;
  const quote=selectionAnchor(selectedRange);if(!quote)return;
- const book=current,owner=localOwner,existing=annotationForRange(activeNotes(),quote);
+ document.querySelector('#quote-actions')?.remove();
  const range=selectedRange||(window.getSelection().rangeCount?window.getSelection().getRangeAt(0).cloneRange():null);
- const tools=quoteToolbar(`<button id="quote-save">${existing?'Сохранено':'Сохранить'}</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button><button id="quote-cancel" aria-label="Снять выделение">${icon('close')}</button>`,range?.getBoundingClientRect());
- if(existing)tools.querySelector('#quote-save').disabled=true;
- const save=async note=>{
-  if(current!==book||owner!==localOwner)return;
-  if(quote.text.length>3000){message('Цитата слишком длинная. Выделите фрагмент до 3000 символов.',true);return;}
-  if(activeNotes().length>=500){message('В книге уже 500 цитат. Удалите ненужные, чтобы сохранить новую.',true);return;}
-  const value={...quote,id:crypto.randomUUID(),note,color:'gold',changedAt:Date.now(),deleted:false};
-  const previous=book.progress?.annotations||[];book.progress={...(book.progress||{}),annotations:mergeAnnotations(previous,[value])};
-  clearQuoteActions();window.getSelection()?.removeAllRanges();refreshNotesOnPage();
-  try{await saveBookMeta(book);message('Цитата сохранена.');}catch(e){book.progress.annotations=book.progress.annotations.filter(n=>n.id!==value.id);if(current===book)refreshNotesOnPage();message('Не удалось сохранить цитату: '+e.message,true);}
+ const tools=document.createElement('div');tools.id='quote-actions';tools.className='quote-actions';
+ tools.innerHTML='<button id="quote-save">Цитата</button><button id="quote-note">Заметка</button><button id="quote-copy">Копировать</button>';
+ document.body.append(tools);tools.setAttribute('role','toolbar');tools.setAttribute('aria-label','Действия с выбранным текстом');
+ const bounds=range?.getBoundingClientRect(),view=window.visualViewport;
+ const left=view?.offsetLeft||0,top=view?.offsetTop||0,width=view?.width||innerWidth,height=view?.height||innerHeight;
+ const size=tools.getBoundingClientRect(),x=bounds?bounds.left+bounds.width/2:left+width/2;
+ const y=bounds&&bounds.top-size.height-12>=top+8?bounds.top-size.height-12:Math.min(top+height-size.height-8,(bounds?.bottom||top)+12);
+ tools.style.left=`${Math.max(left+8,Math.min(x-size.width/2,left+width-size.width-8))}px`;tools.style.top=`${Math.max(top+8,y)}px`;
+ tools.addEventListener('pointerdown',e=>e.preventDefault());
+ const save=note=>{const value={...quote,id:crypto.randomUUID(),note,color:'gold',changedAt:Date.now(),deleted:false};
+  current.progress={...(current.progress||{}),annotations:mergeAnnotations(current.progress?.annotations||[],[value])};
+  clearQuoteActions();window.getSelection()?.removeAllRanges();refreshNotesOnPage();scheduleSave();message('Цитата сохранена.');
  };
  tools.querySelector('#quote-save').onclick=()=>save('');
- tools.querySelector('#quote-copy').onclick=()=>copyQuote(quote.text);
- tools.querySelector('#quote-cancel').onclick=()=>{clearQuoteActions();window.getSelection()?.removeAllRanges();};
- tools.querySelector('#quote-note').onclick=()=>{
-  if(existing){editQuote(book,existing);return;}
-  clearQuoteActions();openSheet('Заметка к цитате',`<blockquote class="quoted">${esc(quote.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000"></textarea><button id="note-save" class="button primary">Сохранить</button>`);
+ tools.querySelector('#quote-copy').onclick=async()=>{try{await navigator.clipboard.writeText(quote.text);message('Скопировано.');}catch{message('Скопировать не удалось.',true);}clearQuoteActions();};
+ tools.querySelector('#quote-note').onclick=()=>{clearQuoteActions();
+  openSheet('Заметка к цитате',`<blockquote class="quoted">${esc(quote.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000"></textarea><button id="note-save" class="button primary">Сохранить</button>`);
   document.querySelector('#note-save').onclick=()=>{const value=document.querySelector('#note-editor').value;closeSheet();save(value);};
  };
 }
-
 function showReadingNotes(focus=''){
- const book=current;if(!book)return;
- const refreshList=()=>{const sheet=document.querySelector('#sheet');if(current===book&&sheet?.open&&sheet.dataset.view==='quotes'&&sheet.dataset.bookId===book.id)showReadingNotes();};
- const notes=activeNotes(),shown=focus?[...notes].sort((a,b)=>Number(b.id===focus)-Number(a.id===focus)):notes;
- openSheet('Цитаты и заметки',`<p class="small-copy muted">Выделите текст на странице, чтобы сохранить цитату.</p><div class="notes-list">${shown.length?shown.map(n=>`<article class="note-item"><blockquote>${esc(n.text)}</blockquote>${n.note?`<p>${esc(n.note)}</p>`:''}<div class="note-item-actions"><button data-annotation-jump="${esc(n.id)}">Перейти</button><button data-annotation-edit="${esc(n.id)}">Изменить</button><button data-annotation-delete="${esc(n.id)}">Удалить</button></div></article>`).join(''):'<p class="muted">Пока нет заметок.</p>'}</div>${notes.length?'<button id="export-notes" class="button secondary">Экспортировать цитаты</button>':''}`);
- const quoteSheet=document.querySelector('#sheet');quoteSheet.dataset.view='quotes';quoteSheet.dataset.bookId=book.id;
+ const notes=activeNotes(),shown=focus?[...notes].sort((a,b)=>(a.id===focus?-1:0)-(b.id===focus?-1:0)):notes;
+ openSheet('Цитаты и заметки',`<p class="small-copy muted">Выделите текст на странице, чтобы сохранить цитату.</p><div class="notes-list">${shown.length?shown.map(n=>`<article class="note-item"><blockquote>${esc(n.text)}</blockquote>${n.note?`<p>${esc(n.note)}</p>`:''}<div class="note-item-actions"><button data-annotation-jump="${esc(n.id)}">Перейти</button><button data-annotation-edit="${esc(n.id)}">Изменить</button><button data-annotation-delete="${esc(n.id)}">Удалить</button></div></article>`).join(''):'<p class="muted">Пока нет заметок.</p>'}</div><button id="export-notes" class="button secondary">Экспортировать в Markdown</button>`);
  document.querySelectorAll('[data-annotation-jump]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationJump);if(note)jump(note.start);});
- document.querySelectorAll('[data-annotation-edit]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationEdit);if(note)editQuote(book,note,()=>{if(current===book)showReadingNotes(note.id);});});
- document.querySelectorAll('[data-annotation-delete]').forEach(b=>b.onclick=()=>deleteQuote(book,b.dataset.annotationDelete,refreshList));
- document.querySelector('#export-notes')?.addEventListener('click',()=>{const text='# '+current.title+'\n\n'+notes.map(n=>'> '+n.text.replace(/\n/g,'\n> ')+'\n\n'+(n.note?n.note+'\n\n':'')).join('---\n\n');downloadText('libra-notes.md',text,'text/markdown');});
+ document.querySelectorAll('[data-annotation-edit]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationEdit);if(!note)return;
+  openSheet('Редактировать заметку',`<blockquote class="quoted">${esc(note.text)}</blockquote><label class="note-label" for="note-editor">Комментарий</label><textarea id="note-editor" rows="5" maxlength="5000">${esc(note.note)}</textarea><button id="note-save" class="button primary">Сохранить</button>`);
+  document.querySelector('#note-save').onclick=()=>{current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,note:document.querySelector('#note-editor').value,changedAt:Date.now()}]);scheduleSave();showReadingNotes(note.id);};
+ });
+ document.querySelectorAll('[data-annotation-delete]').forEach(b=>b.onclick=()=>{const note=notes.find(n=>n.id===b.dataset.annotationDelete);if(!note)return;current.progress.annotations=mergeAnnotations(current.progress.annotations,[{...note,changedAt:Date.now(),deleted:true}]);scheduleSave();refreshNotesOnPage();showReadingNotes();});
+ document.querySelector('#export-notes').onclick=()=>{const text='# '+current.title+'\n\n'+notes.map(n=>'> '+n.text.replace(/\n/g,'\n> ')+'\n\n'+(n.note?n.note+'\n\n':'')).join('---\n\n');downloadText('kniga-notes.md',text,'text/markdown');};
 }
 document.addEventListener('pointerdown',event=>{if(!matchMedia('(pointer:coarse)').matches&&!event.target.closest?.('#quote-actions'))clearQuoteActions();},{capture:true});
 document.addEventListener('selectionchange',()=>{clearTimeout(noteSelectTimer);if(!matchMedia('(pointer:coarse)').matches)noteSelectTimer=setTimeout(offerQuoteActions,250);});
@@ -662,7 +541,7 @@ function scheduleCloudPoll(){
  if(!cloud?.user||cloud.error||document.visibilityState!=='visible'||navigator.onLine===false)return;
  cloudPoll=setTimeout(async()=>{cloudPoll=null;await cloud.sync();scheduleCloudPoll();},current?120000:60000);
 }
-function updateCloudStatus(){const el=document.querySelector('#cloud-status');if(el){const label=cloud?.user?(cloud.running?'Синхронизация':cloud.status==='Синхронизировано'?'Сохранено':cloud.error?'Ошибка облака':'Проверить облако'):'На устройстве';el.innerHTML=icon('cloud')+'<span>'+label+'</span>';el.setAttribute('aria-label','Профиль: '+label);el.dataset.state=cloud?.user&&cloud.status==='Синхронизировано'?'saved':'idle';el.title=cloud?.status||'Облачная синхронизация';}}
+function updateCloudStatus(){const el=document.querySelector('#cloud-status');if(el){const label=cloud?.user?(cloud.running?'Синхронизация':cloud.status==='Синхронизировано'?'Сохранено':cloud.error?'Ошибка облака':'Проверить облако'):'Облако';el.innerHTML=icon('user')+'<span>'+label+'</span>';el.setAttribute('aria-label','Профиль: '+label);el.dataset.state=cloud?.user&&cloud.status==='Синхронизировано'?'saved':'idle';el.title=cloud?.status||'Облачная синхронизация';}}
 function showCloud(){
 
 
@@ -693,7 +572,7 @@ function showCloud(){
 }
 function rememberBookOwner(book){const previous=allBooks.find(b=>b.id===book.id);book.cloudOwners=[...new Set([...(previous?.cloudOwners||[]),previous?.cloudOwner,localOwner].filter(Boolean))];}
 async function loadAccountState(owner){
- localOwner=owner||null;libraryDestination='library';libraryQuery='';libraryStatusFilter='';libraryCollection='';
+ localOwner=owner||null;
  settings=restoreSettings(await localState().getPreference('settings'));
  settingsUpdatedAt=await localState().getPreference('settings-updatedAt')||0;globalSettings={...settings};
  allBooks=await storage.listBooks();books=allBooks.filter(b=>bookBelongsToAccount(b,localOwner));
@@ -711,7 +590,7 @@ function queueLocalState(){
  for(const b of books)if(b.progress?.updatedAt&&!cloud.remote.some(r=>r.key==='position:'+b.id&&r.clientUpdatedAt>=b.progress.updatedAt))cloud.queue('position:'+b.id,b.progress,b.progress.updatedAt,(b.localStateOwner===undefined?localOwner:b.localStateOwner));
 }
 async function init(){
- app.innerHTML='<div class="boot"><div class="brand">'+icon('book')+'<span>libra</span></div><p>Открываем библиотеку…</p></div>';
+ app.innerHTML='<div class="boot"><div class="brand">'+icon('book')+'<span>Книга.</span></div><p>Открываем библиотеку…</p></div>';
  try{
   localOwner=await storage.getPreference('cloud-owner')||null;
   await accountState.migrateLegacy(localOwner);
@@ -732,7 +611,7 @@ async function init(){
     },0);
    });
   }
-  cloud=new CloudSync({onSettled:()=>{queueLocalState();if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},accountChanged:async(next,previous)=>{clearTimeout(saveTimer);await appearanceTail.catch(()=>{});await persistPosition();dispose();current=null;closeSheet();if(!previous)await accountState.adoptGuest(next);await loadAccountState(next);await library();},allBooks:()=>allBooks,canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>{b.localStateOwner=localOwner;books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);},status:updateCloudStatus,libraryChanged:()=>{if(!current)library(libraryDestination);},
+  cloud=new CloudSync({onSettled:()=>{queueLocalState();if(!cloudPoll&&!cloud?.error)scheduleCloudPoll();},accountChanged:async(next,previous)=>{clearTimeout(saveTimer);await appearanceTail.catch(()=>{});await persistPosition();dispose();current=null;closeSheet();if(!previous)await accountState.adoptGuest(next);await loadAccountState(next);await library();},allBooks:()=>allBooks,canSync:()=>document.visibilityState==='visible'&&navigator.onLine!==false,books:()=>books,addBook:b=>{b.localStateOwner=localOwner;books.push(b);allBooks=allBooks.filter(x=>x.id!==b.id);allBooks.push(b);},status:updateCloudStatus,libraryChanged:()=>{if(!current)library();},
    localAppearance:b=>b.appearanceSettings?{settings:b.appearanceSettings,updatedAt:b.appearanceUpdatedAt||0}:null,
    remoteAppearance:async(b,record,hasPending)=>{
     if(!preferRemoteAppearance(b.appearanceUpdatedAt,record.clientUpdatedAt,hasPending))return;
@@ -747,7 +626,7 @@ async function init(){
     await localState().setPreference('settings',globalSettings);await localState().setPreference('settings-updatedAt',settingsUpdatedAt);
     const effective=resolveReadingAppearance({settings:globalSettings,updatedAt:settingsUpdatedAt},current?{settings:current.appearanceSettings,updatedAt:current.appearanceUpdatedAt||0}:null);
     applyLiveAppearance(effective.settings);
-   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;const changed=previous!==JSON.stringify(stored);if(changed){await localState((book.localStateOwner===undefined?localOwner:book.localStateOwner)).setPreference('position:'+book.id,stored);if(current?.id===book.id){updateProgress();clearQuoteActions();refreshNotesOnPage();}}return changed;}});
+   },remotePosition:async(book,record,marks,annotations)=>{const previous=JSON.stringify(book.progress);book.marks=marks;const p=record.payload;if(!p?.anchor||!Number.isInteger(p.anchor.block)||p.anchor.block<0||p.anchor.block>=book.blocks.length||!Number.isInteger(p.anchor.offset)||p.anchor.offset<0||p.anchor.offset>book.blocks[p.anchor.block].text.length)return;const restoreOpen=current?.id===book.id&&!readingTouched&&record.clientUpdatedAt>(book.progress?.updatedAt||0);if(record.clientUpdatedAt>(book.progress?.updatedAt||0)&&(current?.id!==book.id||restoreOpen)){book.progress={...p,marks,annotations,updatedAt:record.clientUpdatedAt};if(restoreOpen&&!readingTouched&&current?.id===book.id){anchor={...p.anchor};await layout();}}const stored={...(book.progress||{anchor:{block:0,offset:0},updatedAt:0}),marks,annotations};book.progress=stored;const changed=previous!==JSON.stringify(stored);if(changed){await localState((book.localStateOwner===undefined?localOwner:book.localStateOwner)).setPreference('position:'+book.id,stored);if(current?.id===book.id)updateProgress();}return changed;}});
   await cloud.init();
   queueLocalState();
   scheduleCloudPoll();

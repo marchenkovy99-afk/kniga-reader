@@ -1,6 +1,6 @@
 {
-  "name": "Libra · личная библиотека",
-  "short_name": "Libra",
+  "name": "Книга · личная читалка",
+  "short_name": "Книга",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

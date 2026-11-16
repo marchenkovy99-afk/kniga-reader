@@ -18,7 +18,7 @@ async function inspect(blocks,options){
  assertSourceRanges(model,pages);assertPageIntegrity(blocks,pages);
  let text='',checked=0,maxGap=0;
  for(const [i,page] of pages.entries()){
-  const el=mounted(page,options);if(!visibleContentFits(el,el,{bottomGap:3})){
+  const el=mounted(page,options);if(!visibleContentFits(el)){
    const box=el.getBoundingClientRect(),walker=document.createTreeWalker(el,4),range=document.createRange(),rects=[];let n;
    while(n=walker.nextNode()){if(!n.data.trim())continue;range.selectNodeContents(n);for(const r of range.getClientRects())if(r.width&&r.height)rects.push({top:r.top-box.top,bottom:r.bottom-box.top,left:r.left-box.left,right:r.right-box.left});}
    throw Error(`page ${i} clips glyphs: ${JSON.stringify({options,scroll:el.scrollHeight,client:el.clientHeight,rects,measured:page.geometry})}`);
@@ -32,7 +32,7 @@ async function inspect(blocks,options){
    // complete row. Extend independently until a new row appears or overflows.
    for(const next of graphemeBoundaries(source.text).filter(n=>n>last.to)){
     last.to=next;last.hyphen=false;el.innerHTML=renderer.html({fragments:parts});
-    const fits=visibleContentFits(el,el,{bottomGap:3});
+    const fits=visibleContentFits(el);
     if(bottom()>originalBottom+lineHeight*.6){check(!fits,`page ${i} accepts an additional complete row`);checked++;break;}
     if(!fits){checked++;break;}
    }
@@ -69,7 +69,7 @@ await run('Long tables paginate without losing cell text',async()=>{
  const pages=await paginate([{type:'table',html,text}],options);
  check(pages.length>1,'Long table needs multiple pages');
  let restored='';
- for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el,el,{bottomGap:3}),'Table is clipped');restored+=el.textContent;el.remove();}
+ for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el),'Table is clipped');restored+=el.textContent;el.remove();}
  check(restored===text,'Table text changed or disappeared');return {pages:pages.length,sourceCharacters:restored.length};
 });
 await run('Mixed image and prose paginate without cropping or duplicating content',async()=>{
@@ -78,7 +78,7 @@ await run('Mixed image and prose paginate without cropping or duplicating conten
  const blocks=[{type:'p',text:before+after,html:'<em>'+before+'</em><img src="'+image+'"/><strong>'+after+'</strong>'}];
  const options={width:393,height:400,settings};
  const pages=await paginate(blocks,options);let restored='',images=0;
- for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el,el,{bottomGap:3}),'Inline image page is clipped');images+=el.querySelectorAll('img').length;restored+=el.textContent;el.remove();}
+ for(const page of pages){const el=mounted(page,options);check(visibleContentFits(el),'Inline image page is clipped');images+=el.querySelectorAll('img').length;restored+=el.textContent;el.remove();}
  check(restored===before+after,'Inline image dropped source text');check(images===1,'Inline image must appear once');
  return {pages:pages.length,images,sourceCharacters:restored.length};
 });
