@@ -123,7 +123,7 @@ async function exerciseInstalledReader({width,height,top=59,bottom=34,visualShri
    assert.ok(reading.first>=top+(height<=550?48:56)&&reading.first<=top+(height<=550?48:56)+8,'first line must clear the fixed header strip');
    assert.ok(reading.stage.bottom<=height+0.1&&Math.abs(reading.stage.bottom-(height-Math.max(60,bottom+26)))<=1,'last line must remain on-screen');
    assert.ok(reading.page.bottom<=reading.stage.bottom+1,'flipbook page cannot extend beyond its clipping stage');
-   assert.ok(reading.last<=reading.stage.bottom-2.5,'last glyph must not be cropped');
+   assert.ok(reading.last<=reading.stage.bottom-2.5,'last glyph must not be cropped: '+JSON.stringify({screen:[width,height],stage:reading.stage,last:reading.last,page:reading.page}));
    assert.ok(height-reading.last>=59.5,'last glyph descenders must clear the physical viewport edge by at least 44px');
    if(samples.length){
     const previous=samples.at(-1).markers.at(-1),next=reading.markers[0];

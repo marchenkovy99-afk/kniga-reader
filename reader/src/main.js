@@ -280,10 +280,10 @@ function enableReaderGeometryReport(){
 }
 
 async function openBook(id){
- const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;
+ const b=books.find(x=>x.id===id),owner=localOwner;if(!b)return;const request=++libraryRenderId;
  if(matchMedia('(pointer:coarse)').matches)await readingFullscreen.enter();
- if(owner!==localOwner)return;
- if(current)await persistPosition();if(owner!==localOwner)return;dispose();current=b;readingTouched=false;
+ if(owner!==localOwner||request!==libraryRenderId)return;
+ if(current)await persistPosition();if(owner!==localOwner||request!==libraryRenderId)return;dispose();current=b;readingTouched=false;
  await upgradeBookPresentation(b,{saveBook:storage.putBook});
  if(owner!==localOwner||current!==b)return;
  try{const stored=await localState((b.localStateOwner===undefined?localOwner:b.localStateOwner)).getPreference(`position:${id}`);if(stored){b.progress=stored;b.marks=stored.marks||[];}}catch(e){message(e.message,true);}
@@ -467,7 +467,7 @@ function showNote(id){
 function saveSettings(){
  const saved=restoreSettings(settings),at=Math.max(Date.now(),settingsUpdatedAt+1,(current?.appearanceUpdatedAt||0)+1);
  const book=current;
- if(!book){globalSettings={...saved};settingsUpdatedAt=at;}
+ globalSettings={...saved};settingsUpdatedAt=at;
  if(book){
   book.appearanceSettings={...saved};book.appearanceUpdatedAt=at;
   book.progress={...(book.progress||{}),bookSettings:{...saved},appearanceUpdatedAt:at};scheduleSave();
@@ -503,7 +503,7 @@ function showSettings(){
  if(settingsTab==='text')html=`<div class="appearance-presets" aria-label="Готовые настройки">${[['novel','Роман'],['nonfiction','Нон-фикшн'],['compact','Компактно']].map(([key,label])=>`<button data-preset="${key}" aria-pressed="${selectedPreset===key}">${label}</button>`).join('')}</div><p class="preset-caption" id="preset-caption">${selectedPreset==='custom'?'Свои настройки':'Готовый набор, который можно изменить'}</p><label class="select-setting"><span>Шрифт</span><select id="font-select" aria-label="Шрифт"><option value="serif">Книжный · Georgia</option><option value="literary">Классический · Palatino</option><option value="sans">Без засечек · Системный</option></select></label><p id="font-sample" class="font-sample" data-font="${settings.font}">Тихо светилась страница книги.</p>${rangeControl('fontSize')}${rangeControl('lineHeight')}<details class="advanced"><summary>Абзацы и дополнительные настройки</summary>${rangeControl('paragraphGap')}${rangeControl('indent')}${rangeControl('letterSpacing')}<label class="select-setting"><span>Выравнивание</span><select id="align-select" aria-label="Выравнивание"><option value="left">По левому краю</option><option value="justify">По ширине</option></select></label><label class="switch-row"><span>Переносы слов</span><input type="checkbox" id="hyphens-check" ${settings.hyphens?'checked':''}></label></details>`;
  if(settingsTab==='page')html=`<p class="appearance-section-note">Поля и отступы страницы</p>${rangeControl('margin')}${rangeControl('topInset')}${rangeControl('bottomInset')}<p class="small-copy muted">Системные отступы сохраняются отдельно, чтобы текст не попадал под часы и край экрана.</p>`;
  if(settingsTab==='themes')html=themeChoices();
- openSheet('Оформление',`<p class="appearance-scope">${current?'Для этой книги':'Общее оформление книг'}</p>`+tabs+`<div class="settings-body">${html}</div><div class="settings-bottom"><button id="reset-settings" class="text-button">Сбросить ${settingsTab==='text'?'текст':settingsTab==='page'?'поля':'тему'}</button>${current?'<button id="use-default-appearance" class="text-button">Использовать для всех книг</button>':''}<details class="full-reset"><summary>Сбросить всё оформление</summary><p class="small-copy muted">Вернутся исходные шрифт, интервалы, поля и тема.</p><button id="reset-all-settings" class="button secondary">Сбросить всё</button></details></div>`);
+ openSheet('Оформление',`<p class="appearance-scope">Общее оформление книг</p>`+tabs+`<div class="settings-body">${html}</div><div class="settings-bottom"><button id="reset-settings" class="text-button">Сбросить ${settingsTab==='text'?'текст':settingsTab==='page'?'поля':'тему'}</button><details class="full-reset"><summary>Сбросить всё оформление</summary><p class="small-copy muted">Вернутся исходные шрифт, интервалы, поля и тема.</p><button id="reset-all-settings" class="button secondary">Сбросить всё</button></details></div>`);
  const sheet=document.querySelector('#sheet');sheet.classList.add('appearance-sheet');
  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{settingsTab=b.dataset.tab;showSettings();});
  const change=(key,value)=>{settings=clampSettings({...settings,[key]:value});saveSettings();syncControls(key);if(current)scheduleLayout(300);document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed',String(presetFor(settings)===b.dataset.preset)));const caption=document.querySelector('#preset-caption');if(caption)caption.textContent=presetFor(settings)==='custom'?'Свои настройки':'Готовый набор, который можно изменить';const sample=document.querySelector('#font-sample');if(sample)sample.dataset.font=settings.font;};
@@ -517,10 +517,7 @@ function showSettings(){
  bindThemeChoices(()=>{saveSettings();showSettings();});
  document.querySelector('#reset-settings').onclick=()=>{settings=resetAppearanceSection(settings,settingsTab,defaults);theme();saveSettings();showSettings();if(current)scheduleLayout();};
  document.querySelector('#reset-all-settings').onclick=()=>{settings={...defaults};theme();saveSettings();showSettings();if(current)scheduleLayout();};
- document.querySelector('#use-default-appearance')?.addEventListener('click',async()=>{
-  const owner=localOwner,saved=restoreSettings(settings),at=Math.max(Date.now(),settingsUpdatedAt+1,(current?.appearanceUpdatedAt||0)+1);
-  try{await writeAppearance({settings:saved,updatedAt:at},owner);if(owner!==localOwner)return;globalSettings={...saved};settingsUpdatedAt=at;message('Общее оформление сохранено.');}catch(e){message('Не удалось сохранить: '+e.message,true);}
- });
+
 }
 
 /** Inject highlights into original text nodes without changing text length or character anchors. */
