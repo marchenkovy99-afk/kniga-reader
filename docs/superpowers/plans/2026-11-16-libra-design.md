@@ -40,3 +40,5 @@
 - CI environment fix: ubuntu-latest moved to 26.04, unsupported by the repository Playwright 1.56.1. Pin both browser workflows to ubuntu-24.04; do not skip browser tests.
 
 - Browser verification found insufficient descender clearance in WebKit compact typography after the stable header inset. Increased the measured bottom safety allowance by two pixels; source anchors and displayed text are unchanged.
+
+- Root cause correction: fit validation deliberately allows trailing CSS padding to overflow, so increasing padding did not enforce the glyph guard. Enforce a 3px bottom gap on actual glyph rectangles in measurement and live validation, and bump the pagination cache version.

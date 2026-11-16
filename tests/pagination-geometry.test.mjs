@@ -52,3 +52,10 @@ test('a visually clipped flipbook page is rejected even if the stage and text bo
  el.ownerDocument.defaultView={innerWidth:240,innerHeight:200,getComputedStyle:()=>({overflowX:'hidden',overflowY:'hidden',clipPath:'none'})};
  assert.equal(visibleContentFits(el,stage),false,'a clipped page must never appear readable merely because the outer stage fits');
 });
+
+test('requested descender safety is enforced on glyph bounds, not just CSS padding',()=>{
+ const el=page({textRects:[rect(8,4,192,98)]});
+ assert.equal(visibleContentFits(el,el,{bottomGap:3}),false,'two spare pixels cannot satisfy a three-pixel glyph guard');
+ const safe=page({textRects:[rect(8,4,192,97)]});
+ assert.equal(visibleContentFits(safe,safe,{bottomGap:3}),true);
+});

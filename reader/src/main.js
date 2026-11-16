@@ -330,7 +330,7 @@ function holdLayout(){
 function scheduleLayout(delay=0){if(!current)return;geometryRecovery=0;holdLayout();clearTimeout(layoutTimer);layoutTimer=setTimeout(layout,delay);}
 function checkRenderedPage(stage){
  const text=pageNodes[pageIndex]?.querySelector('.book-text');
- if(!text||!visibleContentFits(text,stage))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
+ if(!text||!visibleContentFits(text,stage,{bottomGap:3}))throw new Error('Страница не помещается целиком. Измените размер текста или поля. Исходный текст книги сохранён.');
 }
 function verifyVisiblePage(){
  const stage=document.querySelector('#book-stage');if(!stage||stage.dataset.layoutState!=='ready')return;
@@ -540,7 +540,7 @@ function renderNotesOnPage(page){
    for(let i=0;i<cuts.length-1;i++){
     const from=cuts[i],to=cuts[i+1],str=part.node.nodeValue.slice(from-part.from,to-part.from);
     const active=matches.filter(a=>(a.start.block<block||a.start.offset<=from)&&(a.end.block>block||a.end.offset>=to)).sort((a,b)=>b.changedAt-a.changedAt)[0];
-    if(active){const mark=document.createElement('mark');mark.className='reading-highlight '+active.color;mark.dataset.annotation=active.id;mark.setAttribute('role','button');mark.tabIndex=0;mark.setAttribute('aria-label','Цитата. Открыть действия');mark.textContent=str;mark.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();showQuoteActions(active.id,mark.getBoundingClientRect());}};fragment.append(mark);}
+    if(active){const mark=document.createElement('mark');mark.className='reading-highlight '+active.color;mark.dataset.annotation=active.id;mark.setAttribute('role','button');mark.tabIndex=0;mark.setAttribute('aria-label','Цитата: '+str+'. Открыть действия');mark.textContent=str;mark.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();showQuoteActions(active.id,mark.getBoundingClientRect());}};fragment.append(mark);}
     else fragment.append(document.createTextNode(str));
    }
    part.node.replaceWith(fragment);

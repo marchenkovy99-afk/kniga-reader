@@ -1,7 +1,7 @@
 import {readerPaintHeight} from './reader-window.js';
 // scrollHeight/scrollWidth are integers and can miss a clipped fraction of a
 // text row. Range rectangles also catch superscripts and nowrap inline runs.
-export function visibleContentFits(element,clip=element){
+export function visibleContentFits(element,clip=element,{bottomGap=0}={}){
  const doc=element.ownerDocument,view=doc.defaultView,style=view?.getComputedStyle?.(element);
  // scrollHeight includes trailing padding after a fractional final line box.
  // Only that empty padding may exceed the integer client size. Every actual
@@ -37,6 +37,9 @@ export function visibleContentFits(element,clip=element){
   right=Math.min(right,view.innerWidth,visual?.width>0?(visual.offsetLeft||0)+visual.width:view.innerWidth);
   bottom=Math.min(bottom,paintHeight,visualClips&&visual?.height>0?(visual.offsetTop||0)+visual.height:paintHeight);
  }
+ // Padding is permitted to overflow above, so it cannot enforce a glyph gap.
+ // Apply the requested safety margin to the actual clipping rectangle.
+ bottom-=Math.max(0,bottomGap);
  const epsilon=1/64;
  const fits=rect=>rect.width<=0||rect.height<=0||
   (rect.left>=left-epsilon&&rect.top>=top-epsilon&&rect.right<=right+epsilon&&rect.bottom<=bottom+epsilon);

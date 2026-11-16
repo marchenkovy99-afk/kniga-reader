@@ -15,9 +15,7 @@ export function applyTypography(element,s,width){
  // ordinary reading settings keep their existing compact 2px top inset.
  const glyphOverhang=Math.max(0,((1.15-Number(s.lineHeight))*s.fontSize)/2);
  const topClearance=Math.max(Math.ceil(glyphOverhang+2),Number(s.topInset)||0);
- // WebKit glyph rectangles can descend beyond a compact line box. Keep
- // an extra two pixels below the measured line, including when bottomInset=0.
- const bottomClearance=Math.max(Math.ceil(glyphOverhang+5),Number(s.bottomInset)||0);
+ const bottomClearance=Math.max(Math.ceil(glyphOverhang+3),Number(s.bottomInset)||0);
  const variables={'--font-size':`${s.fontSize}px`,'--line-height':s.lineHeight,'--page-margin':`${margin}px`,'--paragraph-gap':`${s.paragraphGap}em`,'--indent':`${indentPx}px`,'--letter-spacing':`${s.letterSpacing}px`,'--text-align':s.align,'--hyphens':s.hyphens?'auto':'none'};
  element.style.setProperty('padding-top',`${topClearance}px`);
  element.style.setProperty('padding-bottom',`${bottomClearance}px`);
