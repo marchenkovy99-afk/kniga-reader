@@ -234,6 +234,9 @@ body.reading{position:fixed;inset:0;height:var(--reader-window-height,100%);over
 /* Installed iOS apps can report browser-sized dvh/svh values. Size the reader
    against the fixed app window instead, including its real bottom edge. */
 body.reading #app{position:absolute;inset:0}
+
+/* Keep the shelf surface behind the fixed tabs even when the shelf is short. */
+body:not(.reading) #app{min-height:100vh;min-height:100dvh}
 body.reading .reader{height:100%;min-height:0}
 /* The measured stage follows the available screen as a touch device folds or rotates. */
 @media(pointer:coarse){

@@ -18,7 +18,7 @@ try{
   const path=new URL(route.request().url()).pathname;
   if(path==='/empty')return route.fulfill({contentType:'text/html',body:'<html></html>'});
   const rel=path.replace(/^\/kniga-reader\//,'')||'index.html';let body=readFileSync(root+rel,'utf8');
-  if(rel.endsWith('.css')&&brokenViewportUnits)body=body.replaceAll('100dvh','803px').replaceAll('100svh','803px');
+  if(rel.endsWith('.css')&&brokenViewportUnits)body=body.replace(/(?<![-\w])height:100(?:dvh|svh)/g,'height:803px');
   if(rel.endsWith('.css'))body=body.replace(/env\(safe-area-inset-(top|bottom)(?:,\s*0px)?\)/g,(_,edge)=>`var(--test-${edge},0px)`);
   if(rel==='index.html')body=body.replace('<head>','<head><style>:root{--test-top:59px;--test-bottom:34px}</style>');
   return route.fulfill({body,contentType:rel.endsWith('.js')?'text/javascript':rel.endsWith('.css')?'text/css':'text/html'});
@@ -31,7 +31,36 @@ try{
   const blocks=[{type:'p',text:caption,html:'<em>'+caption+'</em>'},...Array.from({length:20},()=>({type:'p',text,html:text}))];
   await new Promise((resolve,reject)=>{const r=indexedDB.open('kniga-reader',1);r.onupgradeneeded=()=>{r.result.createObjectStore('books',{keyPath:'id'});r.result.createObjectStore('preferences');};r.onsuccess=()=>{const db=r.result,tx=db.transaction(['books','preferences'],'readwrite');tx.objectStore('books').put({id:'test',title:'Геометрия страницы',author:'Тест',blocks,presentationVersion:1,chars:blocks.reduce((n,b)=>n+b.text.length,0),chapters:[],fileName:'test.fb2',addedAt:1,marks:[]});tx.objectStore('preferences').put({font:'sans',fontSize:22,lineHeight:1.1,margin:8,indent:1.3,paragraphGap:0,paragraphSpacingVersion:1,letterSpacing:0,align:'justify',hyphens:true,theme:'night'},'settings');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};});
  });
- await page.goto('https://reader.test/kniga-reader/');if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();try{await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor({timeout:20000});}catch(error){console.error('Reader startup diagnostics',await page.evaluate(()=>({stage:document.querySelector('#book-stage')?.dataset.layoutState,loading:document.querySelector('#page-loading')?.textContent,loadingError:document.querySelector('#page-loading')?.classList.contains('layout-error'),reader:document.querySelector('.reader')?.className,stageBox:document.querySelector('#book-stage')?.getBoundingClientRect().toJSON(),visiblePages:document.querySelectorAll('.book-page[aria-hidden="false"]').length})));throw error;}
+ await page.goto('https://reader.test/kniga-reader/');
+ const session=await page.context().newCDPSession(page);
+ const themeToggle=page.locator('#library-theme');
+ await themeToggle.waitFor();
+ const foldSizes=[[390,790],[790,390],[688,856],[856,688]];
+ for(const [theme,autoDark] of [['night',false],['paper',false],['paper',true]]){
+  if(await page.locator('html').getAttribute('data-theme')!==theme)await themeToggle.evaluate(button=>button.click());
+  await session.send('Emulation.setAutoDarkModeOverride',{enabled:autoDark});
+  for(const [width,height] of [...foldSizes,[688,790],[688,856]]){
+   await page.setViewportSize({width,height});
+   await page.evaluate(()=>Promise.all(document.getAnimations().map(animation=>animation.finished.catch(()=>{}))));
+   const nav=await page.locator('.library-nav').boundingBox();
+   const app=await page.locator('#app').boundingBox();
+   assert.ok(app.y+app.height>=height,`library canvas must fill ${width}×${height}`);
+   assert.equal(nav.y+nav.height,height,'navigation touches the visible bottom edge');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width,'library fits the screen horizontally');
+   const screenshot=await page.screenshot();
+   const colors=await page.evaluate(async({image,navTop})=>{
+    const screenshot=new Image();screenshot.src=image;await screenshot.decode();
+    const canvas=document.createElement('canvas');canvas.width=screenshot.width;canvas.height=screenshot.height;
+    const pixels=canvas.getContext('2d');pixels.drawImage(screenshot,0,0);
+    return [100,navTop-24,navTop+12].map(y=>Array.from(pixels.getImageData(4,Math.floor(y),1,1).data));
+   },{image:'data:image/png;base64,'+screenshot.toString('base64'),navTop:nav.y});
+   assert.deepEqual(colors.slice(1),[colors[0],colors[0]],`uniform shelf and navigation background at ${width}×${height} (${theme}, auto dark: ${autoDark})`);
+  }
+ }
+ await session.send('Emulation.setAutoDarkModeOverride',{});
+ await page.setViewportSize({width:393,height:852});
+ await themeToggle.evaluate(button=>button.click());
+ if(shortFixedViewport)await page.addStyleTag({content:'body.reading{bottom:64px}'});await page.locator('[data-book="test"]').click();try{await page.locator('.book-page[aria-hidden="false"] .book-text').waitFor({timeout:20000});}catch(error){console.error('Reader startup diagnostics',await page.evaluate(()=>({stage:document.querySelector('#book-stage')?.dataset.layoutState,loading:document.querySelector('#page-loading')?.textContent,loadingError:document.querySelector('#page-loading')?.classList.contains('layout-error'),reader:document.querySelector('.reader')?.className,stageBox:document.querySelector('#book-stage')?.getBoundingClientRect().toJSON(),visiblePages:document.querySelectorAll('.book-page[aria-hidden="false"]').length})));throw error;}
  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
  const pages=[];
  const pageCount=Number((await page.locator('#reader-page-position').textContent()).match(/из\s+(\d+)/)?.[1]||0);
@@ -94,7 +123,6 @@ try{
  await page.locator('#book-stage').tap({position:{x:190,y:300}});
  await assertUnchangedChrome();
  await page.screenshot({path:'/tmp/kniga-pwa-controls.png'});
- const session=await page.context().newCDPSession(page);
  await session.send('Emulation.setDeviceMetricsOverride',{width:393,height:900,deviceScaleFactor:1,mobile:false});
  await page.waitForFunction(()=>document.querySelector('.reader').clientHeight===900);
  await page.waitForFunction(()=>document.querySelector('#book-stage')?.dataset.layoutState==='ready'&&document.querySelector('#book-stage')?.dataset.paginationComplete==='true');
@@ -111,7 +139,7 @@ try{
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+15),'continued text should fill the page; the book final page may end early');
  // Resize the open book through cover and unfolded viewport shapes.
  assert.ok(await page.evaluate(()=>matchMedia('(pointer: coarse)').matches));
- for(const [width,height] of [[390,790],[790,390],[688,856],[856,688],[390,790]]){
+ for(const [width,height] of [...foldSizes,foldSizes[0]]){
   await session.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
   await page.waitForFunction(height=>document.querySelector('.reader').clientHeight===height,height);
   await assertAnchorPresent();
