@@ -109,4 +109,25 @@ try{
  assert.ok(pages.every(p=>852-p.stageBottom>=59.5),'screen edge must have at least 44px clearance below every book page');
  assert.ok(pages.every(p=>p.last<=p.stageBottom-2.5),'last glyph descenders must not be cropped by the page viewport');
  assert.ok(pages.slice(0,-1).every(p=>p.unused<=p.lineHeight+15),'continued text should fill the page; the book final page may end early');
+ // Resize the open book through cover and unfolded viewport shapes.
+ assert.ok(await page.evaluate(()=>matchMedia('(pointer: coarse)').matches));
+ for(const [width,height] of [[390,790],[790,390],[688,856],[856,688],[390,790]]){
+  await session.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+  await page.waitForFunction(height=>document.querySelector('.reader').clientHeight===height,height);
+  await assertAnchorPresent();
+  const surface=await page.evaluate(()=>{
+   const reader=document.querySelector('.reader'),stage=document.querySelector('#book-stage');
+   const sheet=stage.querySelector('.book-page[aria-hidden="false"]');
+   const paper=getComputedStyle(reader).backgroundColor;
+   const bounds=sheet.getBoundingClientRect();
+   return {
+    width:stage.clientWidth,left:bounds.left,right:bounds.right,
+    border:getComputedStyle(reader).borderInlineStartWidth,
+    paint:[document.body,stage,sheet].every(node=>getComputedStyle(node).backgroundColor===paper),
+    gradient:getComputedStyle(sheet).backgroundImage,
+    underlay:getComputedStyle(sheet,'::before').content
+   };
+  });
+  assert.deepEqual(surface,{width,left:0,right:width,border:'0px',paint:true,gradient:'none',underlay:'none'});
+ }
 }finally{await browser.close();}
