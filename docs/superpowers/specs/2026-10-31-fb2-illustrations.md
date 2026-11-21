@@ -1,0 +1,5 @@
+# Libra: FB2, illustrations and typography
+
+Approved requirements: retain FB2 metadata, chapters, images, emphasis, poetry, lists and footnotes; parity with existing EPUB settings, bookmarks, quotes and cloud persistence. Override publisher prose fonts with the user's chosen font while retaining emphasis and symbol fonts. Keep illustrations in their original colours with white backing in every theme; fit without cropping; provide an accessible zoom/pan viewer that returns to the reading position. Decode images before accepting page counts. Preserve existing book records and anchors. Validate on mobile Chromium and WebKit and standalone display mode; do not claim physical iPhone verification without it.
+
+Implementation decisions: extend the existing FB2 parser and reader rather than convert books or replace the reader. Keep original book bytes, block order and flattened text stable for old bookmarks. Use React-rendered safe inline runs, never publisher HTML. Do not change cloud schemas. No new runtime dependency.

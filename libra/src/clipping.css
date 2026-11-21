@@ -1,0 +1,15 @@
+.reading-root{--clipping-alert-height:0px}
+.reading-scroll-safe{--clipping-alert-height:92px}
+.clipping-alert{position:absolute;top:var(--reader-safe-top);left:0;right:0;min-height:var(--clipping-alert-height);padding:8px 12px;box-sizing:border-box;display:flex;align-items:center;gap:10px;background:var(--bg);color:var(--fg);border-bottom:1px solid var(--border);font:12px/1.35 system-ui,sans-serif;z-index:8;pointer-events:auto}
+.clipping-alert span{flex:1;min-width:0}
+.clipping-alert button{flex:0 0 104px;border:1px solid var(--border);background:transparent;border-radius:6px;padding:8px;color:inherit;font:inherit;cursor:pointer}
+.reading-scroll-safe .reading-zones{display:none;pointer-events:none}
+.reading-scroll-safe .reading-content{pointer-events:auto}
+.reading-scroll-safe .page-viewport{overflow:auto;contain:layout;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.reading-scroll-safe .book-flow{height:auto!important;column-count:1!important;column-width:auto!important;column-gap:0!important;transform:none!important;transition:none!important;overflow:visible!important;padding:3px 0 20px}
+.reading-scroll-safe .book-flow :is(p,h2,.book-verse,td){height:auto!important;max-height:none!important;overflow:visible!important;white-space:normal!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:normal!important;transform:none!important}
+.reading-scroll-safe .book-flow> :is(p,h2,.book-verse){width:auto!important;max-width:100%!important;margin-left:0!important;margin-right:0!important;position:static!important}
+
+@media(max-width:340px){.reading-scroll-safe{--clipping-alert-height:108px}}
+
+.reading-top .reading-panels-close{flex:0 0 44px;width:44px;height:44px;color:var(--muted);border-radius:8px}
